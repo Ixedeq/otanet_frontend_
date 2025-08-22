@@ -1,0 +1,102 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 1rem 1.5rem;
+  background: var(--header-color);
+  color: var(--font-color);
+}
+
+/* Logo */
+.site-title {
+  font-size: 3.5rem;
+  font-weight: bold;
+  text-align: center;
+  z-index: 1; /* stay above mobile search bar */
+}
+
+.ota a {
+  background: var(--accent-color);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-decoration: none;
+}
+
+.net a {
+  color: var(--font-color);
+  text-decoration: none;
+}
+
+/* Menu icon */
+.menu-icon {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+/* Search container */
+.search-container {
+  position: absolute;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  width: auto;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.15);
+  transition: background 0.3s ease;
+}
+
+.search-icon {
+  color: white;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-input {
+  width: 0;
+  opacity: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: white;
+  font-size: 1.5rem;
+  padding-left: 0;
+  transition: width 0.3s ease, opacity 0.3s ease;
+}
+
+/* Desktop click: expand input only when .open class is added */
+@media (min-width: 769px) {
+  .search-container.open {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .search-container.open .search-input {
+    width: 160px;
+    opacity: 1;
+    padding-left: 0.5rem;
+  }
+}
+
+/* Mobile click: expand input using .open class */
+@media (max-width: 768px) {
+  .site-title {
+    font-size: 2.5rem;
+  }
+
+  .search-container.open .search-input {
+    width: 120px; /* slightly smaller on mobile */
+    opacity: 1;
+    padding-left: 0.5rem;
+  }
+}
