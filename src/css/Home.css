@@ -1,0 +1,56 @@
+.home {
+  display: flex;
+  gap: 0.8rem;
+  padding: 1rem;
+  overflow-x: auto;        /* allows horizontal scroll */
+  overflow-y: hidden;      /* hides vertical scroll */
+  white-space: nowrap;     /* keeps items on one line */
+  background-color: var(--main-bg);
+
+  min-height: auto;
+  height: auto;
+
+  scrollbar-width: none;   /* Firefox: hide scrollbar */
+}
+
+.home::-webkit-scrollbar {
+  display: none;           /* Chrome, Safari, Edge: hide scrollbar */
+}
+
+.manga-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;  /* push image to top, title to bottom */
+  align-items: center;
+  flex-shrink: 0;                  /* prevent shrinking in horizontal scroll */
+  width: 120px;                     /* same as cover width */
+  height: 200px;                    /* total card height */
+  padding: 0.3rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+
+.home-cover {
+  width: 120px;
+  height: 170px;                   /* image height smaller than card height */
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.manga-item:hover {
+  transform: scale(1.05);
+}
+
+.manga-title {
+  font-size: 1rem;
+  color: var(--main-text);
+  text-align: center;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

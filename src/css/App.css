@@ -1,0 +1,55 @@
+:root {
+  --main-bg: #333;
+  --header-color: #131313;
+  --accent-color: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
+  --primary-home: #474747; /* slightly lighter than main background */
+  --font-color: white;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: var(--main-bg);
+  color: var(--font-color);
+}
+
+main {
+  padding: 2rem;
+  min-height: 70vh;
+}
+
+/* Content containers */
+.home, .about{
+  background-color: var(--primary-home);
+  padding: 1.5rem;
+  border-radius: 8px;
+  max-width: 1000px;
+  margin: 0 auto;
+  margin-bottom: 1rem;
+}
+
+.home2{
+  padding: 1.5rem;
+  max-width: 1050px;
+  margin: 0 auto;
+  margin-bottom: 1rem;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  main {
+    padding: 1rem;
+  }
+
+  .home, .about {
+    padding: 1rem;
+    font-size: 0.9rem; /* smaller text for phones */
+  }
+
+  .home2 {
+    padding: 1rem;
+    font-size: 0.9rem; /* smaller text for phones */
+  }
+}
+  
+  
