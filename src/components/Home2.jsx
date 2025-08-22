@@ -15,6 +15,7 @@ export default function Home2() {
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const [descriptions, setDescriptions] = useState({});
+  const [killSwitch, setKillSwitch] = useState(true)
 
   const totalPages = Math.ceil(images.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -33,12 +34,16 @@ export default function Home2() {
             ...prev,
             [filename]: text && text.trim().length > 0 ? text : "No description available.",
           }));
+          setKillSwitch(false)
         })
         .catch(() =>
           setDescriptions((prev) => ({ ...prev, [filename]: "No description available." }))
         );
     };
-    bs()
+    if(killSwitch){
+      bs()
+    }
+    
   });
 
   const goNext = () => {
