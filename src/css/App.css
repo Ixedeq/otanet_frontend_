@@ -28,12 +28,7 @@ main {
   margin-bottom: 1rem;
 }
 
-.home2{
-  padding: 1.5rem;
-  max-width: 1050px;
-  margin: 0 auto;
-  margin-bottom: 1rem;
-}
+
 
 /* Mobile adjustments */
 @media (max-width: 600px) {
@@ -46,10 +41,6 @@ main {
     font-size: 0.9rem; /* smaller text for phones */
   }
 
-  .home2 {
-    padding: 1rem;
-    font-size: 0.9rem; /* smaller text for phones */
-  }
 }
   
   

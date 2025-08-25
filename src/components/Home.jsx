@@ -1,43 +1,55 @@
-import React, { useEffect, useRef } from "react";
-import "../css/Home.css";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
-const importAll = (r) => r.keys().map(r);
-const images = importAll(require.context("../assets/covers", false, /\.(png|jpe?g)$/));
 
-export default function Home() {
-  const containerRef = useRef(null);
+export default function Recent_Manga (){
+  const [shouldKill, setShouldKill] = useState(true)
+  const [manga, setManga] = useState([[]])
+  const [cover, setCover] = useState('')
 
-  useEffect(() => {
-    const container = containerRef.current;
-    let scrollPos = 0;
+  const Get_Manga = async () => {
+    try {
+      var response = await fetch('http://localhost:8000/recent_manga?page=1')
+      .then(response => {
+        if(!response.ok){
+          throw new Error('Network response was not ok!')
+        }
+        return response.json()
+      })
+      .then(data => {
+        data = JSON.parse(data)
+        setManga(data)
+      })
+    }
+    catch(error){
+      console.log('Error has occured!', error)
+    }
+  }
+  const Get_Cover = async () => {
+     var response = await fetch('http://localhost:8000/get_cover')
+     .then(response => {
+      if(!response.ok){
+          throw new Error('Network response was not ok!')
+        }
+        return response.json()
+     })
+     .then(data => {
+      console.log(JSON.parse(data))
+      setCover(JSON.parse(data))
+      setShouldKill(false)
+     })
+  }
 
-    const isMobile = window.innerWidth <= 768; // tweak breakpoint as needed
-    const speed = isMobile ? 0.5 : 0.3; // Faster on mobile, slower on desktop
-
-    const scrollStep = () => {
-      if (!container) return;
-
-      scrollPos += speed;
-      if (scrollPos >= container.scrollWidth - container.clientWidth) {
-        scrollPos = 0; // loop back to start
-      }
-
-      container.scrollLeft = scrollPos;
-      requestAnimationFrame(scrollStep);
-    };
-
-    const anim = requestAnimationFrame(scrollStep);
-    return () => cancelAnimationFrame(anim);
-  }, []);
+  if(shouldKill){
+    Get_Manga()
+    Get_Cover()
+  }
 
   return (
-    <main className="home" ref={containerRef}>
-      {images.map((src, idx) => (
-        <div key={idx} className="manga-item">
-          <img src={src} alt={`cover-${idx}`} className="home-cover" />
-          <div className="manga-title">Manga {idx + 1}</div>
-        </div>
-      ))}
+    <main className="home">
+      <img src={cover} />
+      <div></div>
+      <div className="manga-title">{manga[0][0]}</div>
     </main>
   );
 }
