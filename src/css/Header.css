@@ -136,7 +136,7 @@ a {
 /* Responsive */
 @media screen and (max-width: 480px) {
     .site-title {
-        font-size: 24px;
+        font-size: 54px;
     }
 
     .searchBox:hover > .searchInput {

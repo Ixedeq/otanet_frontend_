@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../css/Home.css";
 
+const API_BASE = "http://localhost:8000"; 
+
 export default function Recent_Manga() {
   const [manga, setManga] = useState([]);
   const [cover, setCover] = useState("");
   const isPausedRef = useRef(false);  // use ref for latest paused state
   const scrollRef = useRef(null);
-
   const perPage = 8;
   const noCover =
     "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
@@ -15,7 +16,7 @@ export default function Recent_Manga() {
   const fetchManga = async () => {
     try {
       const response = await fetch(
-        `http://localhost:8000/recent_manga?per_page=${perPage}`
+        `${API_BASE}/recent_manga?per_page=${perPage}`
       );
       if (!response.ok) throw new Error("Network response was not ok!");
       const data = await response.json();
