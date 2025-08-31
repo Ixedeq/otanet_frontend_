@@ -1,29 +1,30 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { FaBars, FaSearch } from "react-icons/fa";
+import { FiSearch } from "react-icons/fi";
 import "../css/Header.css";
 
 export default function Header() {
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
-    <header className="header">
-      {/* Search container */}
-      <div className={`search-container ${mobileSearchOpen ? "open" : ""}`}>
-        <FaSearch
-          className="search-icon"
-          size={34}
-          onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-        />
+    <header>
+      {/* Search Box on the left */}
+      <div
+        className={`searchBox ${searchOpen ? "open" : ""}`}
+        onMouseEnter={() => setSearchOpen(true)}
+        onMouseLeave={() => setSearchOpen(false)}
+      >
         <input
           type="text"
           placeholder="Search..."
-          className="search-input"
-          onBlur={() => setMobileSearchOpen(false)}
+          className="searchInput"
         />
+        <button className="searchButton">
+          <FiSearch size={20} color="white"/>
+        </button>
       </div>
 
-      {/* Logo */}
+      {/* Centered Logo */}
       <h1 className="site-title">
         <span className="ota">
           <Link to="/">Ota</Link>
@@ -33,10 +34,12 @@ export default function Header() {
         </span>
       </h1>
 
-      {/* Menu icon */}
-      <button className="menu-icon" aria-label="Menu">
-        <FaBars size={34} />
-      </button>
+      {/* Menu Box on the right */}
+      <div className="MenuBox">
+        <button className="searchButton">☰</button>
+      </div>
     </header>
   );
 }
+
+

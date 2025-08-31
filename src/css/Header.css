@@ -1,102 +1,145 @@
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  padding: 1rem 1.5rem;
-  background: var(--header-color);
-  color: var(--font-color);
+:root {
+    --color-primary: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
+    --color-back-light: #2e2e2e;
+    --spacer-base: 1em;
+    --header-font-size: 3.5em;
+    --header-height: 8em;
+    --menu-color: white;
 }
 
-/* Logo */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--spacer-base);
+    background-color: var(--header-color);
+    height: var(--header-height);
+    border-bottom: 1px solid #5553b5;
+    position: relative;
+}
+
+/* Logo centered absolutely */
 .site-title {
-  font-size: 3.5rem;
-  font-weight: bold;
-  text-align: center;
-  z-index: 1; /* stay above mobile search bar */
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    font-size: var(--header-font-size);
+    color: white;
+    z-index: 1;
 }
 
-.ota a {
-  background: var(--accent-color);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-decoration: none;
+header h1 span {
+    background: var(--color-primary);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
 }
 
-.net a {
-  color: var(--font-color);
-  text-decoration: none;
+a {
+    text-decoration: none;
+    color: inherit;
 }
 
-/* Menu icon */
-.menu-icon {
-  position: absolute;
-  right: 1rem;
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
+/* Search Box - fixed size to contain button */
+.searchBox {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 40px; /* button width */
+    height: 40px;
+    background: var(--color-primary); /* button background gradient */
+    border-radius: 40px;
+    padding: 2px 2px 2px 2px;
+    overflow: visible; /* allow input to expand */
 }
 
-/* Search container */
-.search-container {
-  position: absolute;
-  left: 1rem;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  width: auto;
-  height: 40px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.15);
-  transition: background 0.3s ease;
+/* Search button stays fixed */
+.searchButton {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-back-light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--color-back-light);
+    cursor: pointer;
+    flex-shrink: 0;
+    z-index: 2;
+    font-size: 18px;
 }
 
-.search-icon {
-  color: white;
-  cursor: pointer;
-  flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Input expands to the right */
+.searchInput {
+    position: absolute;
+    left: 45px; /* start right after button */
+    top: 1;
+    height: 40px;
+    width: 0;
+    padding: 0 10px;
+    border: none;
+    border-radius: 20px;
+    background: var(--color-back-light); 
+    color: white;
+    font-size: 16px;
+    line-height: 40px;
+    opacity: 0;
+    transition: width 0.4s ease, opacity 0.4s ease;
+    z-index: 1;
 }
 
-.search-input {
-  width: 0;
-  opacity: 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: white;
-  font-size: 1.5rem;
-  padding-left: 0;
-  transition: width 0.3s ease, opacity 0.3s ease;
+/* Expand on hover OR focus */
+.searchBox:hover,
+.searchBox:focus-within {
+    width: 240px;                 
 }
 
-/* Desktop click: expand input only when .open class is added */
-@media (min-width: 769px) {
-  .search-container.open {
-    background: rgba(255, 255, 255, 0.25);
-  }
-
-  .search-container.open .search-input {
-    width: 160px;
+.searchBox:hover > .searchInput,
+.searchBox:focus-within > .searchInput {
+    outline: 0 ;/* change the color here */
+    width: 175px;                 
     opacity: 1;
-    padding-left: 0.5rem;
-  }
 }
 
-/* Mobile click: expand input using .open class */
-@media (max-width: 768px) {
-  .site-title {
-    font-size: 2.5rem;
-  }
+/* Menu Box */
+.MenuBox {
+    background: var(--color-primary);
+    border-radius: 40px;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    z-index: 2;
+}
 
-  .search-container.open .search-input {
-    width: 120px; /* slightly smaller on mobile */
-    opacity: 1;
-    padding-left: 0.5rem;
-  }
+.MenuBox .searchButton {
+    background: var(--color-back-light);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.MenuBox .searchButton:hover {
+    background: var(--color-back-light);
+    color: #2f3640;
+}
+
+.net{
+  color: aliceblue;
+}
+
+/* Responsive */
+@media screen and (max-width: 480px) {
+    .site-title {
+        font-size: 24px;
+    }
+
+    .searchBox:hover > .searchInput {
+        width: 120px;
+    }
 }

@@ -15,17 +15,27 @@ noCover = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e
 def recent_manga():
     con = sqlite3.connect(Database)
     cursor = con.cursor()
-    page = str(request.args.get('page'))
-    sql = f"SELECT title, description FROM manga_metadata WHERE rowid = {page}"
-    cursor.execute(sql)
-    rows = cursor.fetchall()
-    data = [(rows[0][0],rows[0][1])]
-    return jsonify(json.dumps(data))
 
-@app.route('/get_cover', methods = ['GET'])
+    # Get query params
+    page = int(request.args.get('page', 1))       # default 1
+    per_page = int(request.args.get('per_page', 10)) # default 10
+    offset = (page - 1) * per_page
+
+    # Fetch manga slice
+    sql = "SELECT title, description FROM manga_metadata ORDER BY rowid DESC LIMIT ? OFFSET ?"
+    cursor.execute(sql, (per_page, offset))
+    rows = cursor.fetchall()
+
+    # Convert to list of objects
+    data = [{"title": row[0], "description": row[1]} for row in rows]
+    con.close()
+    return jsonify(data)
+
+
+@app.route('/get_cover', methods=['GET'])
 def get_cover():
-    print(noCover)
-    return jsonify(json.dumps(noCover))
+    return jsonify(noCover) 
+
 
 
 ### POST REQUESTS END ###
