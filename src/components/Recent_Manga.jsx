@@ -10,11 +10,12 @@ export default function Recent_Manga() {
   const [covers, setCovers] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const pages = 10;
 
   useEffect(() => {
     const fetchManga = async () => {
       try {
-        const res = await fetch(`${API_BASE}/recent_manga?per_page=50`);
+        const res = await fetch(`${API_BASE}/recent_manga?per_page=${(pages*itemsPerPage)}`);
         const data = await res.json();
         setManga(data);
       } catch (err) {

@@ -1,26 +1,29 @@
 /* MangaDetail.css */
+
 .detail-container {
   display: flex;
-  flex-direction: row;        /* cover left, details right */
+  flex-direction: row;
   gap: 2rem;
   max-width: 900px;
+  height: 320px;             /* uniform height for container */
   margin: 2rem auto;
-  padding: 2rem;
+  padding: 1.5rem;
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
   font-family: "Arial", sans-serif;
   color: var(--main-text);
+  overflow: hidden;
 }
 
 .detail-cover {
-  width: 210px;              /* fixed width */
-  height: 300px;             /* fixed height */
-  object-fit: contain;       /* show full image */
+  width: 210px;
+  height: 100%;              /* cover fills container height */
+  object-fit: contain;
   border-radius: 8px;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  background-color: #222;    /* optional: fill empty space */
+  background-color: #222;
   align-self: flex-start;
 }
 
@@ -29,6 +32,10 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  max-width: 600px;
+  height: 100%;             /* match container height */
+  overflow-y: auto;         /* scroll if content exceeds */
+  padding-right: 0.5rem;
 }
 
 .detail-title {
@@ -41,12 +48,29 @@
   line-height: 1.5;
   text-align: justify;
 
-  max-height: 400px;       /* fixed height for scroll */
+  max-height: 400px;       /* vertical scroll if too long */
   overflow-y: auto;
+  overflow-x: hidden;      /* prevent horizontal scroll */
+  word-break: break-word;  /* wrap long words */
+  white-space: normal;     /* allow normal wrapping */
   padding-right: 0.5rem;
-  scrollbar-width: thin;   /* Firefox */
 }
 
+/* Scrollbar styling */
+.detail-info::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-info::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+.detail-info::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) */
 .detail-description::-webkit-scrollbar {
   width: 6px;
 }
@@ -60,14 +84,10 @@
   background: transparent;
 }
 
-/* Additional spacing for extra content */
-.detail-extra {
-  margin-top: 2rem;
-}
-
 @media (max-width: 768px) {
   .detail-container {
     flex-direction: column;
+    height: auto;            /* allow auto height on mobile */
     padding: 1rem;
     align-items: center;
   }
@@ -76,6 +96,11 @@
     width: 150px;
     height: 200px;
     margin-bottom: 1rem;
+  }
+
+  .detail-info {
+    max-width: 100%;
+    height: auto;
   }
 
   .detail-title {
@@ -88,10 +113,5 @@
     text-align: justify;
   }
 }
-
-
-
-
-
 
 
