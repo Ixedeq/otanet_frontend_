@@ -12,7 +12,7 @@ export default function MangaCard({ title, description, cover }) {
     "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
 
   return (
-    <Link to={`/manga/${toSlug(title)}`} className="manga-card">
+    <Link to={`/${toSlug(title)}`} className="manga-card">
       <img src={cover || noCover} alt={title} className="manga-thumb" />
       <div className="manga-info">
         <div className="manga-title-text">{prettifyTitle(title)}</div>

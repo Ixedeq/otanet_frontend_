@@ -1,0 +1,97 @@
+/* MangaDetail.css */
+.detail-container {
+  display: flex;
+  flex-direction: row;        /* cover left, details right */
+  gap: 2rem;
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+  font-family: "Arial", sans-serif;
+  color: var(--main-text);
+}
+
+.detail-cover {
+  width: 210px;              /* fixed width */
+  height: 300px;             /* fixed height */
+  object-fit: contain;       /* show full image */
+  border-radius: 8px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  background-color: #222;    /* optional: fill empty space */
+  align-self: flex-start;
+}
+
+.detail-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.detail-title {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.detail-description {
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: justify;
+
+  max-height: 400px;       /* fixed height for scroll */
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  scrollbar-width: thin;   /* Firefox */
+}
+
+.detail-description::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-description::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+.detail-description::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Additional spacing for extra content */
+.detail-extra {
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .detail-container {
+    flex-direction: column;
+    padding: 1rem;
+    align-items: center;
+  }
+
+  .detail-cover {
+    width: 150px;
+    height: 200px;
+    margin-bottom: 1rem;
+  }
+
+  .detail-title {
+    font-size: 1.8rem;
+    text-align: center;
+  }
+
+  .detail-description {
+    font-size: 0.95rem;
+    text-align: justify;
+  }
+}
+
+
+
+
+
+
+
