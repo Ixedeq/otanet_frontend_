@@ -46,13 +46,12 @@ export default function Recent_Manga() {
   return (
     <div className="manga-list">
       {currentManga.length > 0
-        ? currentManga.map(({ title, filename, description }, idx) => (
+        ? currentManga.map(({ title, description }, idx) => (
             <MangaCard
               key={startIndex + idx}
               title={title}
-              filename={filename}
               description={description}
-              cover={covers[filename]}
+              cover={''}
             />
           ))
         : "Loading..."}

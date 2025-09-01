@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-export default function MangaCard({ title, filename, description, cover }) {
+export default function MangaCard({ title, description, cover }) {
   const toSlug = (text) =>
     text.toLowerCase().trim().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, "-");
 
