@@ -4,11 +4,14 @@ import "../css/Recent_Manga.css";
 
 const API_BASE = "http://localhost:8000";
 
-export default function Home2() {
+export default function Recent_Manga() {
   const [manga, setManga] = useState([]);
   const [covers, setCovers] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const toSlug = (text) =>
+    text.toLowerCase().trim().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, "-");
 
   // Fetch recent manga from API
   const fetchManga = async () => {
@@ -28,7 +31,7 @@ export default function Home2() {
       const response = await fetch(`${API_BASE}/get_cover`);
       if (!response.ok) throw new Error("Failed to fetch covers");
       const data = await response.json();
-      setCovers(data); // data should be { filename: cover_url }
+      setCovers(data);
     } catch (error) {
       console.error(error);
     }
@@ -54,25 +57,26 @@ export default function Home2() {
   const prettifyTitle = (title) =>
     title.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-  const noCover = "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
+  const noCover =
+    "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
 
   return (
-    <div className="home2">
+    <div className="manga-list">
       {currentManga.length > 0 ? (
         currentManga.map(({ title, filename, description }, idx) => (
           <Link
-            to={`/chapter/${filename}`}
+            to={`/manga/${toSlug(title)}`}
             key={startIndex + idx}
-            className="manga-item2"
+            className="manga-card"
           >
             <img
               src={covers[filename] || noCover}
               alt={title}
-              className="home2-cover"
+              className="manga-thumb"
             />
-            <div className="manga-text">
-              <div className="manga-title2">{prettifyTitle(title)}</div>
-              <div className="manga-description">
+            <div className="manga-info">
+              <div className="manga-title-text">{prettifyTitle(title)}</div>
+              <div className="manga-description-text">
                 {description || "No description available."}
               </div>
             </div>
@@ -83,7 +87,7 @@ export default function Home2() {
       )}
 
       {totalPages > 1 && (
-        <div className="pagination">
+        <div className="pagination-controls">
           <button onClick={goPrev} disabled={currentPage === 1}>
             Previous
           </button>

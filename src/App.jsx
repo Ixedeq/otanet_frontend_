@@ -5,7 +5,8 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Home from "./components/Home";
 import Recent_Manga from "./components/Recent_Manga";
-import ChapterPage from "./components/ChapterPage"; // make sure this exists
+import MangaPage from "./components/MangaPage";
+import ChapterPage from "./components/ChapterPage";
 import "./css/App.css";
 
 export default function App() {
@@ -14,12 +15,26 @@ export default function App() {
       <Header />
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/chapter/:manga" element={<ChapterPage />} />
+          {/* Home page shows both Home and Recent_Manga */}
+          <Route
+            path="/"
+            element={
+              <>
+                <Home />
+                <Recent_Manga />
+              </>
+            }
+          />
+
+          {/* Individual manga page */}
+          <Route path="/:slug" element={<MangaPage />} />
+
+          {/* Optional future chapter page */}
+          <Route path="/:slug/chapter/" element={<ChapterPage />} />
         </Routes>
-        <Recent_Manga />
       </main>
       <Footer />
     </div>
   );
 }
+
