@@ -29,7 +29,7 @@ export default function App() {
           {/* Individual manga page */}
           <Route path="/:slug" element={<MangaPage />} />
 
-          {/* Optional future chapter page */}
+          {/*future chapter page */}
           <Route path="/:slug/chapter/" element={<ChapterPage />} />
         </Routes>
       </main>
