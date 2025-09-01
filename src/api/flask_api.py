@@ -13,13 +13,7 @@ NOCOVER = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e
 def recent_manga():
     items_per_page = 10
     page = int(request.args.get('page', 1))
-<<<<<<< HEAD
-    per_page = int(request.args.get('per_page', 1))
-    offset = (page - 1) * per_page
-
-=======
     offset = page * items_per_page
->>>>>>> b6be678110e6483c0fa2b6c4343a6b5bfdba9a36
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
     cursor.execute(
