@@ -7,6 +7,7 @@ import Home from "./components/Home";
 import Recent_Manga from "./components/Recent_Manga";
 import MangaPage from "./components/MangaPage";
 import ChapterPage from "./components/ChapterPage";
+import SearchResult from "./components/SearchResult";
 import "./css/App.css";
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
 
           {/* Optional future chapter page */}
           <Route path="/:slug/chapter/" element={<ChapterPage />} />
+           <Route path="/search/:search" element={<SearchResult/>} />
         </Routes>
       </main>
       <Footer />
