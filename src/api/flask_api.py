@@ -12,7 +12,7 @@ NOCOVER = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e
 @app.route('/recent_manga', methods=['GET'])
 def recent_manga():
     page = int(request.args.get('page', 1))
-    per_page = int(request.args.get('per_page', 10))
+    per_page = int(request.args.get('per_page', 1))
     offset = (page - 1) * per_page
 
     con = sqlite3.connect(DATABASE)
@@ -49,7 +49,7 @@ def get_manga_by_slug(slug):
     search_title = slug.replace("-", " ")
 
     # Fetch all titles
-    cursor.execute("SELECT title, description FROM manga_metadata")
+    cursor.execute("SELECT title, description, tags, latest_chapter FROM manga_metadata")
     rows = cursor.fetchall()
 
     result = None
@@ -60,7 +60,9 @@ def get_manga_by_slug(slug):
             result = {
                 "title": row[0],
                 "description": row[1],
-                "cover": NOCOVER  # always provide a cover
+                "cover": NOCOVER,  # always provide a cover
+                "tags": row[2],
+                "chapters": row[3]
             }
             break
 
