@@ -8,6 +8,7 @@ const API_BASE = "http://localhost:8000";
 export default function Recent_Manga() {
   const [manga, setManga] = useState([]);
   const [covers, setCovers] = useState({});
+  const [mangaCount, setMangaCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const pages = 10;
@@ -15,7 +16,7 @@ export default function Recent_Manga() {
   useEffect(() => {
     const fetchManga = async () => {
       try {
-        const res = await fetch(`${API_BASE}/recent_manga?per_page=${(pages*itemsPerPage)}`);
+        const res = await fetch(`${API_BASE}/recent_manga?page=${(currentPage)}`);
         const data = await res.json();
         setManga(data);
       } catch (err) {
@@ -32,13 +33,25 @@ export default function Recent_Manga() {
         console.error(err);
       }
     };
-
+    
+    const fetchMangaCount = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/manga_count`);
+        const data = await res.json();
+        console.log(data)
+        setMangaCount(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
     fetchManga();
     fetchCovers();
-  }, []);
+    fetchMangaCount();
+    window.scrollTo(0, 0)
+  }, [currentPage]);
 
-  const totalPages = Math.ceil(manga.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const totalPages = Math.ceil(mangaCount / itemsPerPage);
+  const startIndex = 0
   const currentManga = manga.slice(startIndex, startIndex + itemsPerPage);
 
   const goNext = () => setCurrentPage((p) => Math.min(p + 1, totalPages));

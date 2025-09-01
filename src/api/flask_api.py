@@ -11,19 +11,23 @@ NOCOVER = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e
 # GET recent manga (title + description)
 @app.route('/recent_manga', methods=['GET'])
 def recent_manga():
+    items_per_page = 10
     page = int(request.args.get('page', 1))
+<<<<<<< HEAD
     per_page = int(request.args.get('per_page', 1))
     offset = (page - 1) * per_page
 
+=======
+    offset = page * items_per_page
+>>>>>>> b6be678110e6483c0fa2b6c4343a6b5bfdba9a36
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
     cursor.execute(
         "SELECT title, description FROM manga_metadata ORDER BY rowid DESC LIMIT ? OFFSET ?",
-        (per_page, offset)
+        (10, offset)
     )
     rows = cursor.fetchall()
     con.close()
-
     data = [{"title": row[0], "description": row[1]} for row in rows]
     return jsonify(data)
 
@@ -31,6 +35,16 @@ def recent_manga():
 @app.route('/get_cover', methods=['GET'])
 def get_cover():
     return jsonify(NOCOVER)
+
+@app.route('/manga_count', methods=['GET'])
+def manga_count():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    sql = "SELECT COUNT(*) FROM manga_metadata;"
+    cursor.execute(sql)
+    total_rows = cursor.fetchone()[0]
+    conn.close()
+    return jsonify(total_rows)
 
 # GET single manga by slug (title -> slug)
 import re
