@@ -22,7 +22,7 @@ export default function SearchResult() {
          }
       };
       fetchSearchResults()
-   }, []);
+   }, [searchValue]);
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(manga.length / itemsPerPage);
