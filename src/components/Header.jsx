@@ -1,11 +1,19 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
 import "../css/Header.css";
 
 export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchValue, setSerachValue] = useState("")
+  const navigate = useNavigate();
 
+  const handleKeyDown = (event) => {
+      if (event.key === 'Enter') {
+        console.log('Enter key pressed!'); 
+        navigate(`/search/${searchValue}`, { state: { searchValue: searchValue} });
+      }
+    };
   return (
     <header>
       {/* Search Box on the left */}
@@ -18,6 +26,9 @@ export default function Header() {
           type="text"
           placeholder="Search..."
           className="searchInput"
+          onKeyDown={handleKeyDown}
+          value={searchValue}
+          onChange={(e) => setSerachValue(e.target.value)}
         />
         <button className="searchButton">
           <FiSearch size={20} color="white"/>
