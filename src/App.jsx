@@ -32,7 +32,7 @@ export default function App() {
 
           {/*future chapter page */}
           <Route path="/:slug/chapter/" element={<ChapterPage />} />
-           <Route path="/search/:search" element={<SearchResult/>} />
+          <Route path="/search/:search" element={<SearchResult/>} />
         </Routes>
       </main>
       <Footer />
