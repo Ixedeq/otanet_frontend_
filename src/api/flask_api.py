@@ -32,19 +32,14 @@ def recent_manga():
             'get_object',
             Params={'Bucket': 'otanet-manga-devo', 'Key': f"s3://otanet-manga-devo/{cleaned_title}/0_title/cover_img"},
             ExpiresIn=900
+        )
         data.append({"title": row[0], "description": row[1], "cover_img": presigned_url_get})
     return jsonify(data)
 
 # Return default cover URL
 @app.route('/get_cover', methods=['GET'])
 def get_cover():
-    title = request.args.get('title')
-    cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', title)
-    presigned_url_get = S3CLIENT.generate_presigned_url(
-        'get_object',
-        Params={'Bucket': 'otanet-manga-devo', 'Key': f"s3://otanet-manga-devo/{cleaned_title}/0_title/cover_img"},
-        ExpiresIn=900
-    return jsonify(presigned_url_get)
+    return jsonify(NOCOVER)
 
 @app.route('/manga_count', methods=['GET'])
 def manga_count():
