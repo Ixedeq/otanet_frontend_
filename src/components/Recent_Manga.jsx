@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import MangaCard from "./components/MangaCard";
+import MangaSkeleton from "./components/MangaSkeleton";
 import PaginationControls from "./components/PaginationControls";
 import "../css/Recent_Manga.css";
-import API_BASE from "./Config";
+import API_BASE from "./Config.js";
 
 
 export default function Recent_Manga() {
+  const { page } = useParams();
+  const navigate = useNavigate();
+  
   const [manga, setManga] = useState([]);
   const [covers, setCovers] = useState({});
   const [mangaCount, setMangaCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+
   const itemsPerPage = 10;
   const pages = 10;
 
@@ -21,6 +28,7 @@ export default function Recent_Manga() {
         setManga(data);
       } catch (err) {
         console.error(err);
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -71,7 +79,7 @@ export default function Recent_Manga() {
           ))
         : "Loading..."}
 
-      {totalPages > 1 && (
+      {!loading && totalPages > 1 && (
         <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
