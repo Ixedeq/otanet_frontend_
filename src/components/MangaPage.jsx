@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import "../css/MangaPage.css";
-
-const API_BASE =
-  window.location.hostname === "localhost"
-    ? "http://localhost:8000"
-    : "http://76.123.162.109:8000";
+import API_BASE from "./Config";
 
 const DEFAULT_COVER =
   "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";

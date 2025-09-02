@@ -2,11 +2,8 @@ import React, { useState, useEffect } from "react";
 import MangaCard from "./components/MangaCard";
 import PaginationControls from "./components/PaginationControls";
 import "../css/Recent_Manga.css";
+import API_BASE from "./Config";
 
-const API_BASE =
-  window.location.hostname === "localhost"
-    ? "http://localhost:8000"
-    : "http://76.123.162.109:8000";
 
 export default function Recent_Manga() {
   const [manga, setManga] = useState([]);
