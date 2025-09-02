@@ -22,19 +22,7 @@ def recent_manga():
     )
     rows = cursor.fetchall()
     con.close()
-<<<<<<< HEAD
     data = [{"title": row[0], "description": row[1]} for row in rows]
-=======
-    data = []
-    for row in rows:
-        cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', row[0])
-        presigned_url_get = S3CLIENT.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': 'otanet-manga-devo', 'Key': f"s3://otanet-manga-devo/{cleaned_title}/0_title/cover_img"},
-            ExpiresIn=900
-        )
-        data.append({"title": row[0], "description": row[1], "cover_img": presigned_url_get})
->>>>>>> 4b28542b3ec3dd18fe4cf43245418543551dfabb
     return jsonify(data)
 
 # Return default cover URL
