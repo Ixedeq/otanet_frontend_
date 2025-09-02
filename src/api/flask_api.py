@@ -17,7 +17,7 @@ def recent_manga():
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
     cursor.execute(
-        "SELECT title, description FROM manga_metadata ORDER BY rowid DESC LIMIT ? OFFSET ?",
+        "SELECT title, description FROM manga_metadata ORDER BY time DESC LIMIT ? OFFSET ?",
         (10, offset)
     )
     rows = cursor.fetchall()
@@ -83,8 +83,8 @@ def get_manga_by_slug(slug):
 
 
 # Search endpoint
-@app.route('/search', methods=['GET'])
-def search():
+@app.route('/search_by_title', methods=['GET'])
+def search_by_title():
     query = request.args.get('title', '')
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
@@ -98,6 +98,41 @@ def search():
     data = [{"title": row[0], "description": row[1]} for row in rows]
     return jsonify(data)
 
+@app.route('/search_by_tags')
+def search_by_tags():
+    print(request.args)
+
+    try:
+        include_tags = request.args.get('include_tags').split(',')
+    except:
+        include_tags = ['']
+
+    try:
+        exclude_tags = request.args.get('exclude_tags').split(',')
+    except:
+        exclude_tags = []
+
+    sql = f"""
+            SELECT title, description, tags FROM manga_metadata
+            WHERE tags like '%{include_tags[0]}%'
+          """
+    include_tags.pop(0)
+
+    for tag in include_tags:
+        sql = sql + f"AND tags like '%{tag}%' "
+    
+    for tag in exclude_tags:
+        sql = sql + f"AND tags not like '%{tag}%'"
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute(sql)
+    rows = cursor.fetchall()
+    data = [{"title": row[0], "description": row[1], "tags": row[2]} for row in rows]
+    conn.close
+    return jsonify(data)
+
+
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    app.run(host='0.0.0.0', threaded=True, debug=True, port=8000)
 
