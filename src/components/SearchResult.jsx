@@ -3,6 +3,11 @@ import { useState, useEffect } from "react";
 import PaginationControls from "./components/PaginationControls";
 import MangaCard from "./components/MangaCard";
 
+const API_BASE =
+  window.location.hostname === "localhost"
+    ? "http://localhost:8000"
+    : "http://76.123.162.109:8000";
+
 export default function SearchResult() {
    const location = useLocation();
    const [manga, setManga] = useState([]);
@@ -13,7 +18,7 @@ export default function SearchResult() {
    // Fetch cover
       const fetchSearchResults = async () => {
       try {
-         const response = await fetch(`http://localhost:8000/search_by_title?title=${searchValue}`);
+         const response = await fetch(`${API_BASE}/search_by_title?title=${searchValue}`);
          if (!response.ok) throw new Error("Network response was not ok!");
          const data = await response.json();
          setManga(data)

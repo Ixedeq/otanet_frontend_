@@ -72,6 +72,9 @@ def get_manga_by_slug(slug):
                 "tags": row[2],
                 "chapters": row[3]
             }
+            print()
+            print(row[3])
+            print()
             break
 
     con.close()
@@ -135,4 +138,3 @@ def search_by_tags():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', threaded=True, debug=True, port=8000)
-

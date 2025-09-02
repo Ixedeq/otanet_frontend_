@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import "../css/MangaPage.css";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE =
+  window.location.hostname === "localhost"
+    ? "http://localhost:8000"
+    : "http://76.123.162.109:8000";
+
 const DEFAULT_COVER =
   "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
 
@@ -20,37 +24,23 @@ export default function MangaPage() {
 
         if (!data.cover) data.cover = DEFAULT_COVER;
 
-        // normalize tags: if string, split by comma; if array, ensure strings
+        // normalize tags
         if (typeof data.tags === "string") {
-        try {
-            // Try parsing as JSON first
-            const parsed = JSON.parse(data.tags.replace(/'/g, '"')); // replace single quotes with double quotes
-            if (Array.isArray(parsed)) {
-            data.tags = parsed.map((tag) => String(tag).trim());
-            } else {
-            // fallback: split by comma
-            data.tags = data.tags
-                .replace(/[\[\]']/g, "")
-                .split(",")
-                .map((tag) => tag.trim())
-                .filter(Boolean);
-            }
-        } 
-        catch {
-        // fallback if JSON.parse fails
-            data.tags = data.tags
+          data.tags = data.tags
             .replace(/[\[\]']/g, "")
             .split(",")
             .map((tag) => tag.trim())
             .filter(Boolean);
+        } else if (!Array.isArray(data.tags)) {
+          data.tags = [];
         }
-        } 
-        else if (Array.isArray(data.tags)) {
-            data.tags = data.tags.map((tag) => String(tag).trim());
-        } 
-        else {
-            data.tags = [];
-        }
+
+        // generate chapters from single number
+        const latestChapterNumber = Number(data.chapters) || 0;
+        data.chapters = Array.from(
+          { length: latestChapterNumber },
+          (_, i) => ({ number: i + 1, title: `Chapter ${i + 1}` })
+        );
 
         setManga(data);
       } catch (error) {
@@ -89,9 +79,23 @@ export default function MangaPage() {
           <span className="tag-item">No tags available</span>
         )}
       </div>
+
+      <div className="chapter-wrapper">
+        <h2 className="chapter-title">Chapters</h2>
+        {manga.chapters.length > 0 ? (
+          <ul className="chapter-list">
+            {manga.chapters.map((ch) => (
+              <li key={ch.number} className="chapter-item">
+                <a href={`/read/${slug}/${ch.number}`} className="chapter-link">
+                  {ch.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div>No chapters available</div>
+        )}
+      </div>
     </>
   );
 }
-
-
-

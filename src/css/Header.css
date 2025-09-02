@@ -12,10 +12,11 @@ header {
     align-items: center;
     justify-content: space-between;
     padding: 0 var(--spacer-base);
-    background-color: var(--header-color);
+    background-color: var(--header-color, #1a1a1a);
     height: var(--header-height);
     border-bottom: 1px solid #5553b5;
     position: relative;
+    transform-origin: top center;
 }
 
 /* Logo centered absolutely */
@@ -27,6 +28,7 @@ header {
     font-size: var(--header-font-size);
     color: white;
     z-index: 1;
+    white-space: nowrap;
 }
 
 header h1 span {
@@ -41,20 +43,19 @@ a {
     color: inherit;
 }
 
-/* Search Box - fixed size to contain button */
+/* Search Box */
 .searchBox {
     position: relative;
     display: flex;
     align-items: center;
-    width: 40px; /* button width */
+    width: 40px;
     height: 40px;
-    background: var(--color-primary); /* button background gradient */
+    background: var(--color-primary);
     border-radius: 40px;
-    padding: 2px 2px 2px 2px;
-    overflow: visible; /* allow input to expand */
+    padding: 2px;
+    overflow: visible;
 }
 
-/* Search button stays fixed */
 .searchButton {
     width: 40px;
     height: 40px;
@@ -63,18 +64,16 @@ a {
     display: flex;
     justify-content: center;
     align-items: center;
-    color: var(--color-back-light);
+    color: white;
     cursor: pointer;
     flex-shrink: 0;
     z-index: 2;
     font-size: 18px;
 }
 
-/* Input expands to the right */
 .searchInput {
     position: absolute;
-    left: 45px; /* start right after button */
-    top: 1;
+    left: 45px;
     height: 40px;
     width: 0;
     padding: 0 10px;
@@ -89,7 +88,6 @@ a {
     z-index: 1;
 }
 
-/* Expand on hover OR focus */
 .searchBox:hover,
 .searchBox:focus-within {
     width: 240px;                 
@@ -97,7 +95,7 @@ a {
 
 .searchBox:hover > .searchInput,
 .searchBox:focus-within > .searchInput {
-    outline: 0 ;/* change the color here */
+    outline: 0;
     width: 175px;                 
     opacity: 1;
 }
@@ -129,17 +127,9 @@ a {
     color: #2f3640;
 }
 
-.net{
+.net {
   color: aliceblue;
 }
 
-/* Responsive */
-@media screen and (max-width: 480px) {
-    .site-title {
-        font-size: 54px;
-    }
 
-    .searchBox:hover > .searchInput {
-        width: 120px;
-    }
-}
+

@@ -30,6 +30,8 @@
 
 .manga-card:hover {
   transform: scale(1.03);
+  border-color: #708bd40d;
+  border-style: solid;
 }
 
 .manga-thumb {
