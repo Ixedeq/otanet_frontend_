@@ -131,5 +131,28 @@ a {
   color: aliceblue;
 }
 
+@media (max-width: 600px) {
+  header {
+    height: auto; /* let it grow if needed */
+    padding: 0.5em 1em;
+  }
+
+  .site-title {
+    font-size: 2em;      /* smaller logo text */
+    white-space: normal;  /* allow wrapping if needed */
+  }
+
+  .MenuBox {
+    flex-wrap: wrap;      /* wrap menu items */
+    gap: 0.5em;           /* spacing between buttons */
+  }
+
+  .searchBox:hover > .searchInput,
+  .searchBox:focus-within > .searchInput {
+    width: 100px;         /* smaller search input */
+  }
+}
+
+
 
 
