@@ -13,7 +13,7 @@ export default function SearchResult() {
    // Fetch cover
       const fetchSearchResults = async () => {
       try {
-         const response = await fetch(`http://localhost:8000/search?title=${searchValue}`);
+         const response = await fetch(`http://localhost:8000/search_by_title?title=${searchValue}`);
          if (!response.ok) throw new Error("Network response was not ok!");
          const data = await response.json();
          setManga(data)
