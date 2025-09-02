@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import "../css/Home.css";
+import "../css/Carousel.css";
 import API_BASE from "./Config";
 
-export default function Recent_Manga() {
+export default function Carousel() {
   const [manga, setManga] = useState([]);
   const [cover, setCover] = useState("");
   const isPausedRef = useRef(false);

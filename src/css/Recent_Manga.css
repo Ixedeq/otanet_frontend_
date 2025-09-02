@@ -103,6 +103,81 @@
   cursor: default;
 }
 
+.manga-card.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--card-bg, #3636367a);
+}
+
+/* Base shimmer background */
+.skeleton-cover,
+.skeleton-title,
+.skeleton-desc {
+  position: relative;
+  overflow: hidden;
+  background: #3838387a;
+  border-radius: 4px;
+}
+
+/* Cover size */
+.skeleton-cover {
+  width: 100%;
+  height: 250px;   /* same as real cover */
+  border-radius: 0.5rem;
+}
+
+/* Title size */
+.skeleton-title {
+  width: 70%;
+  height: 18px;
+}
+
+/* Description lines */
+.skeleton-desc {
+  width: 90%;
+  height: 14px;
+  margin-top: 4px;
+}
+
+.skeleton-desc.short {
+  width: 60%;
+}
+
+/* Shimmer on each element */
+.skeleton-cover::before,
+.skeleton-title::before,
+.skeleton-desc::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer 1.5s infinite linear;
+}
+
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .manga-list {
@@ -132,3 +207,6 @@
     font-size: 0.8rem;
   }
 }
+
+
+

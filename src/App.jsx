@@ -1,9 +1,9 @@
 // App.jsx
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import Home from "./components/Home";
+import Home from "./components/Carousel";
 import Recent_Manga from "./components/Recent_Manga";
 import MangaPage from "./components/MangaPage";
 import ChapterPage from "./components/ChapterPage";
@@ -16,7 +16,7 @@ export default function App() {
       <Header />
       <main>
         <Routes>
-          {/* Home page shows both Home and Recent_Manga */}
+          {/* Home page shows carousel only */}
           <Route
             path="/"
             element={
@@ -26,13 +26,20 @@ export default function App() {
               </>
             }
           />
+          {/* Redirect /recent → /recent/1 */}
+          <Route path="/recent" element={<Navigate to="/recent/1" replace />} />
+
+          {/* Paginated recent manga */}
+          <Route path="/recent/:page" element={<Recent_Manga />} />
 
           {/* Individual manga page */}
           <Route path="/:slug" element={<MangaPage />} />
 
-          {/*future chapter page */}
-          <Route path="/:slug/chapter/" element={<ChapterPage />} />
-          <Route path="/search/:search" element={<SearchResult/>} />
+          {/* Chapter page */}
+          <Route path="/:slug/chapter/:chapterId" element={<ChapterPage />} />
+
+          {/* Search results */}
+          <Route path="/search/:search" element={<SearchResult />} />
         </Routes>
       </main>
       <Footer />
