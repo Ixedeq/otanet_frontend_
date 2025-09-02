@@ -4,54 +4,45 @@ import PaginationControls from "./components/PaginationControls";
 import "../css/Recent_Manga.css";
 import API_BASE from "./Config";
 
-
 export default function Recent_Manga() {
   const [manga, setManga] = useState([]);
   const [covers, setCovers] = useState({});
-  const [mangaCount, setMangaCount] = useState(0)
+  const [mangaCount, setMangaCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+
   const itemsPerPage = 10;
-  const pages = 10;
 
+  // Fetch manga, covers, and count
   useEffect(() => {
-    const fetchManga = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch(`${API_BASE}/recent_manga?page=${(currentPage)}`);
-        const data = await res.json();
-        setManga(data);
+        const [mangaRes, coversRes, countRes] = await Promise.all([
+          fetch(`${API_BASE}/recent_manga?page=${currentPage}`),
+          fetch(`${API_BASE}/get_cover`),
+          fetch(`${API_BASE}/manga_count`)
+        ]);
+
+        const [mangaData, coversData, countData] = await Promise.all([
+          mangaRes.json(),
+          coversRes.json(),
+          countRes.json()
+        ]);
+
+        setManga(mangaData);
+        setCovers(coversData);
+        setMangaCount(countData);
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } catch (err) {
         console.error(err);
       }
     };
 
-    const fetchCovers = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/get_cover`);
-        const data = await res.json();
-        setCovers(data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    
-    const fetchMangaCount = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/manga_count`);
-        const data = await res.json();
-        console.log(data)
-        setMangaCount(data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchManga();
-    fetchCovers();
-    fetchMangaCount();
-    window.scrollTo(0, 0)
+    fetchData();
   }, [currentPage]);
 
+  // Pagination calculations
   const totalPages = Math.ceil(mangaCount / itemsPerPage);
-  const startIndex = 0
+  const startIndex = (currentPage - 1) * itemsPerPage;
   const currentManga = manga.slice(startIndex, startIndex + itemsPerPage);
 
   const goNext = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
@@ -59,16 +50,18 @@ export default function Recent_Manga() {
 
   return (
     <div className="manga-list">
-      {currentManga.length > 0
-        ? currentManga.map(({ title, description, cover }, idx) => (
-            <MangaCard
-              key={startIndex + idx}
-              title={title}
-              description={description}
-              cover={cover}
-            />
-          ))
-        : "Loading..."}
+      {currentManga.length > 0 ? (
+        currentManga.map(({ title, description, cover }, idx) => (
+          <MangaCard
+            key={startIndex + idx}
+            title={title}
+            description={description}
+            cover={cover}
+          />
+        ))
+      ) : (
+        <div className="loading">Loading...</div>
+      )}
 
       {totalPages > 1 && (
         <PaginationControls
@@ -81,3 +74,4 @@ export default function Recent_Manga() {
     </div>
   );
 }
+

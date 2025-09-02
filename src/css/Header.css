@@ -1,12 +1,13 @@
 :root {
     --color-primary: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
     --color-back-light: #2e2e2e;
-    --spacer-base: 1em;
-    --header-font-size: 3.5em;
-    --header-height: 8em;
+    --spacer-base: 1rem;         /* consistent spacing */
+    --header-font-size: 2.5rem;    /* logo size consistent across phones */
+    --header-height: 5rem;       /* header height consistent */
     --menu-color: white;
 }
 
+/* Header container */
 header {
     display: flex;
     align-items: center;
@@ -17,6 +18,7 @@ header {
     border-bottom: 1px solid #5553b5;
     position: relative;
     transform-origin: top center;
+    min-width: 320px; /* ensures search fits on all phones */
 }
 
 /* Logo centered absolutely */
@@ -29,6 +31,7 @@ header {
     color: white;
     z-index: 1;
     white-space: nowrap;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 header h1 span {
@@ -38,6 +41,7 @@ header h1 span {
     color: transparent;
 }
 
+/* Links */
 a {
     text-decoration: none;
     color: inherit;
@@ -79,7 +83,7 @@ a {
     padding: 0 10px;
     border: none;
     border-radius: 20px;
-    background: var(--color-back-light); 
+    background: var(--color-back-light);
     color: white;
     font-size: 16px;
     line-height: 40px;
@@ -88,15 +92,16 @@ a {
     z-index: 1;
 }
 
+/* Expand search box */
 .searchBox:hover,
 .searchBox:focus-within {
-    width: 240px;                 
+    width: 15rem;
 }
 
 .searchBox:hover > .searchInput,
 .searchBox:focus-within > .searchInput {
     outline: 0;
-    width: 175px;                 
+    width: 11rem;
     opacity: 1;
 }
 
@@ -107,6 +112,7 @@ a {
     padding: 2px;
     display: flex;
     align-items: center;
+    gap: 0.5rem;
     z-index: 2;
 }
 
@@ -128,30 +134,40 @@ a {
 }
 
 .net {
-  color: aliceblue;
+    color: aliceblue;
 }
 
+/* Mobile adjustments */
 @media (max-width: 600px) {
-  header {
-    height: auto; /* let it grow if needed */
-    padding: 0.5em 1em;
-  }
+    header {
+        height: var(--header-height);
+        padding: 0.5rem 1rem;
+    }
 
-  .site-title {
-    font-size: 2em;      /* smaller logo text */
-    white-space: normal;  /* allow wrapping if needed */
-  }
+    .site-title {
+        font-size: var(--header-font-size);
+        white-space: nowrap;
+    }
 
-  .MenuBox {
-    flex-wrap: wrap;      /* wrap menu items */
-    gap: 0.5em;           /* spacing between buttons */
-  }
+    .MenuBox {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
 
-  .searchBox:hover > .searchInput,
-  .searchBox:focus-within > .searchInput {
-    width: 100px;         /* smaller search input */
-  }
+    /* Keep search width fixed on mobile */
+    .searchBox:hover > .searchInput,
+    .searchBox:focus-within > .searchInput {
+        width: 11rem;
+    }
+
+    /* Hide logo when search is open */
+    .searchBox:hover ~ .site-title,
+    .searchBox:focus-within ~ .site-title {
+        opacity: 0;
+        pointer-events: none;
+    }
 }
+
 
 
 

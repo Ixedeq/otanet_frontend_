@@ -42,7 +42,13 @@
   object-fit: cover;
   border-radius: 8px;
   cursor: pointer;
+
+  /* Make images sharper on high-DPI / retina screens */
+  image-rendering: auto; 
+  /* Ensure smooth scaling if container width changes */
+  max-width: 100%;
 }
+  
 
 .manga-info {
   display: flex;
@@ -105,6 +111,12 @@
 
   .manga-thumb {
     width: 30%;
+    min-width: 80px;   /* keep a minimum so it doesn’t shrink too much */
+    height: auto;
+    aspect-ratio: 120 / 170;
+    object-fit: cover;
+    image-rendering: auto;
+    max-width: 100%;
   }
 
   .manga-info {

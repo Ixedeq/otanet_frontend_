@@ -1,15 +1,12 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sqlite3
-import boto3
-import re
 
 app = Flask(__name__)
 CORS(app)
 
 DATABASE = 'otanet_devo.db'
 NOCOVER = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg'
-S3CLIENT = boto3.client('s3')
 
 # GET recent manga (title + description)
 @app.route('/recent_manga', methods=['GET'])
@@ -25,26 +22,13 @@ def recent_manga():
     )
     rows = cursor.fetchall()
     con.close()
-    data = []
-    for row in rows:
-        cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', row[0])
-        presigned_url_get = S3CLIENT.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': 'otanet-manga-devo', 'Key': f"s3://otanet-manga-devo/{cleaned_title}/0_title/cover_img"},
-            ExpiresIn=900
-        data.append({"title": row[0], "description": row[1], "cover_img": presigned_url_get})
+    data = [{"title": row[0], "description": row[1]} for row in rows]
     return jsonify(data)
 
 # Return default cover URL
 @app.route('/get_cover', methods=['GET'])
 def get_cover():
-    title = request.args.get('title')
-    cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', title)
-    presigned_url_get = S3CLIENT.generate_presigned_url(
-        'get_object',
-        Params={'Bucket': 'otanet-manga-devo', 'Key': f"s3://otanet-manga-devo/{cleaned_title}/0_title/cover_img"},
-        ExpiresIn=900
-    return jsonify(presigned_url_get)
+    return jsonify(NOCOVER)
 
 @app.route('/manga_count', methods=['GET'])
 def manga_count():

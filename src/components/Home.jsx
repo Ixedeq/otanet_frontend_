@@ -5,67 +5,65 @@ import API_BASE from "./Config";
 export default function Recent_Manga() {
   const [manga, setManga] = useState([]);
   const [cover, setCover] = useState("");
-  const isPausedRef = useRef(false);  // use ref for latest paused state
+  const isPausedRef = useRef(false);
   const scrollRef = useRef(null);
-  const perPage = 8;
+
+  const perPage = 1;
+  
   const noCover =
     "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
 
-  // Fetch manga
-  const fetchManga = async () => {
-    try {
-      const response = await fetch(
-        `${API_BASE}/recent_manga?per_page=${perPage}`
-      );
-      if (!response.ok) throw new Error("Network response was not ok!");
-      const data = await response.json();
-      setManga(data);
-    } catch (error) {
-      console.error("Error fetching manga!", error);
-    }
-  };
-
-  // Fetch cover
-  const fetchCover = async () => {
-    try {
-      const response = await fetch("http://localhost:8000/get_cover");
-      if (!response.ok) throw new Error("Network response was not ok!");
-      const data = await response.json();
-      setCover(data);
-    } catch (error) {
-      console.error("Error fetching cover!", error);
-    }
-  };
-
-  // Fetch data once on mount
+  // Fetch manga and cover
   useEffect(() => {
-    fetchManga();
-    fetchCover();
-  }, []);
+    const fetchData = async () => {
+      try {
+        const [mangaRes, coverRes] = await Promise.all([
+          fetch(`${API_BASE}/recent_manga?per_page=${perPage}`),
+          fetch(`${API_BASE}/get_cover`),
+        ]);
 
-  // Infinite scroll with pause-on-hover
-  useEffect(() => {
-    const scrollContainer = scrollRef.current;
-    if (!scrollContainer) return;
+        if (!mangaRes.ok || !coverRes.ok) throw new Error("Network response was not ok!");
 
-    const scrollSpeed = 1; // pixels per frame
+        const [mangaData, coverData] = await Promise.all([mangaRes.json(), coverRes.json()]);
 
-    const step = () => {
-      if (!isPausedRef.current) {
-        scrollContainer.scrollLeft += scrollSpeed;
-
-        // Reset seamlessly at halfway (duplicated list)
-        if (scrollContainer.scrollLeft >= scrollContainer.scrollWidth / 2) {
-          scrollContainer.scrollLeft = 0;
-        }
+        setManga(mangaData);
+        setCover(coverData);
+      } catch (err) {
+        console.error("Error fetching data!", err);
       }
-      requestAnimationFrame(step);
     };
 
-    const animationId = requestAnimationFrame(step);
+    fetchData();
+  }, []);
 
-    return () => cancelAnimationFrame(animationId);
-  }, []); // run once on mount
+  useEffect(() => {
+  const scrollContainer = scrollRef.current;
+  if (!scrollContainer) return;
+
+  const scrollSpeed = 1; // pixels per frame
+  let direction = 1; // 1 = forward, -1 = backward
+  let animationFrameId;
+
+  const step = () => {
+    if (!isPausedRef.current) {
+      // Move in current direction
+      scrollContainer.scrollLeft += scrollSpeed * direction;
+
+      // Reverse direction at ends
+      if (scrollContainer.scrollLeft >= scrollContainer.scrollWidth - scrollContainer.clientWidth) {
+        direction = -1; // scroll backward
+      } else if (scrollContainer.scrollLeft <= 0) {
+        direction = 1; // scroll forward
+      }
+    }
+
+    animationFrameId = requestAnimationFrame(step);
+  };
+
+  animationFrameId = requestAnimationFrame(step);
+
+  return () => cancelAnimationFrame(animationFrameId);
+}, []);
 
   return (
     <main
@@ -75,19 +73,20 @@ export default function Recent_Manga() {
       onMouseLeave={() => (isPausedRef.current = false)}
     >
       {manga.length > 0 ? (
-        [...manga, ...manga].map(({ title, description }, index) => (
-          <div key={index} className="manga-item">
-            <img
-              src={cover || noCover}
-              alt={title}
-              className="home-cover"
-            />
-            <div className="manga-title">{title}</div>
-          </div>
-        ))
+        <>
+          {manga.map(({ title, description }, index) => (
+            <div key={index} className="manga-item">
+              <img src={cover || noCover} alt={title} className="home-cover" />
+              <div className="manga-title">{title}</div>
+            </div>
+          ))}
+          {/* Spacer at end for smooth wrapping */}
+          <div style={{ display: "inline-block", width: "100%" }} />
+        </>
       ) : (
         <div>Loading...</div>
       )}
     </main>
   );
 }
+

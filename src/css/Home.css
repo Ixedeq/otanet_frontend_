@@ -2,36 +2,51 @@
   display: flex;
   gap: 0.8rem;
   padding: 1rem;
-  overflow-x: auto;        /* allows horizontal scroll */
-  overflow-y: hidden;      /* hides vertical scroll */
-  white-space: nowrap;     /* keeps items on one line */
+  overflow-x: auto;        /* horizontal scroll */
+  overflow-y: hidden;      /* hide vertical scroll */
+  white-space: nowrap;     /* keep items on one line */
   background-color: var(--main-bg);
-
-  min-height: auto;
   height: auto;
+  min-height: auto;
+
+  /* Cross-browser scrollbar handling */
+  -ms-overflow-style: none;  /* IE & Edge */
+  scrollbar-width: thin;     /* Firefox */
+  scrollbar-color: rgba(255,255,255,0.2) rgba(255,255,255,0.05);
 }
 
+.home::-webkit-scrollbar {
+  height: 8px;                /* horizontal scrollbar height */
+}
+
+.home::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.home::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  border: 2px solid rgba(0,0,0,0);
+}
+
+.home::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Each manga card */
 .manga-item {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;  /* push image to top, title to bottom */
+  justify-content: space-between;  /* image top, title bottom */
   align-items: center;
-  flex-shrink: 0;                  /* prevent shrinking in horizontal scroll */
-  width: 120px;                     /* same as cover width */
+  flex-shrink: 0;                  /* prevent shrinking */
+  width: 120px;                     /* fixed card width */
   height: 200px;                    /* total card height */
   padding: 0.3rem;
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 6px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-
-
-.home-cover {
-  width: 120px;
-  height: 170px;                   /* image height smaller than card height */
-  object-fit: cover;
-  border-radius: 6px;
-  cursor: pointer;
   transition: transform 0.2s ease;
 }
 
@@ -39,6 +54,18 @@
   transform: scale(1.05);
 }
 
+/* Cover image */
+.home-cover {
+  width: 120px;
+  height: 170px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  image-rendering: auto; /* smooth scaling */
+}
+
+/* Title text */
 .manga-title {
   font-size: 1rem;
   color: var(--main-text);
@@ -48,30 +75,3 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* For Chrome, Safari, Edge */
-.home::-webkit-scrollbar {
-  height: 8px;                /* horizontal scrollbar height */
-}
-
-.home::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);  /* track color */
-  border-radius: 4px;
-}
-
-.home::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2); /* thumb color */
-  border-radius: 4px;
-  border: 2px solid rgba(0, 0, 0, 0);        /* optional padding */
-}
-
-.home::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.4); /* hover effect */
-}
-
-/* For Firefox */
-.home {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.2) rgba(255,255,255,0.05);
-}
-
