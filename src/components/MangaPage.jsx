@@ -83,23 +83,21 @@ export default function MangaPage() {
       <div className="chapter-wrapper">
         <h2 className="chapter-title">Chapters</h2>
         {manga.chapters && manga.chapters.length > 0 ? (
-          <ol className="chapter-list">
+          <div className="chapter-grid">
             {manga.chapters.map((ch) => (
-              <ol key={ch.number}>
-                <a href={`/read/${slug}/${ch.number}`} className="chapter-link">
-                  <span className="ch-item">
-                    {ch.title || "Untitled"}
-                  </span>
-                  
-                </a>
-              </ol>
+              <a
+                key={ch.number}
+                href={`/read/${slug}/chapter-${ch.number}`}
+                className="chapter-item"
+              >
+                {ch.title || `Chapter ${ch.number}`}
+              </a>
             ))}
-          </ol>
+          </div>
         ) : (
           <p>No chapters available.</p>
         )}
       </div>
-
     </>
   );
 }

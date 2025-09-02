@@ -121,76 +121,76 @@
 }
 
 .chapter-wrapper {
-  
-  max-width: 900px;       /* keeps everything contained */
-  height: 320px;          /* uniform height */
-  margin: 1rem auto;
+  max-width: 900px;
+  margin: 2rem auto;
   padding: 1.5rem;
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-
-  font-family: "Arial", sans-serif;
-  color: var(--main-text, #fff);
-
-  overflow: hidden;
 }
 
 .chapter-title {
-  font-size: 1.5rem;
-  margin-bottom: 0.8rem;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  text-align: center;
 }
 
-.chapter-list {
-  list-style: decimal inside;
-  padding-left: 0;
-  margin: 0;
-  max-height: 300px;       /* optional scroll */
+/* Grid for chapters: 3 columns */
+.chapter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* exactly 3 columns */
+  gap: 0.5rem;
+  max-height: 300px; /* adjust as needed */
   overflow-y: auto;
+  padding-right: 0.5rem; /* space for scrollbar */
 }
 
-.chapter-list li {
-  margin-bottom: 0.5rem;
+/* Scrollbar styling */
+.chapter-grid::-webkit-scrollbar {
+  width: 6px;
 }
 
-.chapter-link {
+.chapter-grid::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+.chapter-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chapter-item {
   text-decoration: none;
   color: var(--main-text, #fff);
-  transition: color 0.2s ease;
-}
-
-.chapter-link:hover {
-  color: #708ad4;
-}
-
-.ch-item{
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--main-text, #fff);
-  padding: 1.25rem 15.7rem;
-
-  font-size: 0.85rem;
+  background-color: rgba(255, 255, 255, 0.08);
+  padding: 0.8rem;
+  border-radius: 6px;
   font-weight: 500;
-  white-space: nowrap;
-  cursor: default;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  text-align: center;
+  height: 50px;           /* fixed height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
+.chapter-item:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
 
-/* Mobile responsiveness */
+/* Mobile: keep 2 columns */
 @media (max-width: 768px) {
-  .chapter-wrapper {
-    padding: 0.5rem 1rem;
-    max-height: 200px;
+  .chapter-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-height: 250px;
   }
-  .chapter-title {
-    font-size: 1.2rem;
-  }
-  .chapter-link {
-    padding: 0.2rem 0.4rem;
-    font-size: 0.9rem;
+
+  .chapter-item {
+    font-size: 0.85rem;
+    height: 45px;
   }
 }
-
 
 
 /* Mobile: stack everything but maintain proportions */
