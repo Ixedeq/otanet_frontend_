@@ -127,7 +127,7 @@ def get_chapters():
     parsed_title = ''
 
     for word in title:
-        parsed_title = parsed_title + word.capitzalize()
+        parsed_title = parsed_title + word.capitalize()
     
     cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', request.args.get('title'))
     print(parsed_title)
