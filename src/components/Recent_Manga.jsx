@@ -56,16 +56,17 @@ export default function Recent_Manga() {
 
   const goNext = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
   const goPrev = () => setCurrentPage((p) => Math.max(p - 1, 1));
-
+  console.log(manga)
+  console.log(currentManga)
   return (
     <div className="manga-list">
       {currentManga.length > 0
-        ? currentManga.map(({ title, description, cover }, idx) => (
+        ? currentManga.map(({ title, description, cover_img }, idx) => (
             <MangaCard
               key={startIndex + idx}
               title={title}
               description={description}
-              cover={cover}
+              cover={cover_img}
             />
           ))
         : "Loading..."}

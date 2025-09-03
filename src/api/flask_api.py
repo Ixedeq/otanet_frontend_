@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sqlite3
 import boto3
+from botocore.config import Config
 import re
 
 app = Flask(__name__)
@@ -9,11 +10,13 @@ CORS(app)
 
 DATABASE = 'otanet_devo.db'
 NOCOVER = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg'
-S3CLIENT = boto3.client('s3')
+config = Config(signature_version='s3v4')
+S3CLIENT = boto3.client('s3', region_name='us-east-1', config=config)
 
 # GET recent manga (title + description)
 @app.route('/recent_manga', methods=['GET'])
 def recent_manga():
+    S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', 'otanet_devo.db')
     items_per_page = 10
     page = int(request.args.get('page', 1))
     offset = page * items_per_page
@@ -30,9 +33,10 @@ def recent_manga():
         cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', row[0])
         presigned_url_get = S3CLIENT.generate_presigned_url(
             'get_object',
-            Params={'Bucket': 'otanet-manga-devo', 'Key': f"s3://otanet-manga-devo/{cleaned_title}/0_title/cover_img"},
+            Params={'Bucket': 'otanet-manga-devo', 'Key': f"{cleaned_title}/0_title/cover_img"},
             ExpiresIn=900
         )
+        print(presigned_url_get)
         data.append({"title": row[0], "description": row[1], "cover_img": presigned_url_get})
     return jsonify(data)
 
@@ -73,13 +77,19 @@ def get_manga_by_slug(slug):
 
     result = None
     for row in rows:
+        cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', row[0])
+        presigned_url_get = S3CLIENT.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': 'otanet-manga-devo', 'Key': f"{cleaned_title}/0_title/cover_img"},
+            ExpiresIn=900
+        )
         db_title = row[0].lower().strip()
         db_title_normalized = "".join(c for c in db_title if c.isalnum() or c == " ").replace(" ", "-")
         if db_title_normalized == slug:
             result = {
                 "title": row[0],
                 "description": row[1],
-                "cover": NOCOVER,  # always provide a cover
+                "cover": presigned_url_get,  # always provide a cover
                 "tags": row[2],
                 "chapters": row[3]
             }
@@ -111,6 +121,19 @@ def search_by_title():
 
     data = [{"title": row[0], "description": row[1]} for row in rows]
     return jsonify(data)
+
+@app.route('/get_chapters', methods=['GET'])
+def get_chapters():
+    s3_resource = boto3.resource('s3')
+    bucket = s3_resource.Bucket('otanet-manga-devo')
+
+    objs = []
+    for obj in bucket.objects.filter(Prefix='2gethertheseries/'):
+        pattern = r"chapter_\d+(?:\.\d+)?"
+        key = re.search(pattern,obj.key)
+        if key and key.group() not in objs:
+            objs.append(key.group())
+    return jsonify(objs)
 
 @app.route('/search_by_tags')
 def search_by_tags():
@@ -149,3 +172,7 @@ def search_by_tags():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', threaded=True, debug=True, port=8000)
+
+
+
+

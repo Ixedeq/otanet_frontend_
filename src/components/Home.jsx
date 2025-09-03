@@ -75,10 +75,10 @@ export default function Recent_Manga() {
       onMouseLeave={() => (isPausedRef.current = false)}
     >
       {manga.length > 0 ? (
-        [...manga, ...manga].map(({ title, description }, index) => (
+        [...manga, ...manga].map(({ title, description, cover_img }, index) => (
           <div key={index} className="manga-item">
             <img
-              src={cover || noCover}
+              src={cover_img || noCover}
               alt={title}
               className="home-cover"
             />
