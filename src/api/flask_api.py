@@ -131,9 +131,10 @@ def get_chapters():
     for obj in bucket.objects.filter(Prefix='2gethertheseries/'):
         pattern = r"chapter_\d+(?:\.\d+)?"
         key = re.search(pattern,obj.key)
-        if key and key.group() not in objs:
+        if key and key.group() not in objs['title']:
             number = re.search(r'\d+', key.group())
-            objs.append({'title': key.group(0).capitalize(), 'number': number.group()})
+            title = key.group(0).capitalize()
+            objs.append({'title': title.rsplit('_', ' '), 'number': number.group()})
     return jsonify(objs)
 
 @app.route('/search_by_tags')
