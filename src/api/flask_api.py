@@ -37,7 +37,6 @@ def recent_manga():
             Params={'Bucket': 'otanet-manga-devo', 'Key': f"{cleaned_title}/0_title/cover_img"},
             ExpiresIn=900
         )
-        print(presigned_url_get)
         data.append({"title": row[0], "description": row[1], "cover_img": presigned_url_get})
     return jsonify(data)
 
@@ -125,6 +124,7 @@ def search_by_title():
 @app.route('/get_chapters', methods=['GET'])
 def get_chapters():
     cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', request.args.get('title'))
+    print(cleaned_title)
     s3_resource = boto3.resource('s3')
     bucket = s3_resource.Bucket('otanet-manga-devo')
 
