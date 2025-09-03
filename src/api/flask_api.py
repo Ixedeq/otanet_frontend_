@@ -4,6 +4,7 @@ import sqlite3
 import boto3
 from botocore.config import Config
 import re
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -133,7 +134,7 @@ def get_chapters():
         if key and key.group() not in objs:
             number = re.search(r'\d+', key.group())
             objs.append({'title': key.group(), 'number': number})
-    return jsonify(objs)
+    return jsonify(json.dumps(objs))
 
 @app.route('/search_by_tags')
 def search_by_tags():
