@@ -31,7 +31,7 @@ export default function App() {
           <Route path="/:slug" element={<MangaPage />} />
 
           {/*future chapter page */}
-          <Route path="/:slug/chapter/" element={<ChapterPage />} />
+          <Route path="/read/:slug" element={<ChapterPage />} />
           <Route path="/search/:search" element={<SearchResult/>} />
         </Routes>
       </main>
