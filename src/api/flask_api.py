@@ -123,6 +123,7 @@ def search_by_title():
 
 @app.route('/get_chapters', methods=['GET'])
 def get_chapters():
+    print(request.args.get('title'))
     cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', request.args.get('title'))
     print(cleaned_title)
     s3_resource = boto3.resource('s3')
