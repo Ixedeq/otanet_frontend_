@@ -56,7 +56,6 @@ def manga_count():
     return jsonify(total_rows)
 
 # GET single manga by slug (title -> slug)
-import re
 def to_slug(title):
     slug = title.lower().strip()
     slug = re.sub(r"[^a-z0-9 ]", "", slug)
