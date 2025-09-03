@@ -134,7 +134,7 @@ def get_chapters():
         if key and key.group() not in objs:
             number = re.search(r'\d+', key.group())
             title = key.group(0).capitalize()
-            objs.append({'title': title.rsplit('_', ' '), 'number': number.group()})
+            objs.append({'title': str(title).rsplit('_', ' '), 'number': number.group()})
     return jsonify(objs)
 
 @app.route('/search_by_tags')
