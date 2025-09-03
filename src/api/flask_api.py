@@ -148,7 +148,7 @@ def get_pages():
     bucket = s3_resource.Bucket('otanet-manga-devo')
     objs = []
     for obj in bucket.objects.filter(Prefix=f"WazatoMiseteruKamoisan/chapter_1"):
-        objs.append(obj)
+        objs.append(obj.key)
     
     return(jsonify(objs))
 
