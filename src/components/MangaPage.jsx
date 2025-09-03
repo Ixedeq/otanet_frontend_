@@ -15,7 +15,7 @@ export default function MangaPage() {
   useEffect(() => {
     const fetchChapters = async () => {
       try {
-        const response = await fetch(`${API_BASE}/get_chapters`);
+        const response = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
         if(!response.ok) throw new Error("Chpaters not found!")
         const data = await response.json();
         setChapters(data)
