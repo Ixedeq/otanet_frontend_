@@ -128,9 +128,6 @@ def get_chapters():
 
     for word in title:
         parsed_title = parsed_title + word.capitalize()
-    
-    cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', request.args.get('title'))
-    print(parsed_title)
     s3_resource = boto3.resource('s3')
     bucket = s3_resource.Bucket('otanet-manga-devo')
 
@@ -144,6 +141,14 @@ def get_chapters():
             title = key.capitalize()
             objs.append({'title': title, 'number': number.group()})
     return jsonify(objs)
+
+@app.route('/get_pages', methods=['GET'])
+def get_pages():
+    s3_resource = boto3.resource('s3')
+    bucket = s3_resource.Bucket('otanet-manga-devo')
+    for obj in bucket.objects.filter(Prefix=f"WazatoMiseteruKamoisan/chapter_1"):
+        print(obj)
+
 
 @app.route('/search_by_tags')
 def search_by_tags():
