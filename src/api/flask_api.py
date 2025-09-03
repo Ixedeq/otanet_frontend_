@@ -123,14 +123,19 @@ def search_by_title():
 
 @app.route('/get_chapters', methods=['GET'])
 def get_chapters():
-    print(request.args.get('title'))
+    title = request.args.get('title').split('-')
+    parsed_title = ''
+
+    for word in title:
+        parsed_title = parsed_title + word.capitzalize()
+    
     cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', request.args.get('title'))
-    print(cleaned_title)
+    print(parsed_title)
     s3_resource = boto3.resource('s3')
     bucket = s3_resource.Bucket('otanet-manga-devo')
 
     objs = []
-    for obj in bucket.objects.filter(Prefix=f"{cleaned_title}/"):
+    for obj in bucket.objects.filter(Prefix=f"{parsed_title}/"):
         pattern = r"chapter_\d+(?:\.\d+)?"
         key = re.search(pattern,obj.key)
         if key and key.group() not in objs:
