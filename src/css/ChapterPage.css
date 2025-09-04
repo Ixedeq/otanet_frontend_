@@ -1,105 +1,76 @@
-:root {
-  --main-bg: #333;
-  --main-text: #fff;
-  --accent-color: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
-  --prev-color: #3498db;
-  --prev-hover: #2980b9;
-  --next-color: #2ecc71;
-  --next-hover: #27ae60;
-  --disabled-bg: #7f8c8d;
-  --disabled-text: #bdc3c7;
-}
-
-/* Chapter page container */
 .chapter-page {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 2rem 1rem;
   background-color: var(--main-bg);
-  color: var(--main-text);
+  color: var(--main-text, #fff);
   min-height: 100vh;
-  font-family: sans-serif;
   box-sizing: border-box;
+  font-family: sans-serif;
 }
 
-/* Back link */
+/* Back to Home Link */
 .back-link {
   align-self: flex-start;
   margin-bottom: 1rem;
   padding: 0.5rem 1rem;
-  background: var(--accent-color);
+  background-color: var(--accent-color, #e00b72);
   color: #fff;
   text-decoration: none;
   border-radius: 6px;
   font-weight: bold;
-  transition: opacity 0.3s;
-}
-.back-link:hover {
-  opacity: 0.85;
+  transition: background 0.3s;
 }
 
-/* Chapter title */
+.back-link:hover {
+  background-color: #e00b72;
+}
+
+/* Chapter Title */
 .chapter-title {
   font-size: 2rem;
   margin-bottom: 2rem;
   text-align: center;
 }
 
-/* Chapter images container */
+/* Chapter Images */
 .chapter-images {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   width: 100%;
   max-width: 800px;
-  margin: 0 auto;
-  padding: 0 1rem;
 }
 
 .chapter-img {
   width: 100%;
   height: auto;
-  max-height: 70vh;
-  object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  object-fit: contain;
 }
 
-/* Horizontal scroll for mobile */
+/* Horizontal scroll mode */
 .chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   gap: 1rem;
-  padding-bottom: 1rem;
+  padding: 0 5vw; /* Center first and last images */
+  margin: 0 auto;
 }
 
 .chapter-images.horizontal-scroll .chapter-img {
-  flex: 0 0 90vw; /* narrower width on mobile */
+  flex: 0 0 90vw; /* Take most of the viewport */
   max-width: 350px;
   max-height: 60vh;
   scroll-snap-align: center;
   border-radius: 6px;
+  object-fit: contain;
 }
 
-/* Toggle scroll button */
-.toggle-scroll-btn {
-  margin-bottom: 1rem;
-  padding: 0.4rem 0.8rem;
-  font-weight: bold;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  background: var(--accent-color);
-  color: #fff;
-  transition: opacity 0.3s;
-}
-.toggle-scroll-btn:hover {
-  opacity: 0.85;
-}
-
-/* Navigation buttons */
+/* Navigation Buttons */
 .chapter-navigation {
   display: flex;
   justify-content: space-between;
@@ -121,40 +92,50 @@
 }
 
 .prev-chapter {
-  background-color: var(--prev-color);
+  background-color: #3498db;
   color: #fff;
 }
+
 .prev-chapter:hover {
-  background-color: var(--prev-hover);
+  background-color: #2980b9;
 }
 
 .next-chapter {
-  background-color: var(--next-color);
+  background-color: #2ecc71;
   color: #fff;
 }
+
 .next-chapter:hover {
-  background-color: var(--next-hover);
+  background-color: #27ae60;
 }
 
 /* Disabled buttons */
 .disabled {
-  background-color: var(--disabled-bg);
-  color: var(--disabled-text);
+  background-color: #7f8c8d;
+  color: #bdc3c7;
   cursor: not-allowed;
 }
 
-/* Mobile adjustments */
+/* Responsive adjustments for mobile */
 @media (max-width: 600px) {
   .chapter-images.horizontal-scroll {
-    width: 100%;
-    padding: 0 0.5rem;
+    padding: 0 2vw; /* slightly smaller padding on very small screens */
   }
-  .chapter-img {
-    border-radius: 6px;
+
+  .chapter-images.horizontal-scroll .chapter-img {
+    flex: 0 0 85vw;
+    max-width: 300px;
+    max-height: 55vh;
   }
+
   .chapter-navigation a,
   .chapter-navigation span {
-    font-size: 0.9rem;
     padding: 0.4rem 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  .chapter-title {
+    font-size: 1.6rem;
+    margin-bottom: 1.5rem;
   }
 }
