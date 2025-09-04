@@ -1,27 +1,24 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import "../css/ChapterPage.css";
 import API_BASE from "./Config";
 
 export default function ChapterPage() {
   const { slug, chapter } = useParams();
-  const navigate = useNavigate();
   const [pages, setPages] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
 
   // Convert chapter param for API
   const chapterKey = chapter.replace("-", "_");
-  const chapterNumber = parseFloat(chapter.replace("-", "."));
+  const chapterNumberFloat = parseFloat(chapter.replace("-", "."));
 
-  // Fetch pages for current chapter
+  // Fetch pages
   useEffect(() => {
     const fetchPages = async () => {
       setLoadingPages(true);
       try {
-        const res = await fetch(
-          `${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`
-        );
+        const res = await fetch(`${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`);
         const data = await res.json();
         setPages(data);
       } catch (err) {
@@ -34,7 +31,7 @@ export default function ChapterPage() {
     fetchPages();
   }, [slug, chapterKey]);
 
-  // Fetch chapters once
+  // Fetch chapters
   useEffect(() => {
     const fetchChapters = async () => {
       try {
@@ -51,26 +48,14 @@ export default function ChapterPage() {
     fetchChapters();
   }, [slug]);
 
-  // Compute previous and next chapter numbers
-  const currentIndex = chapters.findIndex((ch) => ch.number === chapterNumber);
+  // Determine previous & next chapters
+  const currentIndex = chapters.findIndex(ch => ch.number === chapterNumberFloat);
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
-  const nextChapter =
-    currentIndex >= 0 && currentIndex < chapters.length - 1
-      ? chapters[currentIndex + 1]
-      : null;
-
-  // Navigate to next or previous chapter
-  const goToChapter = (ch) => {
-    if (!ch) return;
-    const chSlug = ch.number.toString().replace(".", "-");
-    navigate(`/${slug}/chapter-${chSlug}`);
-  };
+  const nextChapter = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
 
   return (
     <div className="chapter-page">
-      <button className="back-link" onClick={() => navigate("/")}>
-        ← Back to Home
-      </button>
+      <Link to="/" className="back-link">← Back to Home</Link>
       <h1 className="chapter-title">{slug}</h1>
 
       {loadingPages && <p>Loading pages...</p>}
@@ -82,21 +67,27 @@ export default function ChapterPage() {
       </div>
 
       <div className="chapter-navigation">
-        <button
-          className={`prev-chapter ${prevChapter ? "" : "disabled"}`}
-          onClick={() => goToChapter(prevChapter)}
-          disabled={!prevChapter}
-        >
-          ← Previous Chapter
-        </button>
+        {prevChapter ? (
+          <Link
+            to={`/read/${slug}/${prevChapter.number.toString().replace(".", "-")}`}
+            className="prev-chapter"
+          >
+            ← Previous Chapter
+          </Link>
+        ) : (
+          <span className="prev-chapter disabled">← Previous Chapter</span>
+        )}
 
-        <button
-          className={`next-chapter ${nextChapter ? "" : "disabled"}`}
-          onClick={() => goToChapter(nextChapter)}
-          disabled={!nextChapter}
-        >
-          Next Chapter →
-        </button>
+        {nextChapter ? (
+          <Link
+            to={`/read/${slug}/${nextChapter.number.toString().replace(".", "-")}`}
+            className="next-chapter"
+          >
+            Next Chapter →
+          </Link>
+        ) : (
+          <span className="next-chapter disabled">Next Chapter →</span>
+        )}
       </div>
     </div>
   );
