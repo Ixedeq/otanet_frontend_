@@ -153,20 +153,21 @@ def get_pages():
     
     s3_resource = boto3.resource('s3')
     bucket = s3_resource.Bucket('otanet-manga-devo')
-    objs = []
+    keys = []
     for obj in bucket.objects.filter(Prefix=f"WazatoMiseteruKamoisan/chapter_1"):
-        '''
+        obj = obj.key.rsplit('/')
+        keys.append(obj[2])
+    
+    sorted_keys = sorted(keys, key=get_first_number)
+    pages = []
+    for key in sorted_keys:
         presigned_url_get = S3CLIENT.generate_presigned_url(
             'get_object',
-            Params={'Bucket': 'otanet-manga-devo', 'Key': obj.key},
+            Params={'Bucket': 'otanet-manga-devo', 'Key': f"WazatoMiseteruKamoisan/chapter_1/{key}"},
             ExpiresIn=900
         )
-        '''
-        obj = obj.key.rsplit('/')
-        objs.append(obj[2])
-    
-    sorted_list = sorted(objs, key=get_first_number)
-    return(jsonify(sorted_list))
+        pages.append(presigned_url_get)
+    return(jsonify(pages))
 
 
 @app.route('/search_by_tags')
