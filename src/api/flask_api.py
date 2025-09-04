@@ -129,12 +129,13 @@ def get_chapters():
 
     objs = []
     for obj in bucket.objects.filter(Prefix=f"{title}/"):
-        pattern = r"chapter_\d+(?:\.\d+)?"
+        pattern = r"chapter_\d+(?:\.\d+\_\d+)?"
         key = re.search(pattern,obj.key)
         if key and key.group() not in objs:
             key = key.group().replace('_', ' ', 1)
             key = key.replace('_','.')
             number = re.search(r'\d+', key)
+            print(key, number)
             chapter_word = key.capitalize()
             objs.append({'title': chapter_word, 'number': number.group()})
     return jsonify(objs)
