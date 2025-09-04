@@ -9,7 +9,7 @@ export default function ChapterPage() {
   const [loadingPages, setLoadingPages] = useState(true);
   const { slug, chapter } = useParams();
 
-  // Convert chapter param for API and numeric comparison
+  // Convert chapter param for API
   const chapterKey = chapter.replace("-", "_");
   const chapterNumberFloat = parseFloat(chapter.replace("-", "."));
 
@@ -40,7 +40,6 @@ export default function ChapterPage() {
         const res = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
         const data = await res.json();
 
-        // Sort chapters numerically
         const sorted = data
           .map((ch) => ({ ...ch, number: parseFloat(ch.number) }))
           .sort((a, b) => a.number - b.number);
@@ -57,9 +56,12 @@ export default function ChapterPage() {
   const currentIndex = chapters.findIndex(
     (ch) => ch.number === chapterNumberFloat
   );
+
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
-    currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
+    currentIndex >= 0 && currentIndex < chapters.length - 1
+      ? chapters[currentIndex + 1]
+      : null;
 
   return (
     <div className="chapter-page">
@@ -84,7 +86,9 @@ export default function ChapterPage() {
       <div className="chapter-navigation">
         {prevChapter ? (
           <Link
-            to={`/read/${slug}/chapter-${prevChapter.number.toString().replace(".", "-")}`}
+            to={`/read/${slug}/chapter-${prevChapter.number
+              .toString()
+              .replace(".", "-")}`}
             className="prev-chapter"
           >
             ← Previous Chapter
@@ -95,7 +99,9 @@ export default function ChapterPage() {
 
         {nextChapter ? (
           <Link
-            to={`/read/${slug}/chapter-${nextChapter.number.toString().replace(".", "-")}`}
+            to={`/read/${slug}/chapter-${nextChapter.number
+              .toString()
+              .replace(".", "-")}`}
             className="next-chapter"
           >
             Next Chapter →
