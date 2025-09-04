@@ -139,7 +139,7 @@ def get_chapters():
             chapter_word = key.capitalize()
             dict = {'title': chapter_word, 'number': number[1]}
             if not any(dict == item for item in objs):
-                objs.append()
+                objs.append(dict)
     return jsonify(objs)
 
 @app.route('/get_pages', methods=['GET'])
