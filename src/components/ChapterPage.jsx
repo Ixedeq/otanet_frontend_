@@ -9,9 +9,9 @@ export default function ChapterPage() {
   const [loadingPages, setLoadingPages] = useState(true);
   const { slug, chapter } = useParams();
 
-  // Convert chapter param for API and display
+  // Convert chapter param for API and numeric comparison
   const chapterKey = chapter.replace("-", "_");
-  const chapterNumber = chapterKey.replace("_", "."); // keep as string
+  const chapterNumberFloat = parseFloat(chapter.replace("-", "."));
 
   // Fetch pages for current chapter
   useEffect(() => {
@@ -40,9 +40,10 @@ export default function ChapterPage() {
         const res = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
         const data = await res.json();
 
+        // Sort chapters numerically
         const sorted = data
-          .map((ch) => ({ ...ch, number: ch.number.toString() }))
-          .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
+          .map((ch) => ({ ...ch, number: parseFloat(ch.number) }))
+          .sort((a, b) => a.number - b.number);
 
         setChapters(sorted);
       } catch (err) {
@@ -54,10 +55,9 @@ export default function ChapterPage() {
 
   // Determine previous and next chapters
   const currentIndex = chapters.findIndex(
-    (ch) => ch.number === chapterNumber
+    (ch) => ch.number === chapterNumberFloat
   );
-  const prevChapter =
-    currentIndex > 0 ? chapters[currentIndex - 1] : null;
+  const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
 
@@ -84,7 +84,7 @@ export default function ChapterPage() {
       <div className="chapter-navigation">
         {prevChapter ? (
           <Link
-            to={`/read/${slug}/chapter-${prevChapter.number.replace(".", "-")}`}
+            to={`/${slug}/chapter/${prevChapter.number.toString().replace(".", "-")}`}
             className="prev-chapter"
           >
             ← Previous Chapter
@@ -95,7 +95,7 @@ export default function ChapterPage() {
 
         {nextChapter ? (
           <Link
-            to={`/read/${slug}/chapter-${nextChapter.number.replace(".", "-")}`}
+            to={`/${slug}/chapter/${nextChapter.number.toString().replace(".", "-")}`}
             className="next-chapter"
           >
             Next Chapter →
