@@ -132,6 +132,7 @@ def get_chapters():
         pattern = r"chapter_\d+(?:\.\d+\_\d+)?"
         key = re.search(pattern,obj.key)
         if key and key.group() not in objs:
+            print(key.group())
             key = key.group().replace('_', ' ', 1)
             key = key.replace('_','.')
             number = re.search(r'\d+', key)
