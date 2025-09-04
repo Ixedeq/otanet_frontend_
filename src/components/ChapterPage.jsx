@@ -13,7 +13,6 @@ export default function ChapterPage() {
       try {
         const res = await fetch(`${API_BASE}/get_pages?title=${slug}&chapter=${chapter}`);
         const data = await res.json();
-        console.log(data)
         setPages(data);
       } catch (err) {
         console.error(err);
@@ -21,8 +20,6 @@ export default function ChapterPage() {
     }
     fetchPages()
   },[pages]);
-
-  console.log(pages)
 
   return (
     <div className="chapter-page">
