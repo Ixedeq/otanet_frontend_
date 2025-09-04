@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import "../css/ChapterPage.css";
+import API_BASE from "./Config"
 
 export default function ChapterPage() {
   const [pages, setPages] = useState([])
@@ -24,7 +25,7 @@ export default function ChapterPage() {
     <div className="chapter-page">
       <div>Hello World </div>
       <Link to="/" className="back-link">← Back to Home</Link>
-      <h1 className="chapter-title">{manga}</h1>
+      <h1 className="chapter-title">{slug}</h1>
 
       {pages.length === 0 && <p>No pages found for this manga.</p>}
 
