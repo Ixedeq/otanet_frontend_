@@ -4,7 +4,7 @@
   align-items: center;
   padding: 2rem 1rem;
   background-color: var(--main-bg);
-  color: var(--main-text, #fff);
+  color: var(--main-text);
   min-height: 100vh;
   box-sizing: border-box;
   font-family: sans-serif;
@@ -51,23 +51,42 @@
   object-fit: contain;
 }
 
-/* Horizontal scroll mode */
+/* Horizontal scroll for mobile & optional toggle */
 .chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   gap: 1rem;
-  padding: 0 5vw; /* Center first and last images */
+  padding: 0 2.5vw;
   margin: 0 auto;
+  scroll-padding-left: 2.5vw;
+  scroll-padding-right: 2.5vw;
 }
 
 .chapter-images.horizontal-scroll .chapter-img {
-  flex: 0 0 90vw; /* Take most of the viewport */
-  max-width: 350px;
-  max-height: 60vh;
+  flex: 0 0 80vw;
+  max-width: 400px;
+  max-height: 70vh;
   scroll-snap-align: center;
   border-radius: 6px;
-  object-fit: contain;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+}
+
+/* Toggle button (if using horizontal scroll toggle) */
+.toggle-scroll-btn {
+  margin-bottom: 1rem;
+  padding: 0.4rem 0.8rem;
+  font-weight: bold;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
+  color: #fff;
+  transition: opacity 0.3s;
+}
+
+.toggle-scroll-btn:hover {
+  opacity: 0.85;
 }
 
 /* Navigation Buttons */
@@ -116,26 +135,17 @@
   cursor: not-allowed;
 }
 
-/* Responsive adjustments for mobile */
+/* Mobile adjustments */
 @media (max-width: 600px) {
   .chapter-images.horizontal-scroll {
-    padding: 0 2vw; /* slightly smaller padding on very small screens */
+    padding: 0 2.5vw;
+    scroll-padding-left: 2.5vw;
+    scroll-padding-right: 2.5vw;
   }
 
   .chapter-images.horizontal-scroll .chapter-img {
-    flex: 0 0 85vw;
-    max-width: 300px;
-    max-height: 55vh;
-  }
-
-  .chapter-navigation a,
-  .chapter-navigation span {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.9rem;
-  }
-
-  .chapter-title {
-    font-size: 1.6rem;
-    margin-bottom: 1.5rem;
+    flex: 0 0 95vw;
+    max-width: 95vw;
+    max-height: 75vh;
   }
 }
