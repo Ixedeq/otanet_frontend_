@@ -1,6 +1,73 @@
-/* Horizontal scroll for mobile */
-.chapter-images.horizontal-scroll {
+:root {
+  --main-bg: #333;
+  --main-text: #fff;
+  --accent-color: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
+  --prev-color: #3498db;
+  --prev-hover: #2980b9;
+  --next-color: #2ecc71;
+  --next-hover: #27ae60;
+  --disabled-bg: #7f8c8d;
+  --disabled-text: #bdc3c7;
+}
+
+/* Chapter page container */
+.chapter-page {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  background-color: var(--main-bg);
+  color: var(--main-text);
+  min-height: 100vh;
+  font-family: sans-serif;
+  box-sizing: border-box;
+}
+
+/* Back to Home link */
+.back-link {
+  align-self: flex-start;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--accent-color);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: opacity 0.3s;
+}
+.back-link:hover {
+  opacity: 0.85;
+}
+
+/* Chapter title */
+.chapter-title {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+/* Chapter images container */
+.chapter-images {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.chapter-img {
+  width: 100%;
+  height: auto;
+  max-height: 80vh; /* prevent extremely tall images */
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+/* Horizontal scroll mode */
+.chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -10,13 +77,13 @@
 
 .chapter-images.horizontal-scroll .chapter-img {
   flex: 0 0 auto;
-  width: 80vw; /* adjust for mobile */
+  width: 80vw;
   max-width: 400px;
+  max-height: 70vh;
   scroll-snap-align: center;
-  border-radius: 8px;
 }
 
-/* Toggle button */
+/* Toggle scroll button */
 .toggle-scroll-btn {
   margin-bottom: 1rem;
   padding: 0.4rem 0.8rem;
@@ -24,16 +91,15 @@
   border-radius: 6px;
   border: none;
   cursor: pointer;
-  background: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
+  background: var(--accent-color);
   color: #fff;
   transition: opacity 0.3s;
 }
-
 .toggle-scroll-btn:hover {
   opacity: 0.85;
 }
 
-/* Chapter navigation buttons */
+/* Navigation buttons */
 .chapter-navigation {
   display: flex;
   justify-content: space-between;
@@ -55,31 +121,35 @@
 }
 
 .prev-chapter {
-  background-color: #3498db;
+  background-color: var(--prev-color);
   color: #fff;
 }
-
 .prev-chapter:hover {
-  background-color: #2980b9;
+  background-color: var(--prev-hover);
 }
 
 .next-chapter {
-  background-color: #2ecc71;
+  background-color: var(--next-color);
   color: #fff;
 }
-
 .next-chapter:hover {
-  background-color: #27ae60;
+  background-color: var(--next-hover);
 }
 
 /* Disabled buttons */
 .disabled {
-  background-color: #7f8c8d;
-  color: #bdc3c7;
+  background-color: var(--disabled-bg);
+  color: var(--disabled-text);
   cursor: not-allowed;
 }
 
 /* Responsive adjustments */
+@media (max-width: 800px) {
+  .chapter-images {
+    max-width: 100%;
+  }
+}
+
 @media (max-width: 600px) {
   .chapter-images.horizontal-scroll {
     width: 100%;
