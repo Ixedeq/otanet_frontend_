@@ -172,7 +172,7 @@ def get_pages():
             Params={'Bucket': 'otanet-manga-devo', 'Key': f"{base_key}/{key}"},
             ExpiresIn=900
         )
-        pages.append({'src': presigned_url_get, 'key': key})
+        pages.append({'src': presigned_url_get, 'key': key, 'base_key': base_key})
     return(jsonify(pages))
 
 
