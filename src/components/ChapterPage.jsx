@@ -7,14 +7,11 @@ export default function ChapterPage() {
   const [pages, setPages] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
-  const [horizontalScroll, setHorizontalScroll] = useState(null); // null = default mobile detection
+  const [horizontalScroll, setHorizontalScroll] = useState(null); // null = default vertical
   const { slug, chapter } = useParams();
 
   const chapterKey = chapter.replace("-", "_");
   const chapterNumberStr = chapter.replace("-", ".");
-
-  // Detect if mobile
-  const isMobile = window.innerWidth <= 600;
 
   // Fetch pages for current chapter
   useEffect(() => {
@@ -63,9 +60,9 @@ export default function ChapterPage() {
       ? chapters[currentIndex + 1]
       : null;
 
-  // Determine final scroll mode (mobile default or user toggle)
+  // Determine final scroll mode (default vertical)
   const useHorizontalScroll =
-    horizontalScroll !== null ? horizontalScroll : isMobile;
+    horizontalScroll !== null ? horizontalScroll : false;
 
   return (
     <div className="chapter-page">
