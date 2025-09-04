@@ -23,7 +23,7 @@
   box-sizing: border-box;
 }
 
-/* Back to Home link */
+/* Back link */
 .back-link {
   align-self: flex-start;
   margin-bottom: 1rem;
@@ -60,13 +60,13 @@
 .chapter-img {
   width: 100%;
   height: auto;
-  max-height: 80vh; /* prevent extremely tall images */
+  max-height: 70vh;
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
-/* Horizontal scroll mode */
+/* Horizontal scroll for mobile */
 .chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
@@ -76,11 +76,11 @@
 }
 
 .chapter-images.horizontal-scroll .chapter-img {
-  flex: 0 0 auto;
-  width: 80vw;
-  max-width: 400px;
-  max-height: 70vh;
+  flex: 0 0 90vw; /* narrower width on mobile */
+  max-width: 350px;
+  max-height: 60vh;
   scroll-snap-align: center;
+  border-radius: 6px;
 }
 
 /* Toggle scroll button */
@@ -143,13 +143,7 @@
   cursor: not-allowed;
 }
 
-/* Responsive adjustments */
-@media (max-width: 800px) {
-  .chapter-images {
-    max-width: 100%;
-  }
-}
-
+/* Mobile adjustments */
 @media (max-width: 600px) {
   .chapter-images.horizontal-scroll {
     width: 100%;
@@ -157,5 +151,10 @@
   }
   .chapter-img {
     border-radius: 6px;
+  }
+  .chapter-navigation a,
+  .chapter-navigation span {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
   }
 }
