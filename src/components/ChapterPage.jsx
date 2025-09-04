@@ -64,8 +64,8 @@ export default function ChapterPage() {
       : null;
 
   // Determine final scroll mode (mobile default or user toggle)
-  const useHorizontalScroll =
-    horizontalScroll !== null ? horizontalScroll : isMobile;
+  const useVerticalScroll =
+    verticalScroll !== null ? verticalScroll : isMobile;
 
   return (
     <div className="chapter-page">
@@ -77,14 +77,14 @@ export default function ChapterPage() {
         className="toggle-scroll-btn"
         onClick={() => setHorizontalScroll((prev) => !prev)}
       >
-        {useVerticalScroll ? "Vertical Scroll" : "Horizontal Scroll"}
+        {useVerticalScroll ? "Horizontal Scroll" : "Vertical Scroll"}
       </button>
 
       {loadingPages && <p>Loading pages...</p>}
 
       <div
         className={`chapter-images ${
-          useHorizontalScroll ? "horizontal-scroll" : ""
+          useVerticalScroll ? "vertical-scroll" : ""
         }`}
       >
         {pages.map(({ src, key }) => (
