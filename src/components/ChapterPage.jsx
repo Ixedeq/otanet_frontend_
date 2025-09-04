@@ -77,7 +77,7 @@ export default function ChapterPage() {
         className="toggle-scroll-btn"
         onClick={() => setHorizontalScroll((prev) => !prev)}
       >
-        {useHorizontalScroll ? "Vertical Scroll" : "Horizontal Scroll"}
+        {useVerticalScroll ? "Vertical Scroll" : "Horizontal Scroll"}
       </button>
 
       {loadingPages && <p>Loading pages...</p>}
