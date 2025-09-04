@@ -136,7 +136,7 @@ def get_chapters():
             print(key.group())
             key = key.group().replace('_', ' ', 1)
             key = key.replace('_','.')
-            number = re.search(r'\d+', key)
+            number = re.search(r'(?:\.\d+){0,2}', key)
             print(key, number)
             chapter_word = key.capitalize()
             objs.append({'title': chapter_word, 'number': number.group()})
