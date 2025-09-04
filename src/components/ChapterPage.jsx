@@ -4,29 +4,26 @@ import "../css/ChapterPage.css";
 import API_BASE from "./Config";
 
 export default function ChapterPage() {
-  const { slug, chapter } = useParams();
-  const chapterNumber = Number(chapter);
-
   const [pages, setPages] = useState([]);
   const [totalChapters, setTotalChapters] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { slug, chapter } = useParams();
 
-  // Fetch pages and total chapters whenever slug or chapter changes
+  const chapterNumber = Number(chapter);
+
   useEffect(() => {
     const fetchPages = async () => {
       setLoading(true);
       try {
         const res = await fetch(
-          `${API_BASE}/get_pages?title=${slug}&chapter=${chapterNumber}`
+          `${API_BASE}/get_pages?title=${slug}&chapter=${chapter}`
         );
         const data = await res.json();
         setPages(data || []);
       } catch (err) {
         console.error(err);
-        setPages([]);
       } finally {
         setLoading(false);
-        window.scrollTo(0, 0); // scroll to top when chapter changes
       }
     };
 
@@ -37,13 +34,14 @@ export default function ChapterPage() {
         setTotalChapters(data.length || 0);
       } catch (err) {
         console.error(err);
-        setTotalChapters(0);
       }
     };
 
     fetchPages();
     fetchTotalChapters();
-  }, [slug, chapterNumber]);
+  }, [slug, chapter]);
+
+  console.log("Pages: ", pages)
 
   return (
     <div className="chapter-page">
@@ -90,3 +88,5 @@ export default function ChapterPage() {
     </div>
   );
 }
+
+
