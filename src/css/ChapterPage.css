@@ -1,3 +1,10 @@
+:root {
+  --main-bg: #333;
+  --main-text: #fff;
+  --accent-color: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
+}
+
+/* Chapter Page Container */
 .chapter-page {
   display: flex;
   flex-direction: column;
@@ -18,7 +25,7 @@
   background-color: var(--accent-color, #e00b72);
   color: #fff;
   text-decoration: none;
-  border-radius: 6px;
+  border-radius: 0.5rem;
   font-weight: bold;
   transition: background 0.3s;
 }
@@ -34,24 +41,26 @@
   text-align: center;
 }
 
-/* Chapter Images */
+/* Chapter Images - Vertical Scroll Default */
 .chapter-images {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  width: 100%;
-  max-width: 800px;
+  width: 90%;
+  max-width: 40rem;
+  margin: 0 auto;
 }
 
-.chapter-img {
+.chapter-images .chapter-img {
   width: 100%;
+  max-width: 100%;
   height: auto;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
   object-fit: contain;
 }
 
-/* Horizontal scroll for mobile & optional toggle */
+/* Horizontal Scroll (Optional Toggle) */
 .chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
@@ -64,20 +73,20 @@
 }
 
 .chapter-images.horizontal-scroll .chapter-img {
-  flex: 0 0 80vw;
+  flex: 0 0 80%;
   max-width: 400px;
   max-height: 70vh;
   scroll-snap-align: center;
-  border-radius: 6px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.3);
 }
 
-/* Toggle button (if using horizontal scroll toggle) */
+/* Toggle Scroll Button */
 .toggle-scroll-btn {
   margin-bottom: 1rem;
   padding: 0.4rem 0.8rem;
   font-weight: bold;
-  border-radius: 6px;
+  border-radius: 0.5rem;
   border: none;
   cursor: pointer;
   background: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
@@ -94,7 +103,7 @@
   display: flex;
   justify-content: space-between;
   width: 100%;
-  max-width: 800px;
+  max-width: 40rem;
   margin-top: 2rem;
   gap: 1rem;
 }
@@ -102,7 +111,7 @@
 .chapter-navigation a,
 .chapter-navigation span {
   padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border-radius: 0.5rem;
   text-decoration: none;
   font-weight: bold;
   text-align: center;
@@ -128,24 +137,35 @@
   background-color: #27ae60;
 }
 
-/* Disabled buttons */
+/* Disabled Buttons */
 .disabled {
   background-color: #7f8c8d;
   color: #bdc3c7;
   cursor: not-allowed;
 }
 
-/* Mobile adjustments */
+/* Mobile Adjustments */
 @media (max-width: 600px) {
-  .chapter-images.horizontal-scroll {
-    padding: 0 2.5vw;
-    scroll-padding-left: 2.5vw;
-    scroll-padding-right: 2.5vw;
+  .chapter-images {
+    width: 95%;
+    gap: 1rem;
+  }
+
+  .chapter-images .chapter-img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
   }
 
   .chapter-images.horizontal-scroll .chapter-img {
-    flex: 0 0 95vw;
-    max-width: 95vw;
-    max-height: 75vh;
+    flex: 0 0 90%;
+    max-width: 90%;
+    max-height: 70vh;
+  }
+
+  .toggle-scroll-btn {
+    width: 100%;
+    font-size: 1rem;
   }
 }
