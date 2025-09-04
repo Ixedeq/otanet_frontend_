@@ -129,7 +129,8 @@ def get_chapters():
 
     objs = []
     for obj in bucket.objects.filter(Prefix=f"{title}/"):
-        pattern = r"chapter_\d+(?:\.\d+\_\d+)?"
+        #pattern = r"chapter_\d+(?:\.\d+\_\d+)?"
+        pattern = r"chapter(?:_\d+)+"
         key = re.search(pattern,obj.key)
         if key and key.group() not in objs:
             print(key.group())
