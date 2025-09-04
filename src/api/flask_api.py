@@ -134,7 +134,7 @@ def get_chapters():
         if key and key.group() not in objs:
             key = key.group().replace('_', ' ', 1)
             key = key.replace('_','.')
-            number = re.search(r'\d+', key.group())
+            number = re.search(r'\d+', key)
             chapter_word = key.capitalize()
             objs.append({'title': chapter_word, 'number': number.group()})
     return jsonify(objs)
