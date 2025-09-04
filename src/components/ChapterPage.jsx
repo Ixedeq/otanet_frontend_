@@ -69,7 +69,7 @@ export default function ChapterPage() {
       <div className="chapter-navigation">
         {prevChapter ? (
           <Link
-            to={`/read/${slug}/${prevChapter.number.toString().replace(".", "-")}`}
+            to={`/read/${slug}/chapter-${prevChapter.number.toString().replace(".", "-")}`}
             className="prev-chapter"
           >
             ← Previous Chapter
@@ -80,7 +80,7 @@ export default function ChapterPage() {
 
         {nextChapter ? (
           <Link
-            to={`/read/${slug}/${nextChapter.number.toString().replace(".", "-")}`}
+            to={`/read/${slug}/chapter-${nextChapter.number.toString().replace(".", "-")}`}
             className="next-chapter"
           >
             Next Chapter →
