@@ -123,10 +123,16 @@ def search_by_title():
 
 @app.route('/get_chapters', methods=['GET'])
 def get_chapters():
-    title = request.args.get('title').split('-')
-    parsed_title = ''
-    for word in title:
-        parsed_title = parsed_title + word.capitalize()
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    sql = f"SELECT title FROM manga_metadata where title LIKE %{request.args.get('title').replace('-', ' ')}%"
+    cursor.execute(sql)
+
+    title = cursor.fetchone()[0]
+    title = request.args.get('title').replace('-', ' ')
+    parsed_title = re.sub(r'[^a-zA-Z0-9]', '', title)
+
     s3_resource = boto3.resource('s3')
     bucket = s3_resource.Bucket('otanet-manga-devo')
 
@@ -152,10 +158,15 @@ def get_pages():
             return int(match.group(0))
         return 0
     
-    title = request.args.get('title').split('-')
-    parsed_title = ''
-    for word in title:
-        parsed_title = parsed_title + word.capitalize()
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    sql = f"SELECT title FROM manga_metadata where title LIKE %{request.args.get('title').replace('-', ' ')}%"
+    cursor.execute(sql)
+
+    title = cursor.fetchone()[0]
+    title = request.args.get('title').replace('-', ' ')
+    parsed_title = re.sub(r'[^a-zA-Z0-9]', '', title)
+
     chapter = request.args.get('chapter').replace('-', '_')
     base_key = f"{parsed_title}/{chapter}" 
     keys = []
