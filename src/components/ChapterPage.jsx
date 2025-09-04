@@ -41,6 +41,8 @@ export default function ChapterPage() {
     fetchTotalChapters();
   }, [slug, chapter]);
 
+  console.log("Pages: ", pages)
+
   return (
     <div className="chapter-page">
       <Link to="/" className="back-link">← Back to Home</Link>
