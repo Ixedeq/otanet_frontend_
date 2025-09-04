@@ -24,13 +24,13 @@
 }
 
 .back-link:hover {
-  background-color: #e00b72;
+  background-color: #c32f64;
 }
 
 /* Chapter Title */
 .chapter-title {
   font-size: 2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   text-align: center;
 }
 
@@ -46,7 +46,8 @@
 
 .chapter-images .chapter-img {
   width: 100%;
-  height: 90vh;       /* fills most of the viewport */
+  max-height: 85vh;
+  height: auto;
   object-fit: contain;
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
@@ -58,16 +59,13 @@
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   gap: 1rem;
-  padding: 0 2.5vw;
-  margin: 0 auto;
-  scroll-padding-left: 2.5vw;
-  scroll-padding-right: 2.5vw;
+  padding: 0 1rem;
 }
 
 .chapter-images.horizontal-scroll .chapter-img {
-  flex: 0 0 80vw;
-  max-width: 400px;
+  flex: 0 0 85%;
   max-height: 70vh;
+  object-fit: contain;
   scroll-snap-align: center;
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
@@ -76,7 +74,7 @@
 /* Toggle button */
 .toggle-scroll-btn {
   margin-bottom: 1rem;
-  padding: 0.4rem 0.8rem;
+  padding: 0.5rem 1rem;
   font-weight: bold;
   border-radius: 0.5rem;
   border: none;
@@ -144,12 +142,11 @@
   }
 
   .chapter-images .chapter-img {
-    height: 95vh; /* fill almost full mobile viewport */
-    border-radius: 0.5rem;
+    max-height: 80vh; /* fit most of the screen without overflow */
   }
 
   .chapter-images.horizontal-scroll .chapter-img {
     flex: 0 0 90%;
-    max-height: 70vh;
+    max-height: 75vh;
   }
 }
