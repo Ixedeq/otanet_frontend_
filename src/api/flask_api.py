@@ -125,7 +125,6 @@ def search_by_title():
 def get_chapters():
     title = request.args.get('title').split('-')
     parsed_title = ''
-
     for word in title:
         parsed_title = parsed_title + word.capitalize()
     s3_resource = boto3.resource('s3')
@@ -144,21 +143,28 @@ def get_chapters():
 
 @app.route('/get_pages', methods=['GET'])
 def get_pages():
-    
+    s3_resource = boto3.resource('s3')
+    bucket = s3_resource.Bucket('otanet-manga-devo')
+
     def get_first_number(s):
         match = re.search(r'\d+', s)
         if match:
             return int(match.group(0))
         return 0
     
-    s3_resource = boto3.resource('s3')
-    bucket = s3_resource.Bucket('otanet-manga-devo')
+    title = request.args.get('title').split('-')
+    parsed_title = ''
+    for word in title:
+        parsed_title = parsed_title + word.capitalize()
+    chapter = request.args.get('chapter').replace('-', '_')
+    key = f"{parsed_title}/{chapter}" 
     keys = []
-    for obj in bucket.objects.filter(Prefix=f"WazatoMiseteruKamoisan/chapter_1"):
+
+    for obj in bucket.objects.filter(Prefix=key):
         obj = obj.key.rsplit('/')
         keys.append(obj[2])
-    
     sorted_keys = sorted(keys, key=get_first_number)
+    
     pages = []
     for key in sorted_keys:
         presigned_url_get = S3CLIENT.generate_presigned_url(
