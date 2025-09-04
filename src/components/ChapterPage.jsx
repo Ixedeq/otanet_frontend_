@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import "../css/ChapterPage.css";
 
@@ -19,17 +19,6 @@ export default function ChapterPage() {
     }
     fetchPages()
   },[pages]);
-  try {
-    const context = require.context(
-      `../assets/chapters/${manga}`,
-      false,
-      /\.(png|jpe?g)$/
-    );
-    console.log(context);
-    images = context.keys().map(context);
-  } catch (err) {
-    console.warn(`No images found for manga: ${manga}`);
-  }
 
   return (
     <div className="chapter-page">
