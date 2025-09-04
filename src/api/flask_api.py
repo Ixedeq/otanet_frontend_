@@ -154,7 +154,8 @@ def get_pages():
         return 0
     
     title = request.args.get('title')
-    chapter = request.args.get('chapter').replace('-', '_')
+    chapter = request.args.get('chapter').replace('-', '_', 1)
+    chapter = chapter.replace('-', '.')
     base_key = f"{title}/{chapter}" 
     keys = []
 
