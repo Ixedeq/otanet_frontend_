@@ -1,5 +1,5 @@
 import React from "react";
-import "../css/Sidebar.css";
+import "./css/Sidebar.css";
 
 export default function Sidebar({ onClose }) {
   return (
