@@ -84,7 +84,7 @@ export default function ChapterPage() {
       <div className="chapter-navigation">
         {prevChapter ? (
           <Link
-            to={`/${slug}/chapter${prevChapter.number.replace(".", "-")}`}
+            to={`/${slug}/chapter-${prevChapter.number.replace(".", "-")}`}
             className="prev-chapter"
           >
             ← Previous Chapter
@@ -95,7 +95,7 @@ export default function ChapterPage() {
 
         {nextChapter ? (
           <Link
-            to={`/${slug}/chapter${nextChapter.number.replace(".", "-")}`}
+            to={`/${slug}/chapter-${nextChapter.number.replace(".", "-")}`}
             className="next-chapter"
           >
             Next Chapter →
