@@ -164,7 +164,7 @@ def get_pages():
         obj = obj.key.rsplit('/')
         keys.append(obj[2])
     sorted_keys = sorted(keys, key=get_first_number)
-    
+
     pages = []
     for key in sorted_keys:
         presigned_url_get = S3CLIENT.generate_presigned_url(
@@ -172,7 +172,7 @@ def get_pages():
             Params={'Bucket': 'otanet-manga-devo', 'Key': f"WazatoMiseteruKamoisan/chapter_1/{key}"},
             ExpiresIn=900
         )
-        pages.append(presigned_url_get)
+        pages.append({'src': presigned_url_get})
     return(jsonify(pages))
 
 

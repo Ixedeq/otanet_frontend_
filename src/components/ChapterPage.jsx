@@ -21,6 +21,8 @@ export default function ChapterPage() {
     fetchPages()
   },[pages]);
 
+  console.log(pages)
+
   return (
     <div className="chapter-page">
       <div>Hello World </div>
@@ -30,8 +32,8 @@ export default function ChapterPage() {
       {pages.length === 0 && <p>No pages found for this manga.</p>}
 
       <div className="chapter-images">
-        {pages.map((src, idx) => (
-          <img key={idx} src={src} alt={`Page ${idx + 1}`} className="chapter-img" />
+        {pages.map((src) => (
+          <img src={src} className="chapter-img" />
         ))}
       </div>
     </div>
