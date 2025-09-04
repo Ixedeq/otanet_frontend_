@@ -6,8 +6,7 @@ import API_BASE from "./Config"
 export default function ChapterPage() {
   const [pages, setPages] = useState([])
   const { slug, chapter } = useParams();
-  console.log("Params: ", slug, chapter)
-;
+
   useEffect(() => {
     const fetchPages = async () => {
       try {
