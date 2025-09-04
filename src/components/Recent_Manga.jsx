@@ -19,42 +19,34 @@ export default function Recent_Manga() {
   const itemsPerPage = 10;
   const currentPage = Number(page) || 1;
 
+  // Fetch manga data
   useEffect(() => {
-    const fetchManga = async () => {
+    const fetchData = async () => {
       setLoading(true);
-      setImagesLoaded(0);
       try {
-        const res = await fetch(`${API_BASE}/recent_manga?page=${currentPage}`);
-        const data = await res.json();
-        setManga(data);
+        const [mangaRes, coversRes, countRes] = await Promise.all([
+          fetch(`${API_BASE}/recent_manga?page=${currentPage}`),
+          fetch(`${API_BASE}/get_cover`),
+          fetch(`${API_BASE}/manga_count`),
+        ]);
+
+        const [mangaData, coversData, countData] = await Promise.all([
+          mangaRes.json(),
+          coversRes.json(),
+          countRes.json(),
+        ]);
+
+        setManga(mangaData);
+        setCovers(coversData);
+        setMangaCount(countData);
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false); // API finished
       }
     };
 
-    const fetchCovers = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/get_cover`);
-        const data = await res.json();
-        setCovers(data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    const fetchMangaCount = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/manga_count`);
-        const data = await res.json();
-        setMangaCount(data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchManga();
-    fetchCovers();
-    fetchMangaCount();
+    fetchData();
     window.scrollTo(0, 0);
   }, [currentPage]);
 
@@ -62,13 +54,18 @@ export default function Recent_Manga() {
   const startIndex = 0;
   const currentManga = manga.slice(startIndex, startIndex + itemsPerPage);
 
-  // Callback for when each image finishes loading
+  // Reset image counter when new manga is loaded
+  useEffect(() => {
+    setImagesLoaded(0);
+  }, [currentManga]);
+
   const handleImageLoad = () => {
     setImagesLoaded((prev) => prev + 1);
   };
 
+  // True when all images in currentManga have loaded
   const allImagesLoaded =
-    currentManga.length > 0 && imagesLoaded >= currentManga.length;
+    !loading && currentManga.length > 0 && imagesLoaded >= currentManga.length;
 
   const goNext = () =>
     navigate(`/recent/${Math.min(currentPage + 1, totalPages)}`);
@@ -87,7 +84,7 @@ export default function Recent_Manga() {
               title={title}
               description={description}
               cover={cover_img}
-              onImageLoad={handleImageLoad} // Pass callback
+              onImageLoad={handleImageLoad} // callback for image load
             />
           ))
         : "No manga found."}
