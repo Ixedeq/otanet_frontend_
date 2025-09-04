@@ -4,6 +4,7 @@ import "../css/ChapterPage.css";
 
 export default function ChapterPage() {
   const { manga } = useParams();
+  console.log("Params: ", manga)
 
   // Dynamically import all images from the folder
   let images = [];
