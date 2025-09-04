@@ -160,7 +160,7 @@ def get_pages():
     base_key = f"{parsed_title}/{chapter}" 
     keys = []
 
-    for obj in bucket.objects.filter(Prefix=key):
+    for obj in bucket.objects.filter(Prefix=base_key):
         obj = obj.key.rsplit('/')
         keys.append(obj[2])
     sorted_keys = sorted(keys, key=get_first_number)
