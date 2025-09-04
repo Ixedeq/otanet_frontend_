@@ -31,7 +31,7 @@ def recent_manga():
     con.close()
     data = []
     for row in rows:
-        cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', row[0])
+        cleaned_title = to_slug(row[0])
         presigned_url_get = S3CLIENT.generate_presigned_url(
             'get_object',
             Params={'Bucket': 'otanet-manga-devo', 'Key': f"{cleaned_title}/0_title/cover_img"},
@@ -76,7 +76,7 @@ def get_manga_by_slug(slug):
 
     result = None
     for row in rows:
-        cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', row[0])
+        cleaned_title = to_slug(row[0])
         presigned_url_get = S3CLIENT.generate_presigned_url(
             'get_object',
             Params={'Bucket': 'otanet-manga-devo', 'Key': f"{cleaned_title}/0_title/cover_img"},
