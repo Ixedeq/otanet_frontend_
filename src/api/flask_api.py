@@ -4,6 +4,7 @@ import sqlite3
 import boto3
 from botocore.config import Config
 import re
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -19,7 +20,7 @@ def recent_manga():
     S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', 'otanet_devo.db')
     items_per_page = 10
     page = int(request.args.get('page', 1))
-    offset = page * items_per_page
+    offset = (page-1) * items_per_page
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
     cursor.execute(
@@ -30,13 +31,12 @@ def recent_manga():
     con.close()
     data = []
     for row in rows:
-        cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', row[0])
+        cleaned_title = to_slug(row[0])
         presigned_url_get = S3CLIENT.generate_presigned_url(
             'get_object',
             Params={'Bucket': 'otanet-manga-devo', 'Key': f"{cleaned_title}/0_title/cover_img"},
             ExpiresIn=900
         )
-        print(presigned_url_get)
         data.append({"title": row[0], "description": row[1], "cover_img": presigned_url_get})
     return jsonify(data)
 
@@ -56,7 +56,6 @@ def manga_count():
     return jsonify(total_rows)
 
 # GET single manga by slug (title -> slug)
-import re
 def to_slug(title):
     slug = title.lower().strip()
     slug = re.sub(r"[^a-z0-9 ]", "", slug)
@@ -77,7 +76,7 @@ def get_manga_by_slug(slug):
 
     result = None
     for row in rows:
-        cleaned_title = re.sub(r'[^a-zA-Z0-9]', '', row[0])
+        cleaned_title = to_slug(row[0])
         presigned_url_get = S3CLIENT.generate_presigned_url(
             'get_object',
             Params={'Bucket': 'otanet-manga-devo', 'Key': f"{cleaned_title}/0_title/cover_img"},
@@ -121,16 +120,59 @@ def search_by_title():
 
 @app.route('/get_chapters', methods=['GET'])
 def get_chapters():
+    title = request.args.get('title')
     s3_resource = boto3.resource('s3')
     bucket = s3_resource.Bucket('otanet-manga-devo')
 
     objs = []
-    for obj in bucket.objects.filter(Prefix='2gethertheseries/'):
-        pattern = r"chapter_\d+(?:\.\d+)?"
+    for obj in bucket.objects.filter(Prefix=f"{title}/"):
+        #pattern = r"chapter_\d+(?:\.\d+\_\d+)?"
+        pattern = r"chapter(?:_\d+)+"
         key = re.search(pattern,obj.key)
-        if key and key.group() not in objs:
-            objs.append(key.group())
+        if key:
+            key = key.group().replace('_', ' ', 1)
+            key = key.replace('_','.')
+            number = key.rsplit(' ')
+            chapter_word = key.capitalize()
+            dict = {'title': chapter_word, 'number': number[1]}
+            if not any(dict == item for item in objs):
+                objs.append(dict)
     return jsonify(objs)
+
+@app.route('/get_pages', methods=['GET'])
+def get_pages():
+    s3_resource = boto3.resource('s3')
+    bucket = s3_resource.Bucket('otanet-manga-devo')
+
+    def get_first_number(s):
+        match = re.search(r'\d+', s)
+        if match:
+            return int(match.group(0))
+        return 0
+    
+    title = request.args.get('title')
+    chapter = request.args.get('chapter').replace('-', '_')
+    base_key = f"{title}/{chapter}" 
+    keys = []
+
+    for obj in bucket.objects.filter(Prefix=base_key):
+        obj = obj.key.rsplit('/')
+        keys.append(obj[2])
+    sorted_keys = sorted(keys, key=get_first_number)
+    
+    if '' in sorted_keys:
+        sorted_keys.remove('')
+
+    pages = []
+    for key in sorted_keys:
+        presigned_url_get = S3CLIENT.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': 'otanet-manga-devo', 'Key': f"{base_key}/{key}"},
+            ExpiresIn=900
+        )
+        pages.append({'src': presigned_url_get})
+    return(jsonify(pages))
+
 
 @app.route('/search_by_tags')
 def search_by_tags():

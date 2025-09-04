@@ -9,9 +9,23 @@ const DEFAULT_COVER =
 export default function MangaPage() {
   const { slug } = useParams();
   const [manga, setManga] = useState(null);
+  const [chapters, setChapters] = useState([])
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchChapters = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
+        if(!response.ok) throw new Error("Chpaters not found!")
+        const data = await response.json();
+        setChapters(data)
+      }catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const fetchManga = async () => {
       try {
         const response = await fetch(`${API_BASE}/${slug}`);
@@ -46,6 +60,7 @@ export default function MangaPage() {
       }
     };
 
+    fetchChapters();
     fetchManga();
   }, [slug]);
 
@@ -78,12 +93,12 @@ export default function MangaPage() {
 
       <div className="chapter-wrapper">
         <h2 className="chapter-title">Chapters</h2>
-        {manga.chapters && manga.chapters.length > 0 ? (
+        {chapters && chapters.length > 0 ? (
           <div className="chapter-grid">
-            {manga.chapters.map((ch) => (
+            {chapters.map((ch) => (
               <a
                 key={ch.number}
-                href={`/read/${slug}/chapter-${ch.number}`}
+                href={`/read/${slug}/chapter-${ch.number.toString().replace(/\./g, "-")}`}
                 className="chapter-item"
               >
                 {ch.title || `Chapter ${ch.number}`}

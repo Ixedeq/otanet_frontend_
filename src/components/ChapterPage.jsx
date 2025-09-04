@@ -1,34 +1,35 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import "../css/ChapterPage.css";
+import API_BASE from "./Config"
 
 export default function ChapterPage() {
-  const { manga } = useParams();
+  const [pages, setPages] = useState([])
+  const { slug, chapter } = useParams();
 
-  // Dynamically import all images from the folder
-  let images = [];
-  try {
-    const context = require.context(
-      `../assets/chapters/${manga}`,
-      false,
-      /\.(png|jpe?g)$/
-    );
-    console.log(context);
-    images = context.keys().map(context);
-  } catch (err) {
-    console.warn(`No images found for manga: ${manga}`);
-  }
+  useEffect(() => {
+    const fetchPages = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/get_pages?title=${slug}&chapter=${chapter}`);
+        const data = await res.json();
+        setPages(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchPages()
+  },[pages]);
 
   return (
     <div className="chapter-page">
       <Link to="/" className="back-link">← Back to Home</Link>
-      <h1 className="chapter-title">{manga}</h1>
+      <h1 className="chapter-title">{slug}</h1>
 
-      {images.length === 0 && <p>No pages found for this manga.</p>}
+      {pages.length === 0 && <p>No pages found for this manga.</p>}
 
       <div className="chapter-images">
-        {images.map((src, idx) => (
-          <img key={idx} src={src} alt={`Page ${idx + 1}`} className="chapter-img" />
+        {pages.map(({src}) => (
+          <img src={src} className="chapter-img" />
         ))}
       </div>
     </div>

@@ -35,11 +35,9 @@ export default function App() {
           {/* Individual manga page */}
           <Route path="/:slug" element={<MangaPage />} />
 
-          {/* Chapter page */}
-          <Route path="/:slug/chapter/:chapterId" element={<ChapterPage />} />
-
-          {/* Search results */}
-          <Route path="/search/:search" element={<SearchResult />} />
+          {/*future chapter page */}
+          <Route path="/read/:slug/:chapter" element={<ChapterPage />} />
+          <Route path="/search/:search" element={<SearchResult/>} />
         </Routes>
       </main>
       <Footer />
