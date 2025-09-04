@@ -11,7 +11,7 @@ export default function ChapterPage() {
   useEffect(() => {
     const fetchPages = async () => {
       try {
-        const res = await fetch(`${API_BASE}/get_pages?tite=${slug}&chapter=${chapter}`);
+        const res = await fetch(`${API_BASE}/get_pages?title=${slug}&chapter=${chapter}`);
         const data = await res.json();
         console.log(data)
         setPages(data);
