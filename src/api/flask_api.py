@@ -162,11 +162,7 @@ def get_pages():
     sorted_keys = sorted(keys, key=get_first_number)
 
     pages = []
-    for key in keys:
-        try:
-            S3CLIENT.head_object(Bucket='otanet-manga-devo', Key=f"{base_key}/{key}")
-        except:
-            continue
+    for key in sorted_keys:
         presigned_url_get = S3CLIENT.generate_presigned_url(
             'get_object',
             Params={'Bucket': 'otanet-manga-devo', 'Key': f"{base_key}/{key}"},
