@@ -155,6 +155,7 @@ def get_pages():
             ExpiresIn=900
         )
         '''
+        obj = obj.key.rsplit('/')
         objs.append(obj.key)
     
     return(jsonify(objs))
