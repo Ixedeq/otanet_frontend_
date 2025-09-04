@@ -123,22 +123,19 @@ def search_by_title():
 
 @app.route('/get_chapters', methods=['GET'])
 def get_chapters():
-    title = request.args.get('title').split('-')
-    parsed_title = ''
-    for word in title:
-        parsed_title = parsed_title + word.capitalize()
+    title = request.args.get('title')
     s3_resource = boto3.resource('s3')
     bucket = s3_resource.Bucket('otanet-manga-devo')
 
     objs = []
-    for obj in bucket.objects.filter(Prefix=f"{parsed_title}/"):
+    for obj in bucket.objects.filter(Prefix=f"{title}/"):
         pattern = r"chapter_\d+(?:\.\d+)?"
         key = re.search(pattern,obj.key)
         if key and key.group() not in objs:
             number = re.search(r'\d+', key.group())
             key = key.group().replace('_', ' ')
-            title = key.capitalize()
-            objs.append({'title': title, 'number': number.group()})
+            chapter_word = key.capitalize()
+            objs.append({'title': chapter_word, 'number': number.group()})
     return jsonify(objs)
 
 @app.route('/get_pages', methods=['GET'])
@@ -152,12 +149,9 @@ def get_pages():
             return int(match.group(0))
         return 0
     
-    title = request.args.get('title').split('-')
-    parsed_title = ''
-    for word in title:
-        parsed_title = parsed_title + word.capitalize()
+    title = request.args.get('title')
     chapter = request.args.get('chapter').replace('-', '_')
-    base_key = f"{parsed_title}/{chapter}" 
+    base_key = f"{title}/{chapter}" 
     keys = []
 
     for obj in bucket.objects.filter(Prefix=base_key):
