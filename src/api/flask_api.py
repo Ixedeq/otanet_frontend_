@@ -126,7 +126,7 @@ def get_chapters():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
-    sql = f"SELECT title FROM manga_metadata where title LIKE %{request.args.get('title').replace('-', ' ')}%"
+    sql = f"SELECT title FROM manga_metadata where title LIKE '%{request.args.get('title').replace('-', ' ')}%'"
     cursor.execute(sql)
 
     title = cursor.fetchone()[0]
@@ -160,7 +160,7 @@ def get_pages():
     
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    sql = f"SELECT title FROM manga_metadata where title LIKE %{request.args.get('title').replace('-', ' ')}%"
+    sql = f"SELECT title FROM manga_metadata where title LIKE '%{request.args.get('title').replace('-', ' ')}%'"
     cursor.execute(sql)
 
     title = cursor.fetchone()[0]
