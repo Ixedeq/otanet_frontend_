@@ -137,7 +137,8 @@ def get_chapters():
             dict = {'title': chapter_word, 'number': number[1]}
             if not any(dict == item for item in objs):
                 objs.append(dict)
-    return jsonify(objs)
+    sorted_objs = sorted(objs, key=lambda obj: float(obj['number']))
+    return jsonify(sorted_objs)
 
 @app.route('/get_pages', methods=['GET'])
 def get_pages():
