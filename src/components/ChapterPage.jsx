@@ -3,8 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import "../css/ChapterPage.css";
 
 export default function ChapterPage() {
-  const { manga } = useParams();
-  console.log("Params: ", manga)
+  const { slug, chapter } = useParams();
+  console.log("Params: ", slug, chapter)
 
   // Dynamically import all images from the folder
   let images = [];
