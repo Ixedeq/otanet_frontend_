@@ -4,21 +4,23 @@ import "../css/ChapterPage.css";
 import API_BASE from "./Config";
 
 export default function ChapterPage() {
-  const { slug, chapter } = useParams();
   const [pages, setPages] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
+  const { slug, chapter } = useParams();
 
-  // Convert chapter param for API
-  const chapterKey = chapter.replace("-", "_");
-  const chapterNumberFloat = parseFloat(chapter.replace("-", "."));
+  // Normalize chapter param for API and comparison
+  const chapterKey = chapter.replace("-", "_");      // for API request
+  const chapterNumberStr = chapter.replace("-", "."); // for navigation comparison
 
-  // Fetch pages
+  // Fetch pages for the current chapter
   useEffect(() => {
     const fetchPages = async () => {
       setLoadingPages(true);
       try {
-        const res = await fetch(`${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`);
+        const res = await fetch(
+          `${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`
+        );
         const data = await res.json();
         setPages(data);
       } catch (err) {
@@ -31,15 +33,18 @@ export default function ChapterPage() {
     fetchPages();
   }, [slug, chapterKey]);
 
-  // Fetch chapters
+  // Fetch all chapters for this manga
   useEffect(() => {
     const fetchChapters = async () => {
       try {
         const res = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
         const data = await res.json();
+
+        // Normalize chapter numbers to strings for matching
         const sorted = data
-          .map((ch) => ({ ...ch, number: parseFloat(ch.number) }))
-          .sort((a, b) => a.number - b.number);
+          .map((ch) => ({ ...ch, numberStr: ch.number.toString() }))
+          .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
+
         setChapters(sorted);
       } catch (err) {
         console.error(err);
@@ -48,10 +53,15 @@ export default function ChapterPage() {
     fetchChapters();
   }, [slug]);
 
-  // Determine previous & next chapters
-  const currentIndex = chapters.findIndex(ch => ch.number === chapterNumberFloat);
+  // Determine previous and next chapters
+  const currentIndex = chapters.findIndex(
+    (ch) => ch.numberStr === chapterNumberStr
+  );
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
-  const nextChapter = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
+  const nextChapter =
+    currentIndex >= 0 && currentIndex < chapters.length - 1
+      ? chapters[currentIndex + 1]
+      : null;
 
   return (
     <div className="chapter-page">
@@ -69,7 +79,7 @@ export default function ChapterPage() {
       <div className="chapter-navigation">
         {prevChapter ? (
           <Link
-            to={`/read/${slug}/chapter-${prevChapter.number.toString().replace(".", "-")}`}
+            to={`/read/${slug}/chapter-${prevChapter.numberStr.replace(".", "-")}`}
             className="prev-chapter"
           >
             ← Previous Chapter
@@ -80,7 +90,7 @@ export default function ChapterPage() {
 
         {nextChapter ? (
           <Link
-            to={`/read/${slug}/chapter-${nextChapter.number.toString().replace(".", "-")}`}
+            to={`/read/${slug}/chapter-${nextChapter.numberStr.replace(".", "-")}`}
             className="next-chapter"
           >
             Next Chapter →
