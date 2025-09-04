@@ -6,23 +6,31 @@ import API_BASE from "./Config";
 export default function ChapterPage() {
   const [pages, setPages] = useState([]);
   const [chapters, setChapters] = useState([]);
+  const [loadingPages, setLoadingPages] = useState(true);
   const { slug, chapter } = useParams();
 
-  // Fetch pages
+  // Convert chapter param to float (handle 12-5 → 12.5)
+  const chapterNumber = parseFloat(chapter.replace("-", "."));
+
+  // Fetch pages for current chapter
   useEffect(() => {
     const fetchPages = async () => {
+      setLoadingPages(true);
       try {
         const res = await fetch(`${API_BASE}/get_pages?title=${slug}&chapter=${chapter}`);
         const data = await res.json();
         setPages(data);
       } catch (err) {
         console.error(err);
+        setPages([]);
+      } finally {
+        setLoadingPages(false);
       }
     };
     fetchPages();
   }, [slug, chapter]);
 
-  // Fetch chapters
+  // Fetch all chapters
   useEffect(() => {
     const fetchChapters = async () => {
       try {
@@ -30,7 +38,10 @@ export default function ChapterPage() {
         const data = await res.json();
 
         // sort chapters numerically
-        const sorted = data.sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
+        const sorted = data
+          .map(ch => ({ ...ch, number: parseFloat(ch.number) }))
+          .sort((a, b) => a.number - b.number);
+
         setChapters(sorted);
       } catch (err) {
         console.error(err);
@@ -39,9 +50,8 @@ export default function ChapterPage() {
     fetchChapters();
   }, [slug]);
 
-  // Determine previous and next chapter
-  const chapterNumber = parseFloat(chapter);
-  const currentIndex = chapters.findIndex(ch => parseFloat(ch.number) === chapterNumber);
+  // Determine previous and next chapters
+  const currentIndex = chapters.findIndex(ch => ch.number === chapterNumber);
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
 
@@ -50,7 +60,7 @@ export default function ChapterPage() {
       <Link to="/" className="back-link">← Back to Home</Link>
       <h1 className="chapter-title">{slug}</h1>
 
-      {pages.length === 0 && <p>No pages found for this manga.</p>}
+      {loadingPages && <p>Loading pages...</p>}
 
       <div className="chapter-images">
         {pages.map(({ src, key }) => (
