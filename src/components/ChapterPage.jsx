@@ -22,7 +22,6 @@ export default function ChapterPage() {
 
   return (
     <div className="chapter-page">
-      <div>Hello World </div>
       <Link to="/" className="back-link">← Back to Home</Link>
       <h1 className="chapter-title">{slug}</h1>
 
