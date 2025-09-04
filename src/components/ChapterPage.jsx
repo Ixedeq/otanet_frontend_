@@ -4,20 +4,20 @@ import "../css/ChapterPage.css";
 import API_BASE from "./Config";
 
 export default function ChapterPage() {
+  const { slug, chapter } = useParams();
   const [pages, setPages] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
-  const { slug, chapter } = useParams();
 
-  // Convert chapter param to float for numeric comparison
+  // Convert chapter param to float for comparison
   const chapterNumberFloat = parseFloat(chapter.split("-").join("."));
 
-  // Fetch pages for current chapter
+  // Fetch pages whenever slug or chapter changes
   useEffect(() => {
     const fetchPages = async () => {
       setLoadingPages(true);
       try {
-        const chapterKey = chapter.replace("-", "_"); // API expects _ instead of -
+        const chapterKey = chapter.replace("-", "_"); // API expects underscores
         const res = await fetch(
           `${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`
         );
@@ -33,7 +33,7 @@ export default function ChapterPage() {
     fetchPages();
   }, [slug, chapter]);
 
-  // Fetch all chapters
+  // Fetch all chapters when slug changes
   useEffect(() => {
     const fetchChapters = async () => {
       try {
@@ -86,6 +86,7 @@ export default function ChapterPage() {
       <div className="chapter-navigation">
         {prevChapter ? (
           <Link
+            key={prevChapter.number} // Force React to see as new element
             to={`/read/${slug}/chapter-${prevChapter.number
               .toString()
               .replace(".", "-")}`}
@@ -99,6 +100,7 @@ export default function ChapterPage() {
 
         {nextChapter ? (
           <Link
+            key={nextChapter.number} // Force React to see as new element
             to={`/read/${slug}/chapter-${nextChapter.number
               .toString()
               .replace(".", "-")}`}
