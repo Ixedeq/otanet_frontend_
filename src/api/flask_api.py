@@ -132,15 +132,13 @@ def get_chapters():
         #pattern = r"chapter_\d+(?:\.\d+\_\d+)?"
         pattern = r"chapter(?:_\d+)+"
         key = re.search(pattern,obj.key)
-        if key and key.group() not in objs:
-            print(key.group())
-            key = key.group().replace('_', ' ', 1)
-            key = key.replace('_','.')
-            #number = re.search(r'^\d+(?:\.\d+){0,2}$', key)
-            number = key.rsplit(' ')
-            print(key, number)
-            chapter_word = key.capitalize()
-            objs.append({'title': chapter_word, 'number': number[1]})
+        key = key.group().replace('_', ' ', 1)
+        key = key.replace('_','.')
+        number = key.rsplit(' ')
+        chapter_word = key.capitalize()
+        dict = {'title': chapter_word, 'number': number[1]}
+        if dict not in objs:
+            objs.append()
     return jsonify(objs)
 
 @app.route('/get_pages', methods=['GET'])
