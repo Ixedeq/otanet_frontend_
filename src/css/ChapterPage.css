@@ -62,44 +62,44 @@
   width: 100%;
   max-width: 800px;
   margin: 2rem 0;
-  gap: 1rem;
-  flex-wrap: wrap;
 }
 
 .chapter-navigation a,
 .chapter-navigation span {
-  flex: 1 1 45%;
-  padding: 0.75rem 1rem;
-  background-color: var(--card-bg, #1e1e1e);
+  padding: 0.5rem 1rem;
+  background-color: var(--card-bg, #2a2a2a);
   color: var(--main-text);
-  text-align: center;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 500;
-  transition: background-color 0.2s, color 0.2s, transform 0.2s;
+  text-align: center;
+  min-width: 150px;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .chapter-navigation a:hover {
   background-color: var(--accent-color);
   color: #fff;
-  transform: translateY(-2px);
 }
 
 .chapter-navigation .disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  background-color: #444;
+  color: #ccc;
 }
 
-/* Mobile responsiveness */
+/* Mobile adjustments */
 @media (max-width: 600px) {
   .chapter-navigation {
     flex-direction: column;
     gap: 0.75rem;
+    align-items: center;
   }
 
   .chapter-navigation a,
   .chapter-navigation span {
-    flex: 1 1 100%;
+    min-width: 60%;
   }
 
   .chapter-title {
