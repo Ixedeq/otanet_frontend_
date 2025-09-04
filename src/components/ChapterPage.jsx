@@ -33,7 +33,7 @@ export default function ChapterPage() {
       {pages.length === 0 && <p>No pages found for this manga.</p>}
 
       <div className="chapter-images">
-        {pages.map((src) => (
+        {pages.map(({src}) => (
           <img src={src} className="chapter-img" />
         ))}
       </div>
