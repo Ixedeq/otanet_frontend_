@@ -7,16 +7,19 @@ export default function ChapterPage() {
   const [pages, setPages] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
+  const [horizontalScroll, setHorizontalScroll] = useState(null); // null = default mobile detection
   const { slug, chapter } = useParams();
 
-  // Normalize chapter param for API and comparison
-  const chapterKey = chapter.replace("-", "_");      // for API request
-  const chapterNumberStr = chapter.replace("-", "."); // for navigation comparison
+  const chapterKey = chapter.replace("-", "_");
+  const chapterNumberStr = chapter.replace("-", ".");
 
-  // Fetch pages for the current chapter
+  // Detect if mobile
+  const isMobile = window.innerWidth <= 600;
+
+  // Fetch pages for current chapter
   useEffect(() => {
+    setLoadingPages(true);
     const fetchPages = async () => {
-      setLoadingPages(true);
       try {
         const res = await fetch(
           `${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`
@@ -33,18 +36,15 @@ export default function ChapterPage() {
     fetchPages();
   }, [slug, chapterKey]);
 
-  // Fetch all chapters for this manga
+  // Fetch all chapters
   useEffect(() => {
     const fetchChapters = async () => {
       try {
         const res = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
         const data = await res.json();
-
-        // Normalize chapter numbers to strings for matching
         const sorted = data
           .map((ch) => ({ ...ch, numberStr: ch.number.toString() }))
           .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
-
         setChapters(sorted);
       } catch (err) {
         console.error(err);
@@ -63,16 +63,37 @@ export default function ChapterPage() {
       ? chapters[currentIndex + 1]
       : null;
 
+  // Determine final scroll mode (mobile default or user toggle)
+  const useHorizontalScroll =
+    horizontalScroll !== null ? horizontalScroll : isMobile;
+
   return (
     <div className="chapter-page">
       <Link to="/" className="back-link">← Back to Home</Link>
       <h1 className="chapter-title">{slug}</h1>
 
+      {/* Toggle button */}
+      <button
+        className="toggle-scroll-btn"
+        onClick={() => setHorizontalScroll((prev) => !prev)}
+      >
+        {useHorizontalScroll ? "Vertical Scroll" : "Horizontal Scroll"}
+      </button>
+
       {loadingPages && <p>Loading pages...</p>}
 
-      <div className="chapter-images">
+      <div
+        className={`chapter-images ${
+          useHorizontalScroll ? "horizontal-scroll" : ""
+        }`}
+      >
         {pages.map(({ src, key }) => (
-          <img key={key} src={src} className="chapter-img" alt={`Page ${key}`} />
+          <img
+            key={key}
+            src={src}
+            className="chapter-img"
+            alt={`Page ${key}`}
+          />
         ))}
       </div>
 

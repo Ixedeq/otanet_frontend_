@@ -1,56 +1,39 @@
-.chapter-page {
+/* Horizontal scroll for mobile */
+.chapter-images.horizontal-scroll {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem 1rem;
-  background-color: var(--main-bg);
-  color: var(--main-text);
-  min-height: 100vh;
-  box-sizing: border-box;
-  font-family: sans-serif;
+  flex-direction: row;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  gap: 1rem;
+  padding-bottom: 1rem;
 }
 
-/* Back to Home Link */
-.back-link {
-  align-self: flex-start;
-  margin-bottom: 1rem;
-  padding: 0.5rem 1rem;
-  background: var(--accent-color, linear-gradient(180deg, #d0368a 0%, #708ad4 99%));
-  color: #fff;
-  text-decoration: none;
-  border-radius: 6px;
-  font-weight: bold;
-  transition: all 0.3s;
-}
-
-.back-link:hover {
-  opacity: 0.9;
-}
-
-/* Chapter Title */
-.chapter-title {
-  font-size: 2rem;
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-/* Chapter Images */
-.chapter-images {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  width: 100%;
-  max-width: 800px;
-}
-
-.chapter-img {
-  width: 100%;
-  height: auto;
+.chapter-images.horizontal-scroll .chapter-img {
+  flex: 0 0 auto;
+  width: 80vw; /* adjust for mobile */
+  max-width: 400px;
+  scroll-snap-align: center;
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
-/* Navigation Buttons */
+/* Toggle button */
+.toggle-scroll-btn {
+  margin-bottom: 1rem;
+  padding: 0.4rem 0.8rem;
+  font-weight: bold;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
+  color: #fff;
+  transition: opacity 0.3s;
+}
+
+.toggle-scroll-btn:hover {
+  opacity: 0.85;
+}
+
+/* Chapter navigation buttons */
 .chapter-navigation {
   display: flex;
   justify-content: space-between;
@@ -68,54 +51,41 @@
   font-weight: bold;
   text-align: center;
   flex: 1;
-  transition: all 0.3s;
+  transition: background 0.3s, color 0.3s;
 }
 
-/* Previous Chapter Gradient */
 .prev-chapter {
-  background: linear-gradient(180deg, #3498db 0%, #2980b9 100%);
+  background-color: #3498db;
   color: #fff;
 }
 
 .prev-chapter:hover {
-  opacity: 0.85;
+  background-color: #2980b9;
 }
 
-/* Next Chapter Gradient */
 .next-chapter {
-  background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%);
+  background-color: #2ecc71;
   color: #fff;
 }
 
 .next-chapter:hover {
-  opacity: 0.85;
+  background-color: #27ae60;
 }
 
-/* Disabled Buttons */
+/* Disabled buttons */
 .disabled {
   background-color: #7f8c8d;
   color: #bdc3c7;
   cursor: not-allowed;
 }
 
-/* Responsive Mobile Adjustments */
+/* Responsive adjustments */
 @media (max-width: 600px) {
-  .chapter-title {
-    font-size: 1.5rem;
+  .chapter-images.horizontal-scroll {
+    width: 100%;
+    padding: 0 0.5rem;
   }
-
-  .chapter-navigation a,
-  .chapter-navigation span {
-    font-size: 0.9rem;
-    padding: 0.4rem 0.8rem;
-  }
-
-  .chapter-images {
-    gap: 1rem;
-  }
-
-  .back-link {
-    font-size: 0.9rem;
-    padding: 0.4rem 0.8rem;
+  .chapter-img {
+    border-radius: 6px;
   }
 }
