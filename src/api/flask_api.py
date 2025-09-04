@@ -144,6 +144,13 @@ def get_chapters():
 
 @app.route('/get_pages', methods=['GET'])
 def get_pages():
+    
+    def get_first_number(s):
+        match = re.search(r'\d+', s)
+        if match:
+            return int(match.group(0))
+        return 0
+    
     s3_resource = boto3.resource('s3')
     bucket = s3_resource.Bucket('otanet-manga-devo')
     objs = []
@@ -158,7 +165,8 @@ def get_pages():
         obj = obj.key.rsplit('/')
         objs.append(obj[2])
     
-    return(jsonify(objs))
+    sorted_list = sorted(objs, key=get_first_number)
+    return(jsonify(sorted_list))
 
 
 @app.route('/search_by_tags')
