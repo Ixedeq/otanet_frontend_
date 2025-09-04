@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import Sidebar from "./Sidebar"; // your sidebar component
 
 export default function MenuBox() {
   const [isOpen, setIsOpen] = useState(false);
