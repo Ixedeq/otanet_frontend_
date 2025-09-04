@@ -9,15 +9,15 @@ export default function ChapterPage() {
   const [loadingPages, setLoadingPages] = useState(true);
   const { slug, chapter } = useParams();
 
-  // Convert chapter param for API
-  const chapterKey = chapter.replace("-", "_");
-  const chapterNumberFloat = parseFloat(chapter.replace("-", "."));
+  // Convert chapter param to float for numeric comparison
+  const chapterNumberFloat = parseFloat(chapter.split("-").join("."));
 
   // Fetch pages for current chapter
   useEffect(() => {
     const fetchPages = async () => {
       setLoadingPages(true);
       try {
+        const chapterKey = chapter.replace("-", "_"); // API expects _ instead of -
         const res = await fetch(
           `${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`
         );
@@ -31,7 +31,7 @@ export default function ChapterPage() {
       }
     };
     fetchPages();
-  }, [slug, chapterKey]);
+  }, [slug, chapter]);
 
   // Fetch all chapters
   useEffect(() => {
@@ -40,6 +40,7 @@ export default function ChapterPage() {
         const res = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
         const data = await res.json();
 
+        // Sort chapters numerically
         const sorted = data
           .map((ch) => ({ ...ch, number: parseFloat(ch.number) }))
           .sort((a, b) => a.number - b.number);
@@ -56,7 +57,6 @@ export default function ChapterPage() {
   const currentIndex = chapters.findIndex(
     (ch) => ch.number === chapterNumberFloat
   );
-
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1
