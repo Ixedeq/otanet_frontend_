@@ -98,7 +98,7 @@ export default function MangaPage() {
             {chapters.map((ch) => (
               <a
                 key={ch.number}
-                href={`/read/${slug}/chapter-${ch.number}`}
+                href={`/read/${slug}/chapter-${ch.number.toString().replace(/\./g, "-")}`}
                 className="chapter-item"
               >
                 {ch.title || `Chapter ${ch.number}`}
