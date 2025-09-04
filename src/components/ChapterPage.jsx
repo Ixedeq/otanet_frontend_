@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import "../css/ChapterPage.css";
 import API_BASE from "./Config";
 
 export default function ChapterPage() {
   const { slug, chapter } = useParams();
+  const navigate = useNavigate();
   const [pages, setPages] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
 
-  // Convert chapter param to float for comparison
-  const chapterNumberFloat = parseFloat(chapter.split("-").join("."));
+  // Convert chapter param for API
+  const chapterKey = chapter.replace("-", "_");
+  const chapterNumber = parseFloat(chapter.replace("-", "."));
 
-  // Fetch pages whenever slug or chapter changes
+  // Fetch pages for current chapter
   useEffect(() => {
     const fetchPages = async () => {
       setLoadingPages(true);
       try {
-        const chapterKey = chapter.replace("-", "_"); // API expects underscores
         const res = await fetch(
           `${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`
         );
@@ -31,20 +32,17 @@ export default function ChapterPage() {
       }
     };
     fetchPages();
-  }, [slug, chapter]);
+  }, [slug, chapterKey]);
 
-  // Fetch all chapters when slug changes
+  // Fetch chapters once
   useEffect(() => {
     const fetchChapters = async () => {
       try {
         const res = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
         const data = await res.json();
-
-        // Sort chapters numerically
         const sorted = data
           .map((ch) => ({ ...ch, number: parseFloat(ch.number) }))
           .sort((a, b) => a.number - b.number);
-
         setChapters(sorted);
       } catch (err) {
         console.error(err);
@@ -53,64 +51,52 @@ export default function ChapterPage() {
     fetchChapters();
   }, [slug]);
 
-  // Determine previous and next chapters
-  const currentIndex = chapters.findIndex(
-    (ch) => ch.number === chapterNumberFloat
-  );
+  // Compute previous and next chapter numbers
+  const currentIndex = chapters.findIndex((ch) => ch.number === chapterNumber);
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1
       ? chapters[currentIndex + 1]
       : null;
 
+  // Navigate to next or previous chapter
+  const goToChapter = (ch) => {
+    if (!ch) return;
+    const chSlug = ch.number.toString().replace(".", "-");
+    navigate(`/${slug}/chapter-${chSlug}`);
+  };
+
   return (
     <div className="chapter-page">
-      <Link to="/" className="back-link">
+      <button className="back-link" onClick={() => navigate("/")}>
         ← Back to Home
-      </Link>
+      </button>
       <h1 className="chapter-title">{slug}</h1>
 
       {loadingPages && <p>Loading pages...</p>}
 
       <div className="chapter-images">
         {pages.map(({ src, key }) => (
-          <img
-            key={key}
-            src={src}
-            className="chapter-img"
-            alt={`Page ${key}`}
-          />
+          <img key={key} src={src} className="chapter-img" alt={`Page ${key}`} />
         ))}
       </div>
 
       <div className="chapter-navigation">
-        {prevChapter ? (
-          <Link
-            key={prevChapter.number} // Force React to see as new element
-            to={`/read/${slug}/chapter-${prevChapter.number
-              .toString()
-              .replace(".", "-")}`}
-            className="prev-chapter"
-          >
-            ← Previous Chapter
-          </Link>
-        ) : (
-          <span className="prev-chapter disabled">← Previous Chapter</span>
-        )}
+        <button
+          className={`prev-chapter ${prevChapter ? "" : "disabled"}`}
+          onClick={() => goToChapter(prevChapter)}
+          disabled={!prevChapter}
+        >
+          ← Previous Chapter
+        </button>
 
-        {nextChapter ? (
-          <Link
-            key={nextChapter.number} // Force React to see as new element
-            to={`/read/${slug}/chapter-${nextChapter.number
-              .toString()
-              .replace(".", "-")}`}
-            className="next-chapter"
-          >
-            Next Chapter →
-          </Link>
-        ) : (
-          <span className="next-chapter disabled">Next Chapter →</span>
-        )}
+        <button
+          className={`next-chapter ${nextChapter ? "" : "disabled"}`}
+          onClick={() => goToChapter(nextChapter)}
+          disabled={!nextChapter}
+        >
+          Next Chapter →
+        </button>
       </div>
     </div>
   );
