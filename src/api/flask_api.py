@@ -92,9 +92,6 @@ def get_manga_by_slug(slug):
                 "tags": row[2],
                 "chapters": row[3]
             }
-            print()
-            print(row[3])
-            print()
             break
 
     con.close()
