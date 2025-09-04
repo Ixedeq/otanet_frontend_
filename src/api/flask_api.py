@@ -157,7 +157,7 @@ def get_pages():
     for word in title:
         parsed_title = parsed_title + word.capitalize()
     chapter = request.args.get('chapter').replace('-', '_')
-    key = f"{parsed_title}/{chapter}" 
+    base_key = f"{parsed_title}/{chapter}" 
     keys = []
 
     for obj in bucket.objects.filter(Prefix=key):
@@ -169,7 +169,7 @@ def get_pages():
     for key in sorted_keys:
         presigned_url_get = S3CLIENT.generate_presigned_url(
             'get_object',
-            Params={'Bucket': 'otanet-manga-devo', 'Key': f"WazatoMiseteruKamoisan/chapter_1/{key}"},
+            Params={'Bucket': 'otanet-manga-devo', 'Key': f"{base_key}/{key}"},
             ExpiresIn=900
         )
         pages.append({'src': presigned_url_get})
