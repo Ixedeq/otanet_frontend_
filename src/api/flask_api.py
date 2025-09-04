@@ -148,7 +148,12 @@ def get_pages():
     bucket = s3_resource.Bucket('otanet-manga-devo')
     objs = []
     for obj in bucket.objects.filter(Prefix=f"WazatoMiseteruKamoisan/chapter_1"):
-        objs.append(obj.key)
+        presigned_url_get = S3CLIENT.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': 'otanet-manga-devo', 'Key': obj.key},
+            ExpiresIn=900
+        )
+        objs.append(presigned_url_get)
     
     return(jsonify(objs))
 
