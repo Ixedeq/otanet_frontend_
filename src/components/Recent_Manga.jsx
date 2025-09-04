@@ -13,18 +13,16 @@ export default function Recent_Manga() {
   const [manga, setManga] = useState([]);
   const [covers, setCovers] = useState({});
   const [mangaCount, setMangaCount] = useState(0);
-  const [currentPage, setCurrentPage] = useState(Number(page) || 1);
   const [loading, setLoading] = useState(true);
 
   const itemsPerPage = 10;
+  const currentPage = Number(page) || 1;
 
   useEffect(() => {
     const fetchManga = async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `${API_BASE}/recent_manga?page=${currentPage}`
-        );
+        const res = await fetch(`${API_BASE}/recent_manga?page=${currentPage}`);
         const data = await res.json();
         setManga(data);
       } catch (err) {
@@ -64,14 +62,14 @@ export default function Recent_Manga() {
   const startIndex = 0;
   const currentManga = manga.slice(startIndex, startIndex + itemsPerPage);
 
-  const goNext = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
-  const goPrev = () => setCurrentPage((p) => Math.max(p - 1, 1));
+  const goNext = () =>
+    navigate(`/recent/${Math.min(currentPage + 1, totalPages)}`);
+  const goPrev = () => navigate(`/recent/${Math.max(currentPage - 1, 1)}`);
 
   return (
     <div className="manga-list">
       {loading
-        ? // Show skeletons while loading
-          Array.from({ length: itemsPerPage }).map((_, idx) => (
+        ? Array.from({ length: itemsPerPage }).map((_, idx) => (
             <MangaSkeleton key={idx} />
           ))
         : currentManga.length > 0
