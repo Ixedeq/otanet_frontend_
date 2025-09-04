@@ -137,7 +137,7 @@ def get_chapters():
         number = key.rsplit(' ')
         chapter_word = key.capitalize()
         dict = {'title': chapter_word, 'number': number[1]}
-        if dict not in objs:
+        if not any(dict == item for item in objs)
             objs.append()
     return jsonify(objs)
 
