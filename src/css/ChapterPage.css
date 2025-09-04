@@ -1,3 +1,4 @@
+/* Container */
 .chapter-page {
   display: flex;
   flex-direction: column;
@@ -7,26 +8,32 @@
   color: var(--main-text);
   min-height: 100vh;
   box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Back link */
 .back-link {
   align-self: flex-start;
   margin-bottom: 1rem;
   color: var(--main-text);
   text-decoration: none;
   font-size: 1.2rem;
+  transition: color 0.2s;
 }
 
 .back-link:hover {
   color: var(--accent-color);
 }
 
+/* Chapter title */
 .chapter-title {
   font-size: 2rem;
+  font-weight: 600;
   margin-bottom: 2rem;
   text-align: center;
 }
 
+/* Chapter images */
 .chapter-images {
   display: flex;
   flex-direction: column;
@@ -38,6 +45,68 @@
 .chapter-img {
   width: 100%;
   height: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.chapter-img:hover {
+  transform: scale(1.01);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
+
+/* Navigation buttons */
+.chapter-navigation {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 800px;
+  margin: 2rem 0;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.chapter-navigation a,
+.chapter-navigation span {
+  flex: 1 1 45%;
+  padding: 0.75rem 1rem;
+  background-color: var(--card-bg, #1e1e1e);
+  color: var(--main-text);
+  text-align: center;
+  text-decoration: none;
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+.chapter-navigation a:hover {
+  background-color: var(--accent-color);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.chapter-navigation .disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+  .chapter-navigation {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .chapter-navigation a,
+  .chapter-navigation span {
+    flex: 1 1 100%;
+  }
+
+  .chapter-title {
+    font-size: 1.5rem;
+  }
+
+  .back-link {
+    font-size: 1rem;
+  }
 }
