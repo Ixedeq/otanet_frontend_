@@ -156,6 +156,8 @@ def get_pages():
         )
         '''
         obj = obj.key.rsplit('/')
+        obj.pop(1)
+        obj.pop(0)
         objs.append(obj)
     
     return(jsonify(objs))
