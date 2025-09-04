@@ -14,6 +14,7 @@ export default function Recent_Manga() {
   const [covers, setCovers] = useState({});
   const [mangaCount, setMangaCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [imagesLoaded, setImagesLoaded] = useState(0);
 
   const itemsPerPage = 10;
   const currentPage = Number(page) || 1;
@@ -21,14 +22,13 @@ export default function Recent_Manga() {
   useEffect(() => {
     const fetchManga = async () => {
       setLoading(true);
+      setImagesLoaded(0);
       try {
         const res = await fetch(`${API_BASE}/recent_manga?page=${currentPage}`);
         const data = await res.json();
         setManga(data);
       } catch (err) {
         console.error(err);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -62,13 +62,21 @@ export default function Recent_Manga() {
   const startIndex = 0;
   const currentManga = manga.slice(startIndex, startIndex + itemsPerPage);
 
+  // Callback for when each image finishes loading
+  const handleImageLoad = () => {
+    setImagesLoaded((prev) => prev + 1);
+  };
+
+  const allImagesLoaded =
+    currentManga.length > 0 && imagesLoaded >= currentManga.length;
+
   const goNext = () =>
     navigate(`/recent/${Math.min(currentPage + 1, totalPages)}`);
   const goPrev = () => navigate(`/recent/${Math.max(currentPage - 1, 1)}`);
 
   return (
     <div className="manga-list">
-      {loading
+      {!allImagesLoaded
         ? Array.from({ length: itemsPerPage }).map((_, idx) => (
             <MangaSkeleton key={idx} />
           ))
@@ -79,11 +87,12 @@ export default function Recent_Manga() {
               title={title}
               description={description}
               cover={cover_img}
+              onImageLoad={handleImageLoad} // Pass callback
             />
           ))
         : "No manga found."}
 
-      {!loading && totalPages > 1 && (
+      {allImagesLoaded && totalPages > 1 && (
         <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
