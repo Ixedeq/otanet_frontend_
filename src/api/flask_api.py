@@ -20,7 +20,7 @@ def recent_manga():
     S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', 'otanet_devo.db')
     items_per_page = 10
     page = int(request.args.get('page', 1))
-    offset = page * items_per_page
+    offset = (page-1) * items_per_page
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
     cursor.execute(
@@ -133,7 +133,8 @@ def get_chapters():
         key = re.search(pattern,obj.key)
         if key and key.group() not in objs:
             number = re.search(r'\d+', key.group())
-            key = key.group().replace('_', ' ')
+            key = key.group().replace('_', ' ', 1)
+            key = key.replace('_','.')
             chapter_word = key.capitalize()
             objs.append({'title': chapter_word, 'number': number.group()})
     return jsonify(objs)
