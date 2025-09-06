@@ -7,69 +7,22 @@ import API_BASE from "./Config";
 function ChapterImg({ src, alt }) {
   const wrapperRef = useRef(null);
   const lastTap = useRef(0);
+  const startY = useRef(0);
+  const startX = useRef(0);
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
 
-  const isInNativeFullscreen = () =>
-    !!(
-      document.fullscreenElement ||
-      document.webkitFullscreenElement ||
-      document.webkitIsFullScreen
-    );
+  // Fullscreen toggling
+  const toggleFullscreen = () => setOverlayOpen((prev) => !prev);
 
-  const requestNativeFullscreen = async (el) => {
-    try {
-      if (el.requestFullscreen) {
-        await el.requestFullscreen();
-        return true;
-      }
-      if (el.webkitRequestFullscreen) {
-        el.webkitRequestFullscreen();
-        return true;
-      }
-    } catch (e) {
-      console.warn("Fullscreen error:", e);
-    }
-    return false;
-  };
-
-  const exitNativeFullscreen = async () => {
-    try {
-      if (document.exitFullscreen) {
-        await document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      }
-    } catch (e) {
-      console.warn("Exit fullscreen error:", e);
-    }
-  };
-
-  const openOverlay = () => setOverlayOpen(true);
-  const closeOverlay = async () => {
-    if (isInNativeFullscreen()) await exitNativeFullscreen();
-    setOverlayOpen(false);
-  };
-
-  const toggleFullscreen = async () => {
-    if (isInNativeFullscreen()) {
-      await exitNativeFullscreen();
-      setOverlayOpen(false);
-      return;
-    }
-
-    const ok = await requestNativeFullscreen(wrapperRef.current);
-    if (!ok) openOverlay(); // fallback for iOS
-  };
-
+  // Double-tap / single-tap detection
   const onTouchEnd = (e) => {
     const now = Date.now();
     if (now - lastTap.current <= 300) {
-      e.preventDefault(); // block iOS zoom
+      e.preventDefault();
       toggleFullscreen();
       lastTap.current = 0;
-    } else {
-      lastTap.current = now;
-    }
+    } else lastTap.current = now;
   };
 
   const onDoubleClick = (e) => {
@@ -77,15 +30,45 @@ function ChapterImg({ src, alt }) {
     toggleFullscreen();
   };
 
-  // Escape key to close overlay
+  // Track drag start for vertical slide-down or horizontal swipe
+  const onTouchStart = (e) => {
+    if (!e.touches || e.touches.length !== 1) return;
+    startY.current = e.touches[0].clientY;
+    startX.current = e.touches[0].clientX;
+    setDragOffset(0);
+  };
+
+  const onTouchMove = (e) => {
+    if (!overlayOpen) return;
+    if (!e.touches || e.touches.length !== 1) return;
+
+    const deltaY = e.touches[0].clientY - startY.current;
+    const deltaX = e.touches[0].clientX - startX.current;
+
+    if (vertical) setDragOffset(deltaY); // slide-down for vertical
+    else setDragOffset(deltaX);         // swipe left/right for horizontal
+  };
+
+  const onTouchEndDrag = () => {
+    if (!overlayOpen) return;
+
+    if (vertical) {
+      if (dragOffset > 100) setOverlayOpen(false); // slide down to close
+    } else {
+      if (dragOffset > 50) onChangePage(Math.max(index - 1, 0)); // swipe right
+      else if (dragOffset < -50) onChangePage(Math.min(index + 1, totalPages - 1)); // swipe left
+    }
+
+    setDragOffset(0);
+  };
+
+  // Lock scroll when overlay is open
   useEffect(() => {
     if (!overlayOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-
-    const onKey = (ev) => ev.key === "Escape" && closeOverlay();
+    const onKey = (ev) => ev.key === "Escape" && setOverlayOpen(false);
     document.addEventListener("keydown", onKey);
-
     return () => {
       document.body.style.overflow = prev;
       document.removeEventListener("keydown", onKey);
@@ -99,18 +82,36 @@ function ChapterImg({ src, alt }) {
         className="chapter-img-wrapper"
         onTouchEnd={onTouchEnd}
         onDoubleClick={onDoubleClick}
+        role="button"
+        aria-label={alt}
       >
         <img src={src} alt={alt} className="chapter-img" draggable={false} />
       </div>
 
       {overlayOpen && (
-      <div className="fullscreen-overlay" onClick={closeOverlay}>
-        <div className="fullscreen-wrapper">
-          <img src={src} alt={alt} className="fullscreen-img" draggable={false} />
+        <div
+          className="fullscreen-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setOverlayOpen(false)}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEndDrag}
+          style={{
+            transform: vertical ? `translateY(${dragOffset}px)` : `translateX(${dragOffset}px)`,
+            transition: dragOffset === 0 ? "transform 0.25s ease-out" : "none"
+          }}
+        >
+          <div className="fullscreen-wrapper">
+            <img
+              src={src}
+              alt={alt}
+              className="fullscreen-img"
+              draggable={false}
+            />
+          </div>
         </div>
-      </div>
-)}
-
+      )}
     </>
   );
 }
