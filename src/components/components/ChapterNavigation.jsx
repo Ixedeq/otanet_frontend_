@@ -7,8 +7,8 @@ export default function ChapterNavigation() {
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Normalize URL chapter to match API numbers
-  const normalizeChapterStr = (str) => str.replace(/-/g, ".");
+  // Convert URL chapter string "1-5" → number 1.5
+  const parseChapterNumber = (str) => parseFloat(str.replace(/-/g, "."));
 
   useEffect(() => {
     const fetchChapters = async () => {
@@ -17,13 +17,13 @@ export default function ChapterNavigation() {
         if (!res.ok) throw new Error("Chapters not found");
         const data = await res.json();
 
-        // Sort and normalize
+        // Normalize chapters to numbers and sort ascending
         const sortedChapters = data
           .map((ch) => ({
             ...ch,
-            numberStr: ch.number.toString(),
+            numberFloat: parseFloat(ch.number), // convert string/number to float
           }))
-          .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
+          .sort((a, b) => a.numberFloat - b.numberFloat);
 
         setChapters(sortedChapters);
       } catch (err) {
@@ -38,25 +38,25 @@ export default function ChapterNavigation() {
 
   if (loading || chapters.length === 0) return null;
 
-  const normalizedChapter = normalizeChapterStr(chapter);
+  const currentChapterNum = parseChapterNumber(chapter);
+
+  // Find index by comparing floats
   const currentIndex = chapters.findIndex(
-    (ch) => ch.numberStr === normalizedChapter
+    (ch) => ch.numberFloat === currentChapterNum
   );
 
-  // If currentIndex not found, don't show navigation
-  if (currentIndex === -1) return null;
+  if (currentIndex === -1) return null; // Chapter not found
 
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
 
+  const chapterUrl = (num) => `/read/${slug}/chapter-${num.toString().replace(".", "-")}`;
+
   return (
     <div className="chapter-navigation">
       {prevChapter ? (
-        <Link
-          to={`/read/${slug}/chapter-${prevChapter.numberStr.replace(".", "-")}`}
-          className="prev-chapter"
-        >
+        <Link to={chapterUrl(prevChapter.numberFloat)} className="prev-chapter">
           ← Previous Chapter
         </Link>
       ) : (
@@ -64,10 +64,7 @@ export default function ChapterNavigation() {
       )}
 
       {nextChapter ? (
-        <Link
-          to={`/read/${slug}/chapter-${nextChapter.numberStr.replace(".", "-")}`}
-          className="next-chapter"
-        >
+        <Link to={chapterUrl(nextChapter.numberFloat)} className="next-chapter">
           Next Chapter →
         </Link>
       ) : (
