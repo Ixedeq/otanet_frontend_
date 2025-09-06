@@ -15,10 +15,11 @@ export default function ChapterPage() {
   const [loadingPages, setLoadingPages] = useState(true);
   const [horizontalScroll, setHorizontalScroll] = useState(false);
 
-  const [fullscreenIndex, setFullscreenIndex] = useState(null); // null = no fullscreen
+  const [fullscreenIndex, setFullscreenIndex] = useState(null);
   const startX = useRef(0);
   const startY = useRef(0);
   const dragOffset = useRef(0);
+  const [overlayTransform, setOverlayTransform] = useState(0);
 
   // Fetch pages
   useEffect(() => {
@@ -52,7 +53,7 @@ export default function ChapterPage() {
       ? chapters[currentIndex + 1]
       : null;
 
-  // Open fullscreen overlay
+  // Fullscreen handlers
   const openFullscreen = (index) => setFullscreenIndex(index);
   const closeFullscreen = () => setFullscreenIndex(null);
 
@@ -65,25 +66,39 @@ export default function ChapterPage() {
     );
   };
 
-  // Touch handling for swipe in fullscreen
   const handleTouchStart = (e) => {
     startX.current = e.touches[0].clientX;
     startY.current = e.touches[0].clientY;
     dragOffset.current = 0;
   };
+
   const handleTouchMove = (e) => {
     const deltaX = e.touches[0].clientX - startX.current;
     const deltaY = e.touches[0].clientY - startY.current;
-    dragOffset.current = horizontalScroll ? deltaX : deltaY;
+
+    if (horizontalScroll) dragOffset.current = deltaX;
+    else dragOffset.current = deltaY;
+
+    setOverlayTransform(dragOffset.current);
   };
+
   const handleTouchEnd = () => {
     if (horizontalScroll) {
       if (dragOffset.current < -50) handleNext();
       else if (dragOffset.current > 50) handlePrev();
     } else {
-      if (dragOffset.current > 100) closeFullscreen(); // slide down to close
+      if (dragOffset.current < -50) {
+        // Swipe up → next page
+        if (fullscreenIndex < pages.length - 1) handleNext();
+      } else if (dragOffset.current > 50) {
+        // Swipe down → previous page or close
+        if (fullscreenIndex > 0) handlePrev();
+        else closeFullscreen();
+      }
     }
+
     dragOffset.current = 0;
+    setOverlayTransform(0); // smooth transition
   };
 
   return (
@@ -132,6 +147,12 @@ export default function ChapterPage() {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          style={{
+            transform: !horizontalScroll
+              ? `translateY(${overlayTransform}px)`
+              : "none",
+            transition: overlayTransform === 0 ? "transform 0.25s ease-out" : "none",
+          }}
         >
           <img
             src={pages[fullscreenIndex].src}
