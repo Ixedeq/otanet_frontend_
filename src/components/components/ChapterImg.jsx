@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import "../css/ChapterPage.css";
 
 export default function ChapterImg({ src, alt, vertical }) {
   const lastTap = useRef(0);
@@ -22,7 +23,7 @@ export default function ChapterImg({ src, alt, vertical }) {
     setFullscreen(true);
   };
 
-  // Slide-down to close in vertical mode
+  // Slide down to close in vertical fullscreen
   const handleTouchStart = (e) => {
     startY.current = e.touches[0].clientY;
     dragOffset.current = 0;
@@ -35,7 +36,7 @@ export default function ChapterImg({ src, alt, vertical }) {
   };
 
   const handleTouchEnd = () => {
-    if (transformY > 100) setFullscreen(false); // slide down to close
+    if (transformY > 100) setFullscreen(false); // slide down threshold
     setTransformY(0);
   };
 
