@@ -79,9 +79,9 @@ export default function ChapterPage() {
       </div>
 
       <ChapterNavigation
-        prevChapter={prevChapter}
-        nextChapter={nextChapter}
         slug={slug}
+        chapters={chapters}
+        currentChapterNumberStr={chapterNumberStr}
       />
 
       {/* Fullscreen Overlay */}

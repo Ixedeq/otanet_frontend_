@@ -1,8 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-export default function ChapterNavigation({ slug, chapters, currentChapterNumberStr }) {
-  // Find the index of the current chapter
+export default function ChapterNavigation({ chapters, currentChapterNumberStr, slug }) {
   const currentIndex = chapters.findIndex(
     (ch) => ch.numberStr === currentChapterNumberStr
   );
