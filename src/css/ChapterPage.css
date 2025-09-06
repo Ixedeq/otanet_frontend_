@@ -1,3 +1,6 @@
+/* ============================= */
+/* Chapter Page Base Styles */
+/* ============================= */
 .chapter-page {
   display: flex;
   flex-direction: column;
@@ -31,7 +34,23 @@
   text-align: center;
 }
 
-/* Chapter Images - Vertical Scroll (Default) */
+/* Toggle Button */
+.toggle-scroll-btn {
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
+  color: #fff;
+  transition: opacity 0.3s;
+}
+.toggle-scroll-btn:hover { opacity: 0.85; }
+
+/* ============================= */
+/* Chapter Images - Vertical Mode */
+/* ============================= */
 .chapter-images {
   display: flex;
   flex-direction: column;
@@ -42,7 +61,6 @@
 }
 
 .chapter-img-wrapper {
-  display: block;
   width: 100%;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -55,10 +73,11 @@
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
   background: #000;
-  scroll-behavior: smooth; /* smooth scroll when used in vertical mode */
 }
 
-/* Horizontal Scroll */
+/* ============================= */
+/* Chapter Images - Horizontal Mode */
+/* ============================= */
 .chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
@@ -83,59 +102,32 @@
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
 }
 
-/* Toggle button */
-.toggle-scroll-btn {
-  margin-bottom: 1rem;
-  padding: 0.5rem 1rem;
-  font-weight: bold;
-  border-radius: 0.5rem;
-  border: none;
-  cursor: pointer;
-  background: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
-  color: #fff;
-  transition: opacity 0.3s;
-}
-.toggle-scroll-btn:hover { opacity: 0.85; }
-
-/* Navigation Buttons */
-.chapter-navigation {
+/* ============================= */
+/* Fullscreen Horizontal Mode */
+/* ============================= */
+.fullscreen-overlay.horizontal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
   display: flex;
-  justify-content: space-between;
-  width: 100%;
-  max-width: 800px;
-  margin-top: 2rem;
-  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  cursor: zoom-out;
 }
 
-.chapter-navigation a,
-.chapter-navigation span {
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  text-decoration: none;
-  font-weight: bold;
-  text-align: center;
-  flex: 1;
-  transition: background 0.3s, color 0.3s;
-}
-
-.prev-chapter { background-color: #3498db; color: #fff; }
-.prev-chapter:hover { background-color: #2980b9; }
-.next-chapter { background-color: #2ecc71; color: #fff; }
-.next-chapter:hover { background-color: #27ae60; }
-.disabled { background-color: #7f8c8d; color: #bdc3c7; cursor: not-allowed; }
-
-/* Mobile adjustments */
-@media (max-width: 600px) {
-  .chapter-images { width: 100%; gap: 1rem; }
-  .chapter-images .chapter-img { max-height: 80vh; }
-  .chapter-images.horizontal-scroll .chapter-img { flex: 0 0 90%; max-height: 75vh; }
+.fullscreen-overlay.horizontal .fullscreen-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 /* ============================= */
-/* Fullscreen Vertical Mode (Webtoon Feel) */
+/* Fullscreen Vertical Mode - Webtoon */
 /* ============================= */
-
-.fullscreen-overlay {
+.fullscreen-overlay.vertical {
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -143,8 +135,8 @@
   display: flex;
   justify-content: center;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch; /* smooth native scroll on iOS */
-  scroll-behavior: smooth; /* smooth scroll on desktop browsers */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
   padding: 2rem 0;
   cursor: zoom-out;
 }
@@ -167,9 +159,11 @@
   -webkit-user-drag: none;
 }
 
-/* Optional: page counter in vertical overlay */
+/* ============================= */
+/* Fullscreen Page Counter & Nav Buttons */
+/* ============================= */
 .fullscreen-page-counter {
-  position: fixed;
+  position: absolute;
   top: 1rem;
   left: 50%;
   transform: translateX(-50%);
@@ -179,4 +173,47 @@
   background: rgba(0,0,0,0.4);
   padding: 0.25rem 0.75rem;
   border-radius: 0.5rem;
+}
+
+.fullscreen-prev,
+.fullscreen-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 2rem;
+  background: rgba(0,0,0,0.3);
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 0.5rem;
+}
+
+.fullscreen-prev { left: 1rem; }
+.fullscreen-next { right: 1rem; }
+
+.fullscreen-prev:hover,
+.fullscreen-next:hover {
+  background: rgba(0,0,0,0.6);
+}
+
+/* ============================= */
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .chapter-images {
+    width: 100%;
+    gap: 1rem;
+  }
+
+  .chapter-images .chapter-img {
+    max-height: 80vh;
+  }
+
+  .chapter-images.horizontal-scroll .chapter-img-wrapper {
+    flex: 0 0 90%;
+  }
+
+  .chapter-images.horizontal-scroll .chapter-img {
+    max-height: 75vh;
+  }
 }
