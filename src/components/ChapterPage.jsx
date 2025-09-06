@@ -87,18 +87,12 @@ export default function ChapterPage() {
       if (dragOffset.current < -50) handleNext();
       else if (dragOffset.current > 50) handlePrev();
     } else {
-      if (dragOffset.current < -50) {
-        // Swipe up → next page
-        if (fullscreenIndex < pages.length - 1) handleNext();
-      } else if (dragOffset.current > 50) {
-        // Swipe down → previous page or close
-        if (fullscreenIndex > 0) handlePrev();
-        else closeFullscreen();
-      }
+      if (dragOffset.current < -50) handleNext(); // swipe up → next page
+      else if (dragOffset.current > 50) handlePrev(); // swipe down → prev page
     }
 
     dragOffset.current = 0;
-    setOverlayTransform(0); // smooth transition
+    setOverlayTransform(0);
   };
 
   return (
@@ -141,35 +135,44 @@ export default function ChapterPage() {
 
       {/* Fullscreen Overlay */}
       {fullscreenIndex !== null && (
-      <div
-        className={`fullscreen-overlay ${!horizontalScroll ? "vertical" : ""}`}
-        onClick={closeFullscreen}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
         <div
-          className="fullscreen-vertical-wrapper"
-          style={{
-            transform: !horizontalScroll
-              ? `translateY(-${fullscreenIndex * 100}%)`
-              : "none",
-            transition: `transform 0.25s ease-out`,
-          }}
-          onClick={(e) => e.stopPropagation()}
+          className={`fullscreen-overlay ${
+            !horizontalScroll ? "vertical" : ""
+          }`}
+          onClick={closeFullscreen}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
-          {pages.map((page) => (
+          {!horizontalScroll ? (
+            <div
+              className="fullscreen-vertical-wrapper"
+              style={{
+                transform: `translateY(-${fullscreenIndex * 100}%)`,
+                transition: `transform 0.25s ease-out`,
+              }}
+            >
+              {pages.map((page) => (
+                <img
+                  key={page.key}
+                  src={page.src}
+                  alt={`Page ${page.key}`}
+                  className="fullscreen-img"
+                  draggable={false}
+                />
+              ))}
+            </div>
+          ) : (
             <img
-              key={page.key}
-              src={page.src}
-              alt={`Page ${page.key}`}
+              src={pages[fullscreenIndex].src}
+              alt={`Page ${pages[fullscreenIndex].key}`}
               className="fullscreen-img"
               draggable={false}
+              onClick={(e) => e.stopPropagation()}
             />
-          ))}
+          )}
         </div>
-      </div>
-    )}
+      )}
     </div>
   );
 }
