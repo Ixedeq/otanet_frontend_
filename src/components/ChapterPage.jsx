@@ -1,19 +1,63 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import "../css/ChapterPage.css";
 import API_BASE from "./Config";
+
+function ChapterImg({ src, alt }) {
+  const imgRef = useRef(null);
+  const lastTap = useRef(0);
+
+  const toggleFullscreen = () => {
+    const el = imgRef.current;
+    if (!el) return;
+
+    if (!document.fullscreenElement) {
+      if (el.requestFullscreen) {
+        el.requestFullscreen();
+      } else if (el.webkitRequestFullscreen) {
+        // iOS Safari fallback
+        el.webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      // Double tap detected
+      toggleFullscreen();
+    }
+    lastTap.current = now;
+  };
+
+  return (
+    <img
+      ref={imgRef}
+      src={src}
+      alt={alt}
+      className="chapter-img"
+      onDoubleClick={toggleFullscreen} // desktop double click
+      onTouchEnd={handleTouchEnd}      // mobile double tap
+    />
+  );
+}
 
 export default function ChapterPage() {
   const [pages, setPages] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
-  const [horizontalScroll, setHorizontalScroll] = useState(null); // null = default vertical
+  const [horizontalScroll, setHorizontalScroll] = useState(null);
   const { slug, chapter } = useParams();
 
   const chapterKey = chapter.replace("-", "_");
   const chapterNumberStr = chapter.replace("-", ".");
 
-  // Fetch pages for current chapter
   useEffect(() => {
     setLoadingPages(true);
     const fetchPages = async () => {
@@ -33,7 +77,6 @@ export default function ChapterPage() {
     fetchPages();
   }, [slug, chapterKey]);
 
-  // Fetch all chapters
   useEffect(() => {
     const fetchChapters = async () => {
       try {
@@ -50,7 +93,6 @@ export default function ChapterPage() {
     fetchChapters();
   }, [slug]);
 
-  // Determine previous and next chapters
   const currentIndex = chapters.findIndex(
     (ch) => ch.numberStr === chapterNumberStr
   );
@@ -60,7 +102,6 @@ export default function ChapterPage() {
       ? chapters[currentIndex + 1]
       : null;
 
-  // Determine final scroll mode (default vertical)
   const useHorizontalScroll =
     horizontalScroll !== null ? horizontalScroll : false;
 
@@ -69,7 +110,6 @@ export default function ChapterPage() {
       <Link to="/" className="back-link">← Back to Home</Link>
       <h1 className="chapter-title">{slug}</h1>
 
-      {/* Toggle button */}
       <button
         className="toggle-scroll-btn"
         onClick={() => setHorizontalScroll((prev) => !prev)}
@@ -85,12 +125,7 @@ export default function ChapterPage() {
         }`}
       >
         {pages.map(({ src, key }) => (
-          <img
-            key={key}
-            src={src}
-            className="chapter-img"
-            alt={`Page ${key}`}
-          />
+          <ChapterImg key={key} src={src} alt={`Page ${key}`} />
         ))}
       </div>
 
