@@ -167,16 +167,17 @@
   -webkit-user-drag: none;
 }
 
-/* Optional: page counter in vertical overlay */
-.fullscreen-page-counter {
-  position: fixed;
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #fff;
-  font-size: 1.25rem;
-  font-weight: bold;
-  background: rgba(0,0,0,0.4);
-  padding: 0.25rem 0.75rem;
-  border-radius: 0.5rem;
+.chapter-images.horizontal-scroll .chapter-img-wrapper {
+  flex: 0 0 85%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  scroll-snap-align: center;
 }
+
+.chapter-images.horizontal-scroll .chapter-img {
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
