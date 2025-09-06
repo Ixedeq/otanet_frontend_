@@ -44,11 +44,10 @@
   margin: 0 auto;
 }
 
-/* Wrapper for fullscreen/tap handling */
 .chapter-img-wrapper {
   display: block;
   width: 100%;
-  touch-action: manipulation;              /* prevent iOS gesture interference */
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -59,10 +58,10 @@
   object-fit: contain;
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
-  background: #000; /* keeps letterboxing black */
+  background: #000;
 }
 
-/* Horizontal scroll for mobile & optional toggle */
+/* Horizontal scroll */
 .chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
@@ -71,11 +70,18 @@
   padding: 0 1rem;
 }
 
-.chapter-images.horizontal-scroll .chapter-img {
+.chapter-images.horizontal-scroll .chapter-img-wrapper {
   flex: 0 0 85%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  scroll-snap-align: center;
+}
+
+.chapter-images.horizontal-scroll .chapter-img {
+  width: 100%;
   max-height: 70vh;
   object-fit: contain;
-  scroll-snap-align: center;
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
 }
@@ -151,7 +157,7 @@
   }
 
   .chapter-images .chapter-img {
-    max-height: 80vh; /* fit most of the screen without overflow */
+    max-height: 80vh;
   }
 
   .chapter-images.horizontal-scroll .chapter-img {
@@ -164,7 +170,6 @@
 /* Fullscreen & iOS overlay mode */
 /* ============================= */
 
-/* Native fullscreen (desktop + some mobile) */
 .chapter-img-wrapper:fullscreen,
 .chapter-img-wrapper:-webkit-full-screen {
   width: 100%;
@@ -185,7 +190,7 @@
   background: black;
 }
 
-/* Overlay fallback (works everywhere, esp. iOS) */
+/* Overlay fallback (works everywhere) */
 .fullscreen-overlay {
   position: fixed;
   inset: 0;
@@ -195,89 +200,9 @@
   justify-content: center;
   background: #000;
   cursor: zoom-out;
-  animation: fadeIn 0.25s ease-in-out;
-}
-
-.fullscreen-overlay .fullscreen-img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-/* Fade animation for smooth open */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Horizontal scroll for mobile & optional toggle */
-.chapter-images.horizontal-scroll {
-  flex-direction: row;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  gap: 1rem;
-  padding: 0 1rem;
-}
-
-/* Wrapper must have a fixed flex-basis */
-.chapter-images.horizontal-scroll .chapter-img-wrapper {
-  flex: 0 0 85%;         /* each "page" takes 85% of the viewport width */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  scroll-snap-align: center;
-}
-
-/* Image inside wrapper */
-.chapter-images.horizontal-scroll .chapter-img {
-  width: 100%;
-  max-height: 70vh;
-  object-fit: contain;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
-}
-
-.fullscreen-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000;
-  cursor: zoom-out;
-  animation: fadeIn 0.25s ease-in-out;
-}
-
-.fullscreen-overlay .fullscreen-wrapper {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.fullscreen-overlay .fullscreen-img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.fullscreen-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000;
-  cursor: zoom-out;
-  animation: fadeIn 0.25s ease-in-out;
-  touch-action: none; /* disables native scrolling during drag */
+  touch-action: none;
   will-change: transform;
+  transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth slide */
 }
 
 .fullscreen-overlay .fullscreen-wrapper {
@@ -295,33 +220,6 @@
   -webkit-user-select: none;
   user-select: none;
   -webkit-user-drag: none;
-}
-
-.fullscreen-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #000;
-  touch-action: none; /* disables native scrolling during drag */
-  will-change: transform;
-  cursor: zoom-out;
-}
-
-.fullscreen-wrapper {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.fullscreen-img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
 }
 
 .fullscreen-page-counter {
@@ -357,4 +255,10 @@
 .fullscreen-prev:hover,
 .fullscreen-next:hover {
   background: rgba(0,0,0,0.6);
+}
+
+/* Smooth fade-in */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
