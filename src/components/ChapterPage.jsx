@@ -14,7 +14,8 @@ export default function ChapterPage() {
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
   const [horizontalScroll, setHorizontalScroll] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
+
+  const [fullscreenIndex, setFullscreenIndex] = useState(null);
 
   // Fetch pages
   useEffect(() => {
@@ -48,11 +49,12 @@ export default function ChapterPage() {
       ? chapters[currentIndex + 1]
       : null;
 
+  const openFullscreen = (index) => setFullscreenIndex(index);
+  const closeFullscreen = () => setFullscreenIndex(null);
+
   return (
     <div className="chapter-page">
-      <Link to="/" className="back-link">
-        ← Back to Home
-      </Link>
+      <Link to="/" className="back-link">← Back to Home</Link>
       <h1 className="chapter-title">{slug}</h1>
 
       <button
@@ -64,45 +66,71 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      {!fullscreen && (
-        <div
-          className={`chapter-images ${
-            horizontalScroll ? "horizontal-scroll" : ""
-          }`}
-        >
-          {pages.map((page, idx) => (
-            <ChapterImg
-              key={page.key}
-              src={page.src}
-              alt={`Page ${page.key}`}
-              index={idx}
-              onOpenFullscreen={() => setFullscreen(true)}
-            />
-          ))}
-        </div>
-      )}
-
-      {fullscreen && !horizontalScroll && (
-        <div className="fullscreen-overlay" onClick={() => setFullscreen(false)}>
-          <div className="vertical-images-container">
-            {pages.map((page) => (
-              <img
-                key={page.key}
-                src={page.src}
-                alt={`Page ${page.key}`}
-                className="fullscreen-img"
-                draggable={false}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <div className={`chapter-images ${horizontalScroll ? "horizontal-scroll" : ""}`}>
+        {pages.map((page, idx) => (
+          <ChapterImg
+            key={page.key}
+            src={page.src}
+            alt={`Page ${page.key}`}
+            index={idx}
+            onOpenFullscreen={() => openFullscreen(idx)}
+          />
+        ))}
+      </div>
 
       <ChapterNavigation
         prevChapter={prevChapter}
         nextChapter={nextChapter}
         slug={slug}
       />
+
+      {/* Fullscreen Overlay */}
+      {fullscreenIndex !== null && (
+        <>
+          {horizontalScroll ? (
+            // Horizontal fullscreen
+            <div className="fullscreen-overlay horizontal" onClick={closeFullscreen}>
+              <div className="horizontal-images-wrapper">
+                {pages.map((page, idx) => (
+                  <div
+                    key={page.key}
+                    className="chapter-img-wrapper"
+                    style={{
+                      flex: "0 0 85%",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      scrollSnapAlign: "center",
+                    }}
+                  >
+                    <img
+                      src={page.src}
+                      alt={`Page ${page.key}`}
+                      className="fullscreen-img"
+                      draggable={false}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            // Vertical fullscreen (stacked Webtoon)
+            <div className="fullscreen-overlay" onClick={closeFullscreen}>
+              <div className="vertical-images-container">
+                {pages.map((page) => (
+                  <img
+                    key={page.key}
+                    src={page.src}
+                    alt={`Page ${page.key}`}
+                    className="fullscreen-img"
+                    draggable={false}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

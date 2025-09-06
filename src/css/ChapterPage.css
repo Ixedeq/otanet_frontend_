@@ -225,3 +225,36 @@
 .chapter-images.horizontal-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
+.fullscreen-overlay.horizontal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding: 2rem 0;
+  cursor: zoom-out;
+}
+
+.fullscreen-overlay.horizontal .horizontal-images-wrapper {
+  display: flex;
+  gap: 1rem;
+  padding: 0 1rem;
+}
+
+.fullscreen-overlay.horizontal .fullscreen-img {
+  width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
+  user-select: none;
+  -webkit-user-drag: none;
+}
