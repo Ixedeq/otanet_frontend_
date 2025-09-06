@@ -16,10 +16,10 @@ export default function ChapterPage() {
   const [horizontalScroll, setHorizontalScroll] = useState(false);
 
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
-  const [animating, setAnimating] = useState(false);
-  const overlayRef = useRef(null);
+  const startX = useRef(0);
   const startY = useRef(0);
   const dragOffset = useRef(0);
+  const [overlayTransform, setOverlayTransform] = useState(0);
 
   // Fetch pages
   useEffect(() => {
@@ -58,65 +58,41 @@ export default function ChapterPage() {
   const closeFullscreen = () => setFullscreenIndex(null);
 
   const handlePrev = () => {
-    if (fullscreenIndex > 0) setFullscreenIndex(fullscreenIndex - 1);
+    setFullscreenIndex((prev) => (prev > 0 ? prev - 1 : prev));
   };
   const handleNext = () => {
-    if (fullscreenIndex < pages.length - 1) setFullscreenIndex(fullscreenIndex + 1);
+    setFullscreenIndex((prev) =>
+      prev < pages.length - 1 ? prev + 1 : prev
+    );
   };
 
-  // Vertical swipe handlers
   const handleTouchStart = (e) => {
+    startX.current = e.touches[0].clientX;
     startY.current = e.touches[0].clientY;
     dragOffset.current = 0;
   };
 
   const handleTouchMove = (e) => {
-    if (horizontalScroll) return;
+    const deltaX = e.touches[0].clientX - startX.current;
     const deltaY = e.touches[0].clientY - startY.current;
-    dragOffset.current = deltaY;
-    if (overlayRef.current) {
-      overlayRef.current.style.transform = `translateY(${deltaY}px)`;
-      overlayRef.current.style.transition = "none";
-    }
+
+    if (horizontalScroll) dragOffset.current = deltaX;
+    else dragOffset.current = deltaY;
+
+    setOverlayTransform(dragOffset.current);
   };
 
   const handleTouchEnd = () => {
-    if (horizontalScroll) return;
-    const threshold = 100; // swipe distance to change page
-    if (!overlayRef.current) return;
-
-    if (dragOffset.current < -threshold && fullscreenIndex < pages.length - 1) {
-      // Swipe up → next page
-      setAnimating(true);
-      overlayRef.current.style.transform = `translateY(-100%)`;
-      overlayRef.current.style.transition = "transform 0.3s ease-out";
-      setTimeout(() => {
-        handleNext();
-        overlayRef.current.style.transition = "none";
-        overlayRef.current.style.transform = "translateY(0)";
-        setAnimating(false);
-      }, 300);
-    } else if (dragOffset.current > threshold && fullscreenIndex > 0) {
-      // Swipe down → previous page
-      setAnimating(true);
-      overlayRef.current.style.transform = `translateY(100%)`;
-      overlayRef.current.style.transition = "transform 0.3s ease-out";
-      setTimeout(() => {
-        handlePrev();
-        overlayRef.current.style.transition = "none";
-        overlayRef.current.style.transform = "translateY(0)";
-        setAnimating(false);
-      }, 300);
-    } else if (dragOffset.current > threshold && fullscreenIndex === 0) {
-      // Swipe down on first page → close
-      closeFullscreen();
+    if (horizontalScroll) {
+      if (dragOffset.current < -50) handleNext();
+      else if (dragOffset.current > 50) handlePrev();
     } else {
-      // Reset if swipe not enough
-      overlayRef.current.style.transform = "translateY(0)";
-      overlayRef.current.style.transition = "transform 0.2s ease-out";
+      if (dragOffset.current < -50 && fullscreenIndex < pages.length - 1) handleNext();
+      else if (dragOffset.current > 50 && fullscreenIndex > 0) handlePrev();
     }
 
     dragOffset.current = 0;
+    setOverlayTransform(0);
   };
 
   return (
@@ -160,20 +136,46 @@ export default function ChapterPage() {
       {/* Fullscreen Overlay */}
       {fullscreenIndex !== null && (
         <div
-          className="fullscreen-overlay"
+          className={`fullscreen-overlay ${
+            horizontalScroll ? "" : "vertical-swipe"
+          }`}
           onClick={closeFullscreen}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <img
-            ref={overlayRef}
-            src={pages[fullscreenIndex].src}
-            alt={`Page ${pages[fullscreenIndex].key}`}
-            className="fullscreen-img"
-            draggable={false}
-            onClick={(e) => e.stopPropagation()}
-          />
+          {!horizontalScroll && (
+            <div
+              className="vertical-images-container"
+              style={{
+                transform: `translateY(${
+                  -fullscreenIndex * window.innerHeight + overlayTransform
+                }px)`,
+                transition: overlayTransform === 0 ? "transform 0.25s ease-out" : "none",
+              }}
+            >
+              {pages.map((page) => (
+                <img
+                  key={page.key}
+                  src={page.src}
+                  alt={`Page ${page.key}`}
+                  className="fullscreen-img"
+                  draggable={false}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ))}
+            </div>
+          )}
+
+          {horizontalScroll && (
+            <img
+              src={pages[fullscreenIndex].src}
+              alt={`Page ${pages[fullscreenIndex].key}`}
+              className="fullscreen-img"
+              draggable={false}
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
         </div>
       )}
     </div>
