@@ -10,7 +10,7 @@
   font-family: sans-serif;
 }
 
-/* Back to Home Link */
+/* Back link */
 .back-link {
   align-self: flex-start;
   margin-bottom: 1rem;
@@ -22,10 +22,7 @@
   font-weight: bold;
   transition: background 0.3s;
 }
-
-.back-link:hover {
-  background-color: #c32f64;
-}
+.back-link:hover { background-color: #c32f64; }
 
 /* Chapter Title */
 .chapter-title {
@@ -34,7 +31,7 @@
   text-align: center;
 }
 
-/* Chapter Images - Vertical Scroll (Default) */
+/* Chapter Images - vertical scroll */
 .chapter-images {
   display: flex;
   flex-direction: column;
@@ -45,23 +42,21 @@
 }
 
 .chapter-img-wrapper {
-  display: block;
   width: 100%;
-  touch-action: manipulation;
+  touch-action: manipulation; /* prevent iOS gesture interference */
   -webkit-tap-highlight-color: transparent;
 }
 
 .chapter-images .chapter-img {
   width: 100%;
   max-height: 85vh;
-  height: auto;
   object-fit: contain;
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
-  background: #000;
+  background: #000; /* letterboxing */
 }
 
-/* Horizontal scroll */
+/* Horizontal scroll mode */
 .chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
@@ -98,12 +93,9 @@
   color: #fff;
   transition: opacity 0.3s;
 }
+.toggle-scroll-btn:hover { opacity: 0.85; }
 
-.toggle-scroll-btn:hover {
-  opacity: 0.85;
-}
-
-/* Navigation Buttons */
+/* Chapter navigation */
 .chapter-navigation {
   display: flex;
   justify-content: space-between;
@@ -128,21 +120,14 @@
   background-color: #3498db;
   color: #fff;
 }
-
-.prev-chapter:hover {
-  background-color: #2980b9;
-}
+.prev-chapter:hover { background-color: #2980b9; }
 
 .next-chapter {
   background-color: #2ecc71;
   color: #fff;
 }
+.next-chapter:hover { background-color: #27ae60; }
 
-.next-chapter:hover {
-  background-color: #27ae60;
-}
-
-/* Disabled buttons */
 .disabled {
   background-color: #7f8c8d;
   color: #bdc3c7;
@@ -151,77 +136,42 @@
 
 /* Mobile adjustments */
 @media (max-width: 600px) {
-  .chapter-images {
-    width: 100%;
-    gap: 1rem;
-  }
-
-  .chapter-images .chapter-img {
-    max-height: 80vh;
-  }
-
-  .chapter-images.horizontal-scroll .chapter-img {
-    flex: 0 0 90%;
-    max-height: 75vh;
-  }
+  .chapter-images { width: 100%; gap: 1rem; }
+  .chapter-images .chapter-img { max-height: 80vh; }
+  .chapter-images.horizontal-scroll .chapter-img { flex: 0 0 90%; max-height: 75vh; }
 }
 
 /* ============================= */
-/* Fullscreen & iOS overlay mode */
+/* Fullscreen overlay (vertical & horizontal) */
 /* ============================= */
 
-.chapter-img-wrapper:fullscreen,
-.chapter-img-wrapper:-webkit-full-screen {
-  width: 100%;
-  height: 100%;
-  background: black;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.chapter-img-wrapper:fullscreen .chapter-img,
-.chapter-img-wrapper:-webkit-full-screen .chapter-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 0;
-  box-shadow: none;
-  background: black;
-}
-
-/* Overlay fallback (works everywhere) */
 .fullscreen-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   background: #000;
   cursor: zoom-out;
-  touch-action: none;
+  touch-action: none;       /* disables native scrolling during drag */
   will-change: transform;
-  transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth slide */
+  overflow: hidden;
 }
 
-.fullscreen-overlay .fullscreen-wrapper {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.fullscreen-overlay .fullscreen-img {
+.fullscreen-img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
   -webkit-user-select: none;
   user-select: none;
   -webkit-user-drag: none;
+  border-radius: 0;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  transition: transform 0.25s ease-out;
 }
 
+/* Page counter */
 .fullscreen-page-counter {
   position: absolute;
   top: 1rem;
@@ -235,6 +185,7 @@
   border-radius: 0.5rem;
 }
 
+/* Prev/Next buttons for horizontal */
 .fullscreen-prev,
 .fullscreen-next {
   position: absolute;
@@ -247,99 +198,35 @@
   padding: 0.5rem 1rem;
   cursor: pointer;
   border-radius: 0.5rem;
+  transition: background 0.2s;
 }
-
+.fullscreen-prev:hover,
+.fullscreen-next:hover { background: rgba(0,0,0,0.6); }
 .fullscreen-prev { left: 1rem; }
 .fullscreen-next { right: 1rem; }
 
-.fullscreen-prev:hover,
-.fullscreen-next:hover {
-  background: rgba(0,0,0,0.6);
-}
-
-/* Smooth fade-in */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.fullscreen-overlay.vertical {
-  flex-direction: column;
-  overflow: hidden; /* hide overflowing pages */
-}
-
-.fullscreen-vertical-wrapper {
+/* ============================= */
+/* Vertical fullscreen swipe styling (webtoon feel) */
+/* ============================= */
+.fullscreen-overlay.vertical-swipe {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
 }
 
-.fullscreen-vertical-wrapper .fullscreen-img {
+.fullscreen-overlay.vertical-swipe .fullscreen-img {
   width: 100%;
-  height: 100%;
-  object-fit: contain;
-  flex-shrink: 0; /* ensure each image fills viewport */
-}
-
-/* Vertical Webtoon-style scroll */
-.chapter-images.vertical-scroll {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-  max-width: 800px;
+  max-height: 100vh;
   margin: 0 auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch; /* smooth momentum on iOS */
-  scroll-behavior: smooth;           /* smooth programmatic scroll */
+  transform: translateY(0);
+  transition: transform 0.25s ease-out;
 }
 
-.chapter-images.vertical-scroll .chapter-img-wrapper {
-  width: 100%;
-}
-
-.chapter-images.vertical-scroll .chapter-img {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
-  background: #000;
-}
-
-/* Fullscreen overlay for vertical scroll */
-.fullscreen-overlay.vertical {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  background: #000;
-  cursor: zoom-out;
-  touch-action: pan-y;
-}
-
-.fullscreen-overlay.vertical .fullscreen-img {
-  width: 100%;
-  max-width: 100%;
-  object-fit: contain;
-  margin-bottom: 1rem;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-/* Smooth fade in */
+/* subtle fade-in for overlay */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
-.fullscreen-overlay {
-  animation: fadeIn 0.25s ease-in-out;
-}
-
-
-
+.fullscreen-overlay { animation: fadeIn 0.25s ease-in-out; }
