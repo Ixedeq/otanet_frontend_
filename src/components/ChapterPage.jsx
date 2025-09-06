@@ -5,7 +5,8 @@ import API_BASE from "./Config";
 
 function ChapterImg({ src, alt }) {
   const imgRef = useRef(null);
-  const lastTap = useRef(0);
+  const tapTimeout = useRef(null);
+  const tapCount = useRef(0);
 
   const toggleFullscreen = () => {
     const el = imgRef.current;
@@ -15,25 +16,32 @@ function ChapterImg({ src, alt }) {
       if (el.requestFullscreen) {
         el.requestFullscreen();
       } else if (el.webkitRequestFullscreen) {
-        // iOS Safari fallback
-        el.webkitRequestFullscreen();
+        el.webkitRequestFullscreen(); // Safari
       }
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
       } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
+        document.webkitExitFullscreen(); // Safari
       }
     }
   };
 
-  const handleTouchEnd = () => {
-    const now = Date.now();
-    if (now - lastTap.current < 300) {
-      // Double tap detected
+  const handleClick = () => {
+    tapCount.current += 1;
+
+    if (tapCount.current === 2) {
+      // double tap / double click detected
       toggleFullscreen();
+      tapCount.current = 0;
+      clearTimeout(tapTimeout.current);
+      return;
     }
-    lastTap.current = now;
+
+    // reset after short delay
+    tapTimeout.current = setTimeout(() => {
+      tapCount.current = 0;
+    }, 300);
   };
 
   return (
@@ -42,11 +50,11 @@ function ChapterImg({ src, alt }) {
       src={src}
       alt={alt}
       className="chapter-img"
-      onDoubleClick={toggleFullscreen} // desktop double click
-      onTouchEnd={handleTouchEnd}      // mobile double tap
+      onClick={handleClick} // works for tap & click
     />
   );
 }
+
 
 export default function ChapterPage() {
   const [pages, setPages] = useState([]);
