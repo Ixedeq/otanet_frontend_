@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import ChapterImg from "./components/ChapterImg";
 import ChapterNavigation from "./components/ChapterNavigation";
@@ -15,13 +15,18 @@ export default function ChapterPage() {
   const [loadingPages, setLoadingPages] = useState(true);
   const [horizontalScroll, setHorizontalScroll] = useState(false);
 
+  const [fullscreenIndex, setFullscreenIndex] = useState(null); // null = no fullscreen
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const dragOffset = useRef(0);
+
   // Fetch pages
   useEffect(() => {
     setLoadingPages(true);
     fetch(`${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`)
       .then((res) => res.json())
-      .then((data) => setPages(data))
-      .catch((err) => console.error(err))
+      .then(setPages)
+      .catch(console.error)
       .finally(() => setLoadingPages(false));
   }, [slug, chapterKey]);
 
@@ -35,7 +40,7 @@ export default function ChapterPage() {
           .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
         setChapters(sorted);
       })
-      .catch((err) => console.error(err));
+      .catch(console.error);
   }, [slug]);
 
   const currentIndex = chapters.findIndex(
@@ -46,6 +51,40 @@ export default function ChapterPage() {
     currentIndex >= 0 && currentIndex < chapters.length - 1
       ? chapters[currentIndex + 1]
       : null;
+
+  // Open fullscreen overlay
+  const openFullscreen = (index) => setFullscreenIndex(index);
+  const closeFullscreen = () => setFullscreenIndex(null);
+
+  const handlePrev = () => {
+    setFullscreenIndex((prev) => (prev > 0 ? prev - 1 : prev));
+  };
+  const handleNext = () => {
+    setFullscreenIndex((prev) =>
+      prev < pages.length - 1 ? prev + 1 : prev
+    );
+  };
+
+  // Touch handling for swipe in fullscreen
+  const handleTouchStart = (e) => {
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    dragOffset.current = 0;
+  };
+  const handleTouchMove = (e) => {
+    const deltaX = e.touches[0].clientX - startX.current;
+    const deltaY = e.touches[0].clientY - startY.current;
+    dragOffset.current = horizontalScroll ? deltaX : deltaY;
+  };
+  const handleTouchEnd = () => {
+    if (horizontalScroll) {
+      if (dragOffset.current < -50) handleNext();
+      else if (dragOffset.current > 50) handlePrev();
+    } else {
+      if (dragOffset.current > 100) closeFullscreen(); // slide down to close
+    }
+    dragOffset.current = 0;
+  };
 
   return (
     <div className="chapter-page">
@@ -68,12 +107,13 @@ export default function ChapterPage() {
           horizontalScroll ? "horizontal-scroll" : ""
         }`}
       >
-        {pages.map((page) => (
+        {pages.map((page, idx) => (
           <ChapterImg
             key={page.key}
             src={page.src}
             alt={`Page ${page.key}`}
-            vertical={!horizontalScroll}
+            index={idx}
+            onOpenFullscreen={openFullscreen}
           />
         ))}
       </div>
@@ -83,6 +123,25 @@ export default function ChapterPage() {
         nextChapter={nextChapter}
         slug={slug}
       />
+
+      {/* Fullscreen Overlay */}
+      {fullscreenIndex !== null && (
+        <div
+          className="fullscreen-overlay"
+          onClick={closeFullscreen}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <img
+            src={pages[fullscreenIndex].src}
+            alt={`Page ${pages[fullscreenIndex].key}`}
+            className="fullscreen-img"
+            draggable={false}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
