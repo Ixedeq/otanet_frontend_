@@ -104,10 +104,13 @@ function ChapterImg({ src, alt }) {
       </div>
 
       {overlayOpen && (
-        <div className="fullscreen-overlay" onClick={closeOverlay}>
+      <div className="fullscreen-overlay" onClick={closeOverlay}>
+        <div className="fullscreen-wrapper">
           <img src={src} alt={alt} className="fullscreen-img" draggable={false} />
         </div>
-      )}
+      </div>
+)}
+
     </>
   );
 }
