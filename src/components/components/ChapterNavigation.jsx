@@ -7,7 +7,6 @@ export default function ChapterNavigation() {
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Convert URL chapter string "1-5" → number 1.5
   const parseChapterNumber = (str) => parseFloat(str.replace(/-/g, "."));
 
   useEffect(() => {
@@ -17,11 +16,10 @@ export default function ChapterNavigation() {
         if (!res.ok) throw new Error("Chapters not found");
         const data = await res.json();
 
-        // Normalize chapters to numbers and sort ascending
         const sortedChapters = data
           .map((ch) => ({
             ...ch,
-            numberFloat: parseFloat(ch.number), // convert string/number to float
+            numberFloat: parseFloat(ch.number),
           }))
           .sort((a, b) => a.numberFloat - b.numberFloat);
 
@@ -36,22 +34,20 @@ export default function ChapterNavigation() {
     fetchChapters();
   }, [slug]);
 
-  if (loading || chapters.length === 0) return null;
-
   const currentChapterNum = parseChapterNumber(chapter);
-
-  // Find index by comparing floats
   const currentIndex = chapters.findIndex(
     (ch) => ch.numberFloat === currentChapterNum
   );
 
-  if (currentIndex === -1) return null; // Chapter not found
-
-  const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
+  const prevChapter =
+    !loading && currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
-    currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
+    !loading && currentIndex >= 0 && currentIndex < chapters.length - 1
+      ? chapters[currentIndex + 1]
+      : null;
 
-  const chapterUrl = (num) => `/read/${slug}/chapter-${num.toString().replace(".", "-")}`;
+  const chapterUrl = (num) =>
+    `/read/${slug}/chapter-${num.toString().replace(".", "-")}`;
 
   return (
     <div className="chapter-navigation">
