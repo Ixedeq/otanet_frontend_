@@ -1,49 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link, useParams } from "react-router-dom";
-import API_BASE from "../Config";
 
-export default function ChapterNavigation() {
+export default function ChapterNavigation({ chapters }) {
   const { slug, chapter } = useParams();
-  const [chapters, setChapters] = useState([]);
 
-  useEffect(() => {
-    const fetchChapters = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
-        if (!res.ok) throw new Error("Chapters not found");
-        const data = await res.json();
+  // Normalize chapter from URL: remove "chapter-" prefix and convert dashes to dots
+  const chapterNumberStr = chapter.replace("chapter-", "").replace(/-/g, ".");
 
-        // Sort chapters numerically
-        const sorted = data
-          .sort((a, b) => Number(a.number) - Number(b.number))
-          .map((ch) => ({
-            ...ch,
-            numberStr: ch.number.toString(),
-          }));
-
-        setChapters(sorted);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchChapters();
-  }, [slug]);
-
-  const currentIndex = chapters.findIndex((ch) => ch.numberStr === chapter);
+  // Find current chapter index
+  const currentIndex = chapters.findIndex(ch => ch.numberStr === chapterNumberStr);
 
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
-  const nextChapter =
-    currentIndex >= 0 && currentIndex < chapters.length - 1
-      ? chapters[currentIndex + 1]
-      : null;
-
-  const chapterUrl = (numStr) => `/read/${slug}/chapter-${numStr}`;
+  const nextChapter = currentIndex >= 0 && currentIndex < chapters.length - 1
+    ? chapters[currentIndex + 1]
+    : null;
 
   return (
     <div className="chapter-navigation">
       {prevChapter ? (
-        <Link to={chapterUrl(prevChapter.numberStr)} className="prev-chapter">
+        <Link
+          to={`/read/${slug}/chapter-${prevChapter.numberStr.replace(/\./g, "-")}`}
+          className="prev-chapter"
+        >
           ← Previous Chapter
         </Link>
       ) : (
@@ -51,7 +29,10 @@ export default function ChapterNavigation() {
       )}
 
       {nextChapter ? (
-        <Link to={chapterUrl(nextChapter.numberStr)} className="next-chapter">
+        <Link
+          to={`/read/${slug}/chapter-${nextChapter.numberStr.replace(/\./g, "-")}`}
+          className="next-chapter"
+        >
           Next Chapter →
         </Link>
       ) : (
