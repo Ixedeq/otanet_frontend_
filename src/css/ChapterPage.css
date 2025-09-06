@@ -323,3 +323,38 @@
   max-height: 100%;
   object-fit: contain;
 }
+
+.fullscreen-page-counter {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: bold;
+  background: rgba(0,0,0,0.4);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.fullscreen-prev,
+.fullscreen-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 2rem;
+  background: rgba(0,0,0,0.3);
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 0.5rem;
+}
+
+.fullscreen-prev { left: 1rem; }
+.fullscreen-next { right: 1rem; }
+
+.fullscreen-prev:hover,
+.fullscreen-next:hover {
+  background: rgba(0,0,0,0.6);
+}

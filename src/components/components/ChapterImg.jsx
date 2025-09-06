@@ -7,9 +7,11 @@ export default function ChapterImg({ src, alt, index, totalPages, onChangePage, 
   const dragOffset = useRef(0);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlayTransform, setOverlayTransform] = useState(0);
+  const [currentPage, setCurrentPage] = useState(index);
 
   const toggleOverlay = () => setOverlayOpen((prev) => !prev);
 
+  // Double-tap / double-click
   const onTouchEndImage = (e) => {
     const now = Date.now();
     if (now - lastTap.current <= 300) {
@@ -24,18 +26,38 @@ export default function ChapterImg({ src, alt, index, totalPages, onChangePage, 
     toggleOverlay();
   };
 
-  // Lock scroll when overlay is open
+  // Lock scroll on overlay
   useEffect(() => {
     if (!overlayOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (ev) => ev.key === "Escape" && setOverlayOpen(false);
+    const onKey = (ev) => {
+      if (ev.key === "Escape") setOverlayOpen(false);
+      if (ev.key === "ArrowLeft") handlePrev();
+      if (ev.key === "ArrowRight") handleNext();
+    };
     document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
       document.removeEventListener("keydown", onKey);
     };
   }, [overlayOpen]);
+
+  const handlePrev = () => {
+    if (currentPage > 0) {
+      const newPage = currentPage - 1;
+      setCurrentPage(newPage);
+      onChangePage(newPage);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages - 1) {
+      const newPage = currentPage + 1;
+      setCurrentPage(newPage);
+      onChangePage(newPage);
+    }
+  };
 
   return (
     <>
@@ -51,7 +73,9 @@ export default function ChapterImg({ src, alt, index, totalPages, onChangePage, 
         <div
           className="fullscreen-overlay"
           style={{
-            transform: vertical ? `translateY(${overlayTransform}px)` : `translateX(${overlayTransform}px)`,
+            transform: vertical
+              ? `translateY(${overlayTransform}px)`
+              : `translateX(${overlayTransform}px)`,
             transition: overlayTransform === 0 ? "transform 0.25s ease-out" : "none",
           }}
           onTouchStart={(e) => {
@@ -69,14 +93,27 @@ export default function ChapterImg({ src, alt, index, totalPages, onChangePage, 
             if (vertical) {
               if (dragOffset.current > 100) setOverlayOpen(false);
             } else {
-              if (dragOffset.current < -50) onChangePage(Math.min(index + 1, totalPages - 1));
-              else if (dragOffset.current > 50) onChangePage(Math.max(index - 1, 0));
+              if (dragOffset.current < -50) handleNext();
+              else if (dragOffset.current > 50) handlePrev();
             }
             setOverlayTransform(0);
           }}
         >
           <div className="fullscreen-wrapper">
             <img src={src} alt={alt} className="fullscreen-img" draggable={false} />
+
+            {/* Page Counter */}
+            <div className="fullscreen-page-counter">
+              {currentPage + 1} / {totalPages}
+            </div>
+
+            {/* Prev/Next Buttons */}
+            {!vertical && (
+              <>
+                <button className="fullscreen-prev" onClick={(e) => { e.stopPropagation(); handlePrev(); }}>◀</button>
+                <button className="fullscreen-next" onClick={(e) => { e.stopPropagation(); handleNext(); }}>▶</button>
+              </>
+            )}
           </div>
         </div>
       )}
