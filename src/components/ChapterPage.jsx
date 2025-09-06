@@ -141,28 +141,35 @@ export default function ChapterPage() {
 
       {/* Fullscreen Overlay */}
       {fullscreenIndex !== null && (
+      <div
+        className={`fullscreen-overlay ${!horizontalScroll ? "vertical" : ""}`}
+        onClick={closeFullscreen}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div
-          className="fullscreen-overlay"
-          onClick={closeFullscreen}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          className="fullscreen-vertical-wrapper"
           style={{
             transform: !horizontalScroll
-              ? `translateY(${overlayTransform}px)`
+              ? `translateY(-${fullscreenIndex * 100}%)`
               : "none",
-            transition: overlayTransform === 0 ? "transform 0.25s ease-out" : "none",
+            transition: `transform 0.25s ease-out`,
           }}
+          onClick={(e) => e.stopPropagation()}
         >
-          <img
-            src={pages[fullscreenIndex].src}
-            alt={`Page ${pages[fullscreenIndex].key}`}
-            className="fullscreen-img"
-            draggable={false}
-            onClick={(e) => e.stopPropagation()}
-          />
+          {pages.map((page) => (
+            <img
+              key={page.key}
+              src={page.src}
+              alt={`Page ${page.key}`}
+              className="fullscreen-img"
+              draggable={false}
+            />
+          ))}
         </div>
-      )}
+      </div>
+    )}
     </div>
   );
 }

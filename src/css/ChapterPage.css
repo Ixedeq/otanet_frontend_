@@ -262,3 +262,25 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+.fullscreen-overlay.vertical {
+  flex-direction: column;
+  overflow: hidden; /* hide overflowing pages */
+}
+
+.fullscreen-vertical-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.fullscreen-vertical-wrapper .fullscreen-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  flex-shrink: 0; /* ensure each image fills viewport */
+}
+
+
+
