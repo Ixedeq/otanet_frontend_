@@ -3,59 +3,116 @@ import { useParams, Link } from "react-router-dom";
 import "../css/ChapterPage.css";
 import API_BASE from "./Config";
 
+/* --- Single Page Image Component with Double-Tap Fullscreen --- */
 function ChapterImg({ src, alt }) {
-  const imgRef = useRef(null);
-  const tapTimeout = useRef(null);
-  const tapCount = useRef(0);
+  const wrapperRef = useRef(null);
+  const lastTap = useRef(0);
+  const [overlayOpen, setOverlayOpen] = useState(false);
 
-  const toggleFullscreen = () => {
-    const el = imgRef.current;
-    if (!el) return;
+  const isInNativeFullscreen = () =>
+    !!(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.webkitIsFullScreen
+    );
 
-    if (!document.fullscreenElement) {
+  const requestNativeFullscreen = async (el) => {
+    try {
       if (el.requestFullscreen) {
-        el.requestFullscreen();
-      } else if (el.webkitRequestFullscreen) {
-        el.webkitRequestFullscreen(); // Safari
+        await el.requestFullscreen();
+        return true;
       }
-    } else {
+      if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+        return true;
+      }
+    } catch (e) {
+      console.warn("Fullscreen error:", e);
+    }
+    return false;
+  };
+
+  const exitNativeFullscreen = async () => {
+    try {
       if (document.exitFullscreen) {
-        document.exitFullscreen();
+        await document.exitFullscreen();
       } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen(); // Safari
+        document.webkitExitFullscreen();
       }
+    } catch (e) {
+      console.warn("Exit fullscreen error:", e);
     }
   };
 
-  const handleClick = () => {
-    tapCount.current += 1;
+  const openOverlay = () => setOverlayOpen(true);
+  const closeOverlay = async () => {
+    if (isInNativeFullscreen()) await exitNativeFullscreen();
+    setOverlayOpen(false);
+  };
 
-    if (tapCount.current === 2) {
-      // double tap / double click detected
-      toggleFullscreen();
-      tapCount.current = 0;
-      clearTimeout(tapTimeout.current);
+  const toggleFullscreen = async () => {
+    if (isInNativeFullscreen()) {
+      await exitNativeFullscreen();
+      setOverlayOpen(false);
       return;
     }
 
-    // reset after short delay
-    tapTimeout.current = setTimeout(() => {
-      tapCount.current = 0;
-    }, 300);
+    const ok = await requestNativeFullscreen(wrapperRef.current);
+    if (!ok) openOverlay(); // fallback for iOS
   };
 
+  const onTouchEnd = (e) => {
+    const now = Date.now();
+    if (now - lastTap.current <= 300) {
+      e.preventDefault(); // block iOS zoom
+      toggleFullscreen();
+      lastTap.current = 0;
+    } else {
+      lastTap.current = now;
+    }
+  };
+
+  const onDoubleClick = (e) => {
+    e.preventDefault();
+    toggleFullscreen();
+  };
+
+  // Escape key to close overlay
+  useEffect(() => {
+    if (!overlayOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKey = (ev) => ev.key === "Escape" && closeOverlay();
+    document.addEventListener("keydown", onKey);
+
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [overlayOpen]);
+
   return (
-    <img
-      ref={imgRef}
-      src={src}
-      alt={alt}
-      className="chapter-img"
-      onClick={handleClick} // works for tap & click
-    />
+    <>
+      <div
+        ref={wrapperRef}
+        className="chapter-img-wrapper"
+        onTouchEnd={onTouchEnd}
+        onDoubleClick={onDoubleClick}
+      >
+        <img src={src} alt={alt} className="chapter-img" draggable={false} />
+      </div>
+
+      {overlayOpen && (
+        <div className="fullscreen-overlay" onClick={closeOverlay}>
+          <img src={src} alt={alt} className="fullscreen-img" draggable={false} />
+        </div>
+      )}
+    </>
   );
 }
 
-
+/* --- Main Chapter Page Component --- */
 export default function ChapterPage() {
   const [pages, setPages] = useState([]);
   const [chapters, setChapters] = useState([]);
