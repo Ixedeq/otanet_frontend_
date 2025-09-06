@@ -1,9 +1,38 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useParams } from "react-router-dom";
+import API_BASE from "../Config";
 
-export default function ChapterNavigation({ chapters, currentChapterNumberStr, slug }) {
+export default function ChapterNavigation() {
+  const { slug, chapter } = useParams();
+  const [chapters, setChapters] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchChapters = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
+        if (!res.ok) throw new Error("Chapters not found");
+        const data = await res.json();
+
+        const sortedChapters = data
+          .map((ch) => ({ ...ch, numberStr: ch.number.toString() }))
+          .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
+
+        setChapters(sortedChapters);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChapters();
+  }, [slug]);
+
+  if (loading || chapters.length === 0) return null;
+
   const currentIndex = chapters.findIndex(
-    (ch) => ch.numberStr === currentChapterNumberStr
+    (ch) => ch.numberStr === chapter.replace("-", ".")
   );
 
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
