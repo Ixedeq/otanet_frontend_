@@ -1,21 +1,23 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-export default function ChapterNavigation({ prevChapter, nextChapter, slug }) {
-  // Helper to ensure numberStr is always formatted consistently
-  const formatNumberStr = (ch) => {
-    if (!ch) return null;
-    return ch.numberStr.includes(".") ? ch.numberStr : `${ch.numberStr}.0`;
-  };
+export default function ChapterNavigation({ slug, chapters, currentChapterNumberStr }) {
+  // Find the index of the current chapter
+  const currentIndex = chapters.findIndex(
+    (ch) => ch.numberStr === currentChapterNumberStr
+  );
 
-  const prevNumberStr = formatNumberStr(prevChapter);
-  const nextNumberStr = formatNumberStr(nextChapter);
+  const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
+  const nextChapter =
+    currentIndex >= 0 && currentIndex < chapters.length - 1
+      ? chapters[currentIndex + 1]
+      : null;
 
   return (
     <div className="chapter-navigation">
       {prevChapter ? (
         <Link
-          to={`/read/${slug}/chapter-${prevNumberStr.replace(".", "-")}`}
+          to={`/read/${slug}/chapter-${prevChapter.numberStr.replace(".", "-")}`}
           className="prev-chapter"
         >
           ← Previous Chapter
@@ -26,7 +28,7 @@ export default function ChapterNavigation({ prevChapter, nextChapter, slug }) {
 
       {nextChapter ? (
         <Link
-          to={`/read/${slug}/chapter-${nextNumberStr.replace(".", "-")}`}
+          to={`/read/${slug}/chapter-${nextChapter.numberStr.replace(".", "-")}`}
           className="next-chapter"
         >
           Next Chapter →
