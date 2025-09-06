@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import ChapterImg from "./components/ChapterImg";
 import ChapterNavigation from "./components/ChapterNavigation";
@@ -14,12 +14,7 @@ export default function ChapterPage() {
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
   const [horizontalScroll, setHorizontalScroll] = useState(false);
-
-  const [fullscreenIndex, setFullscreenIndex] = useState(null);
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const dragOffset = useRef(0);
-  const [overlayTransform, setOverlayTransform] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
 
   // Fetch pages
   useEffect(() => {
@@ -53,48 +48,6 @@ export default function ChapterPage() {
       ? chapters[currentIndex + 1]
       : null;
 
-  // Fullscreen handlers
-  const openFullscreen = (index) => setFullscreenIndex(index);
-  const closeFullscreen = () => setFullscreenIndex(null);
-
-  const handlePrev = () => {
-    setFullscreenIndex((prev) => (prev > 0 ? prev - 1 : prev));
-  };
-  const handleNext = () => {
-    setFullscreenIndex((prev) =>
-      prev < pages.length - 1 ? prev + 1 : prev
-    );
-  };
-
-  const handleTouchStart = (e) => {
-    startX.current = e.touches[0].clientX;
-    startY.current = e.touches[0].clientY;
-    dragOffset.current = 0;
-  };
-
-  const handleTouchMove = (e) => {
-    const deltaX = e.touches[0].clientX - startX.current;
-    const deltaY = e.touches[0].clientY - startY.current;
-
-    if (horizontalScroll) dragOffset.current = deltaX;
-    else dragOffset.current = deltaY;
-
-    setOverlayTransform(dragOffset.current);
-  };
-
-  const handleTouchEnd = () => {
-    if (horizontalScroll) {
-      if (dragOffset.current < -50) handleNext();
-      else if (dragOffset.current > 50) handlePrev();
-    } else {
-      if (dragOffset.current < -50 && fullscreenIndex < pages.length - 1) handleNext();
-      else if (dragOffset.current > 50 && fullscreenIndex > 0) handlePrev();
-    }
-
-    dragOffset.current = 0;
-    setOverlayTransform(0);
-  };
-
   return (
     <div className="chapter-page">
       <Link to="/" className="back-link">
@@ -111,73 +64,45 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      <div
-        className={`chapter-images ${
-          horizontalScroll ? "horizontal-scroll" : ""
-        }`}
-      >
-        {pages.map((page, idx) => (
-          <ChapterImg
-            key={page.key}
-            src={page.src}
-            alt={`Page ${page.key}`}
-            index={idx}
-            onOpenFullscreen={openFullscreen}
-          />
-        ))}
-      </div>
+      {!fullscreen && (
+        <div
+          className={`chapter-images ${
+            horizontalScroll ? "horizontal-scroll" : ""
+          }`}
+        >
+          {pages.map((page, idx) => (
+            <ChapterImg
+              key={page.key}
+              src={page.src}
+              alt={`Page ${page.key}`}
+              index={idx}
+              onOpenFullscreen={() => setFullscreen(true)}
+            />
+          ))}
+        </div>
+      )}
+
+      {fullscreen && !horizontalScroll && (
+        <div className="fullscreen-overlay" onClick={() => setFullscreen(false)}>
+          <div className="vertical-images-container">
+            {pages.map((page) => (
+              <img
+                key={page.key}
+                src={page.src}
+                alt={`Page ${page.key}`}
+                className="fullscreen-img"
+                draggable={false}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       <ChapterNavigation
         prevChapter={prevChapter}
         nextChapter={nextChapter}
         slug={slug}
       />
-
-      {/* Fullscreen Overlay */}
-      {fullscreenIndex !== null && (
-        <div
-          className={`fullscreen-overlay ${
-            horizontalScroll ? "" : "vertical-swipe"
-          }`}
-          onClick={closeFullscreen}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          {!horizontalScroll && (
-            <div
-              className="vertical-images-container"
-              style={{
-                transform: `translateY(${
-                  -fullscreenIndex * window.innerHeight + overlayTransform
-                }px)`,
-                transition: overlayTransform === 0 ? "transform 0.25s ease-out" : "none",
-              }}
-            >
-              {pages.map((page) => (
-                <img
-                  key={page.key}
-                  src={page.src}
-                  alt={`Page ${page.key}`}
-                  className="fullscreen-img"
-                  draggable={false}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ))}
-            </div>
-          )}
-
-          {horizontalScroll && (
-            <img
-              src={pages[fullscreenIndex].src}
-              alt={`Page ${pages[fullscreenIndex].key}`}
-              className="fullscreen-img"
-              draggable={false}
-              onClick={(e) => e.stopPropagation()}
-            />
-          )}
-        </div>
-      )}
     </div>
   );
 }

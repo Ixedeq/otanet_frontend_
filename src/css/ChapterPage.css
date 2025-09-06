@@ -10,7 +10,7 @@
   font-family: sans-serif;
 }
 
-/* Back link */
+/* Back to Home Link */
 .back-link {
   align-self: flex-start;
   margin-bottom: 1rem;
@@ -31,7 +31,7 @@
   text-align: center;
 }
 
-/* Chapter Images - vertical scroll */
+/* Chapter Images - Vertical Scroll (Default) */
 .chapter-images {
   display: flex;
   flex-direction: column;
@@ -42,8 +42,9 @@
 }
 
 .chapter-img-wrapper {
+  display: block;
   width: 100%;
-  touch-action: manipulation; /* prevent iOS gesture interference */
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -53,10 +54,11 @@
   object-fit: contain;
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
-  background: #000; /* letterboxing */
+  background: #000;
+  scroll-behavior: smooth; /* smooth scroll when used in vertical mode */
 }
 
-/* Horizontal scroll mode */
+/* Horizontal Scroll */
 .chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
@@ -95,7 +97,7 @@
 }
 .toggle-scroll-btn:hover { opacity: 0.85; }
 
-/* Chapter navigation */
+/* Navigation Buttons */
 .chapter-navigation {
   display: flex;
   justify-content: space-between;
@@ -116,23 +118,11 @@
   transition: background 0.3s, color 0.3s;
 }
 
-.prev-chapter {
-  background-color: #3498db;
-  color: #fff;
-}
+.prev-chapter { background-color: #3498db; color: #fff; }
 .prev-chapter:hover { background-color: #2980b9; }
-
-.next-chapter {
-  background-color: #2ecc71;
-  color: #fff;
-}
+.next-chapter { background-color: #2ecc71; color: #fff; }
 .next-chapter:hover { background-color: #27ae60; }
-
-.disabled {
-  background-color: #7f8c8d;
-  color: #bdc3c7;
-  cursor: not-allowed;
-}
+.disabled { background-color: #7f8c8d; color: #bdc3c7; cursor: not-allowed; }
 
 /* Mobile adjustments */
 @media (max-width: 600px) {
@@ -142,38 +132,44 @@
 }
 
 /* ============================= */
-/* Fullscreen overlay (vertical & horizontal) */
+/* Fullscreen Vertical Mode (Webtoon Feel) */
 /* ============================= */
 
 .fullscreen-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
+  background: #000;
   display: flex;
   justify-content: center;
-  align-items: center;
-  background: #000;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* smooth native scroll on iOS */
+  scroll-behavior: smooth; /* smooth scroll on desktop browsers */
+  padding: 2rem 0;
   cursor: zoom-out;
-  touch-action: none;       /* disables native scrolling during drag */
-  will-change: transform;
-  overflow: hidden;
 }
 
-.fullscreen-img {
-  max-width: 100%;
-  max-height: 100%;
+.vertical-images-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 95%;
+  max-width: 800px;
+}
+
+.vertical-images-container .fullscreen-img {
+  width: 100%;
   object-fit: contain;
-  -webkit-user-select: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
+  background: #000;
   user-select: none;
   -webkit-user-drag: none;
-  border-radius: 0;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  transition: transform 0.25s ease-out;
 }
 
-/* Page counter */
+/* Optional: page counter in vertical overlay */
 .fullscreen-page-counter {
-  position: absolute;
+  position: fixed;
   top: 1rem;
   left: 50%;
   transform: translateX(-50%);
@@ -183,81 +179,4 @@
   background: rgba(0,0,0,0.4);
   padding: 0.25rem 0.75rem;
   border-radius: 0.5rem;
-}
-
-/* Prev/Next buttons for horizontal */
-.fullscreen-prev,
-.fullscreen-next {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 2rem;
-  background: rgba(0,0,0,0.3);
-  border: none;
-  color: #fff;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  border-radius: 0.5rem;
-  transition: background 0.2s;
-}
-.fullscreen-prev:hover,
-.fullscreen-next:hover { background: rgba(0,0,0,0.6); }
-.fullscreen-prev { left: 1rem; }
-.fullscreen-next { right: 1rem; }
-
-/* ============================= */
-/* Vertical fullscreen swipe styling (webtoon feel) */
-/* ============================= */
-.fullscreen-overlay.vertical-swipe {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  overflow: hidden;
-}
-
-.fullscreen-overlay.vertical-swipe .fullscreen-img {
-  width: 100%;
-  max-height: 100vh;
-  margin: 0 auto;
-  transform: translateY(0);
-  transition: transform 0.25s ease-out;
-}
-
-/* subtle fade-in for overlay */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.fullscreen-overlay { animation: fadeIn 0.25s ease-in-out; }
-
-.fullscreen-overlay.vertical-swipe {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  overflow: hidden;
-  position: fixed;
-  inset: 0;
-  background: #000;
-  touch-action: none;
-  will-change: transform;
-  z-index: 9999;
-}
-
-.fullscreen-overlay.vertical-swipe .fullscreen-img {
-  width: 100%;
-  max-height: 100vh;
-  margin: 0 auto;
-  object-fit: contain;
-  transition: transform 0.25s ease-out; /* smooth sliding */
-}
-
-.vertical-images-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-  transform: translateY(0);
-  transition: transform 0.25s ease-out;
 }
