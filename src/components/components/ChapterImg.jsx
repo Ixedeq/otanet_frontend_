@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import "../css/ChapterPage.css";
 
 export default function ChapterImg({ src, alt, vertical }) {
   const lastTap = useRef(0);
