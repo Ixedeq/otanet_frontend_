@@ -296,3 +296,30 @@
   user-select: none;
   -webkit-user-drag: none;
 }
+
+.fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  touch-action: none; /* disables native scrolling during drag */
+  will-change: transform;
+  cursor: zoom-out;
+}
+
+.fullscreen-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fullscreen-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
