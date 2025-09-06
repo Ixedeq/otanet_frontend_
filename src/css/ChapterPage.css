@@ -13,7 +13,7 @@
   font-family: sans-serif;
 }
 
-/* Back to Home Link */
+/* Back link */
 .back-link {
   align-self: flex-start;
   margin-bottom: 1rem;
@@ -27,14 +27,14 @@
 }
 .back-link:hover { background-color: #c32f64; }
 
-/* Chapter Title */
+/* Chapter title */
 .chapter-title {
   font-size: 2rem;
   margin-bottom: 1.5rem;
   text-align: center;
 }
 
-/* Toggle Button */
+/* Toggle button */
 .toggle-scroll-btn {
   margin-bottom: 1rem;
   padding: 0.5rem 1rem;
@@ -62,11 +62,11 @@
 
 .chapter-img-wrapper {
   width: 100%;
-  touch-action: manipulation;
+  touch-action: manipulation; /* prevent iOS zoom interference */
   -webkit-tap-highlight-color: transparent;
 }
 
-.chapter-images .chapter-img {
+.chapter-img {
   width: 100%;
   max-height: 85vh;
   object-fit: contain;
@@ -103,65 +103,30 @@
 }
 
 /* ============================= */
-/* Fullscreen Horizontal Mode */
-/* ============================= */
-.fullscreen-overlay.horizontal {
+/* Fullscreen Overlay */
+.fullscreen-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
+  background: #000;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #000;
   cursor: zoom-out;
+  touch-action: none; /* disable native scrolling during drag */
 }
 
-.fullscreen-overlay.horizontal .fullscreen-img {
+.fullscreen-img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
-}
-
-/* ============================= */
-/* Fullscreen Vertical Mode - Webtoon */
-/* ============================= */
-.fullscreen-overlay.vertical {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: #000;
-  display: flex;
-  justify-content: center;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  padding: 2rem 0;
-  cursor: zoom-out;
-}
-
-.vertical-images-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  width: 95%;
-  max-width: 800px;
-}
-
-.vertical-images-container .fullscreen-img {
-  width: 100%;
-  object-fit: contain;
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
-  background: #000;
-  user-select: none;
-  -webkit-user-drag: none;
 }
 
-/* ============================= */
-/* Fullscreen Page Counter & Nav Buttons */
-/* ============================= */
+/* Fullscreen page counter */
 .fullscreen-page-counter {
   position: absolute;
   top: 1rem;
@@ -175,6 +140,7 @@
   border-radius: 0.5rem;
 }
 
+/* Navigation buttons */
 .fullscreen-prev,
 .fullscreen-next {
   position: absolute;
@@ -193,8 +159,20 @@
 .fullscreen-next { right: 1rem; }
 
 .fullscreen-prev:hover,
-.fullscreen-next:hover {
-  background: rgba(0,0,0,0.6);
+.fullscreen-next:hover { background: rgba(0,0,0,0.6); }
+
+/* ============================= */
+/* Vertical Fullscreen - Webtoon style */
+.fullscreen-overlay.vertical {
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  padding: 2rem 0;
+}
+
+.fullscreen-overlay.vertical .fullscreen-img {
+  margin-bottom: 1.5rem;
 }
 
 /* ============================= */
@@ -205,7 +183,7 @@
     gap: 1rem;
   }
 
-  .chapter-images .chapter-img {
+  .chapter-img {
     max-height: 80vh;
   }
 
