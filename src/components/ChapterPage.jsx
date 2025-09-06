@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import ChapterImg from "./ChapterImg";
-import ChapterNavigation from "./ChapterNavigation";
+import ChapterImg from "./components/ChapterImg";
+import ChapterNavigation from "./components/ChapterNavigation";
 import API_BASE from "./Config";
 
 export default function ChapterPage() {
