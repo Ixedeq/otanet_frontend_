@@ -112,9 +112,11 @@ export default function ChapterPage() {
         ← Back to Home
       </Link>
 
-      <h1 className="chapter-title">
-        {mangaTitle} – Chapter {chapterNumberStr}
-      </h1>
+      <Link to={`/${slug}`}>
+        <h1 className="chapter-title">
+          {mangaTitle} – Chapter {chapterNumberStr}
+        </h1>
+      </Link>
 
       {/* Toggle horizontal only when NOT fullscreen */}
       {!fullscreen && (
