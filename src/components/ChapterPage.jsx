@@ -17,10 +17,12 @@ export default function ChapterPage() {
   const [horizontalScroll, setHorizontalScroll] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
+  const [bottomPadding, setBottomPadding] = useState(0);
 
   const pageContainerRef = useRef(null);
+  const navRef = useRef(null);
 
-  // --- Fetch pages ---
+  // Fetch pages
   useEffect(() => {
     const fetchPages = async () => {
       setLoadingPages(true);
@@ -40,7 +42,7 @@ export default function ChapterPage() {
     fetchPages();
   }, [slug, chapterKey]);
 
-  // --- Fetch chapters + manga info ---
+  // Fetch chapters + manga info
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -66,25 +68,34 @@ export default function ChapterPage() {
     fetchData();
   }, [slug]);
 
-  // --- Current chapter index & navigation ---
   const currentIndex = useMemo(
     () => chapters.findIndex((ch) => ch.numberStr === chapterNumberStr),
     [chapters, chapterNumberStr]
   );
+
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1
       ? chapters[currentIndex + 1]
       : null;
 
-  // --- Fullscreen toggle ---
   const toggleFullscreen = (index = null) => {
     if (!fullscreen && index !== null) setFullscreenIndex(index);
-    else setFullscreenIndex(null);
+    if (fullscreen) setFullscreenIndex(null);
     setFullscreen((prev) => !prev);
   };
 
-  // --- Prevent body scroll in fullscreen ---
+  // Dynamically calculate bottom padding for vertical fullscreen
+  useEffect(() => {
+    if (fullscreen && !horizontalScroll && navRef.current) {
+      const navHeight = navRef.current.offsetHeight;
+      setBottomPadding(navHeight + 16); // extra 16px spacing
+    } else {
+      setBottomPadding(0);
+    }
+  }, [fullscreen, horizontalScroll]);
+
+  // Prevent body scroll in fullscreen
   useEffect(() => {
     if (fullscreen) {
       document.body.style.overflow = "hidden";
@@ -99,6 +110,9 @@ export default function ChapterPage() {
     <div
       className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
       ref={pageContainerRef}
+      style={{
+        paddingBottom: fullscreen && !horizontalScroll ? `${bottomPadding}px` : "",
+      }}
     >
       <Link to="/" className="back-link">
         ← Back to Home
@@ -108,7 +122,6 @@ export default function ChapterPage() {
         {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
 
-      {/* Toggle horizontal only when NOT fullscreen */}
       {!fullscreen && (
         <button
           className="toggle-scroll-btn"
@@ -123,12 +136,10 @@ export default function ChapterPage() {
       <div
         className={`chapter-images ${
           fullscreen
-            ? horizontalScroll
-              ? "fullscreen horizontal-scroll"
-              : "fullscreen vertical-scroll"
+            ? "fullscreen"
             : horizontalScroll
             ? "horizontal-scroll"
-            : "vertical-scroll"
+            : ""
         }`}
       >
         {pages.map((page, idx) => (
@@ -143,6 +154,7 @@ export default function ChapterPage() {
       </div>
 
       <ChapterNavigation
+        ref={navRef}
         slug={slug}
         chapters={chapters}
         currentChapterNumberStr={chapterNumberStr}
