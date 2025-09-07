@@ -58,8 +58,8 @@ export default function ChapterPage() {
       : null;
 
   const openFullscreen = (index) => {
-    setFullscreen(true);
     setFullscreenIndex(index);
+    setFullscreen(true);
   };
   const closeFullscreen = () => setFullscreen(false);
 
@@ -91,29 +91,19 @@ export default function ChapterPage() {
       {/* Main page content */}
       {!fullscreen ? (
         horizontalScroll ? (
-          // Horizontal mode immediately full screen
-          <div
-            className="fullscreen-overlay horizontal"
-            onClick={closeFullscreen}
-          >
-            <div className="horizontal-images-wrapper">
-              {pages.map((page) => (
-                <div
-                  key={page.key}
-                  className="chapter-img-wrapper horizontal-fullscreen"
-                >
-                  <img
-                    src={page.src}
-                    alt={`Page ${page.key}`}
-                    className="fullscreen-img"
-                    draggable={false}
-                  />
-                </div>
-              ))}
-            </div>
+          <div className="chapter-images horizontal-scroll">
+            {pages.map((page, idx) => (
+              <div key={page.key} className="chapter-img-wrapper">
+                <ChapterImg
+                  src={page.src}
+                  alt={`Page ${page.key}`}
+                  index={idx}
+                  onOpenFullscreen={() => openFullscreen(idx)}
+                />
+              </div>
+            ))}
           </div>
         ) : (
-          // Vertical mode normal
           <div className="chapter-images">
             {pages.map((page, idx) => (
               <ChapterImg
