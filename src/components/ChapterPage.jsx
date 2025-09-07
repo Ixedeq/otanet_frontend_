@@ -47,7 +47,6 @@ export default function ChapterPage() {
 
   const currentIndex = chapters.findIndex(
     (ch) => ch.numberStr === chapterNumberStr
-  
   );
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
@@ -64,7 +63,7 @@ export default function ChapterPage() {
 
       {/* Title now shows proper manga title */}
       <h1 className="chapter-title">
-        {mangaTitle} – Chapter {chapterNumberStr}
+        {mangaTitle} – {chapterNumberStr}
       </h1>
 
       <button
