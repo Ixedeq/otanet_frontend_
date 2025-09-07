@@ -61,6 +61,7 @@ export default function ChapterPage() {
     setFullscreenIndex(index);
     setFullscreen(true);
   };
+
   const closeFullscreen = () => setFullscreen(false);
 
   return (
@@ -76,7 +77,7 @@ export default function ChapterPage() {
         {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
 
-      {/* Only show toggle when not fullscreen */}
+      {/* Only show toggle button if NOT fullscreen */}
       {!fullscreen && (
         <button
           className="toggle-scroll-btn"
@@ -88,7 +89,7 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      {/* Main page content */}
+      {/* Normal view */}
       {!fullscreen ? (
         horizontalScroll ? (
           <div className="chapter-images horizontal-scroll">
@@ -117,45 +118,37 @@ export default function ChapterPage() {
           </div>
         )
       ) : (
-        // Fullscreen overlay
-        <>
-          {horizontalScroll ? (
-            <div
-              className="fullscreen-overlay horizontal"
-              onClick={closeFullscreen}
-            >
-              <div className="horizontal-images-wrapper">
-                {pages.map((page) => (
-                  <div
-                    key={page.key}
-                    className="chapter-img-wrapper horizontal-fullscreen"
-                  >
-                    <img
-                      src={page.src}
-                      alt={`Page ${page.key}`}
-                      className="fullscreen-img"
-                      draggable={false}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="fullscreen-overlay" onClick={closeFullscreen}>
-              <div className="vertical-images-container">
-                {pages.map((page) => (
+        // Fullscreen mode
+        horizontalScroll ? (
+          <div className="fullscreen-overlay horizontal" onClick={closeFullscreen}>
+            <div className="horizontal-images-wrapper">
+              {pages.map((page) => (
+                <div key={page.key} className="chapter-img-wrapper horizontal-fullscreen">
                   <img
-                    key={page.key}
                     src={page.src}
                     alt={`Page ${page.key}`}
                     className="fullscreen-img"
                     draggable={false}
                   />
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-          )}
-        </>
+          </div>
+        ) : (
+          <div className="fullscreen-overlay" onClick={closeFullscreen}>
+            <div className="vertical-images-container">
+              {pages.map((page) => (
+                <img
+                  key={page.key}
+                  src={page.src}
+                  alt={`Page ${page.key}`}
+                  className="fullscreen-img"
+                  draggable={false}
+                />
+              ))}
+            </div>
+          </div>
+        )
       )}
 
       <ChapterNavigation
