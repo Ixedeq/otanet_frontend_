@@ -20,7 +20,7 @@ export default function ChapterPage() {
 
   const pageContainerRef = useRef(null);
 
-  // --- Fetch pages ---
+  // Fetch pages
   useEffect(() => {
     const fetchPages = async () => {
       setLoadingPages(true);
@@ -40,7 +40,7 @@ export default function ChapterPage() {
     fetchPages();
   }, [slug, chapterKey]);
 
-  // --- Fetch chapters + manga info concurrently ---
+  // Fetch chapters + manga info
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -66,27 +66,34 @@ export default function ChapterPage() {
     fetchData();
   }, [slug]);
 
-  // --- Current chapter index & navigation ---
+  // Current chapter index
   const currentIndex = useMemo(
     () => chapters.findIndex((ch) => ch.numberStr === chapterNumberStr),
     [chapters, chapterNumberStr]
   );
-
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1
       ? chapters[currentIndex + 1]
       : null;
 
-  // --- Fullscreen toggle ---
+  // Fullscreen toggle
   const toggleFullscreen = (index = null) => {
-    if (!fullscreen && index !== null) {
-      setFullscreenIndex(index);
-    } else if (fullscreen) {
-      setFullscreenIndex(null);
-    }
+    if (!fullscreen && index !== null) setFullscreenIndex(index);
+    if (fullscreen) setFullscreenIndex(null);
     setFullscreen((prev) => !prev);
   };
+
+  // Prevent body scroll in fullscreen (desktop + iOS)
+  useEffect(() => {
+    if (fullscreen) {
+      document.body.style.overflow = "hidden";
+      window.scrollTo(0, 0); // hide iOS toolbar
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => (document.body.style.overflow = "");
+  }, [fullscreen]);
 
   return (
     <div
@@ -101,7 +108,7 @@ export default function ChapterPage() {
         {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
 
-      {/* Toggle button only when NOT in fullscreen */}
+      {/* Horizontal toggle only when NOT fullscreen */}
       {!fullscreen && (
         <button
           className="toggle-scroll-btn"
@@ -113,10 +120,13 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      {/* Horizontal scroll class applied to chapter-images */}
       <div
         className={`chapter-images ${
-          horizontalScroll && !fullscreen ? "horizontal-scroll" : ""
+          fullscreen
+            ? "fullscreen"
+            : horizontalScroll
+            ? "horizontal-scroll"
+            : ""
         }`}
       >
         {pages.map((page, idx) => (
