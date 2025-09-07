@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import ChapterImg from "./components/ChapterImg";
 import ChapterNavigation from "./components/ChapterNavigation";
@@ -8,7 +8,7 @@ import "../css/ChapterPage.css";
 export default function ChapterPage() {
   const { slug, chapter } = useParams();
   const chapterKey = chapter.replace("-", "_");
-  const chapterNumberStr = chapter.split("-")[1] || "0";
+  const chapterNumberStr = chapter.split("-")[1];
 
   const [mangaTitle, setMangaTitle] = useState("");
   const [pages, setPages] = useState([]);
@@ -20,71 +20,45 @@ export default function ChapterPage() {
 
   const pageContainerRef = useRef(null);
 
-  // --- Fetch pages ---
+  // Fetch pages
   useEffect(() => {
-    const fetchPages = async () => {
-      setLoadingPages(true);
-      try {
-        const res = await fetch(
-          `${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`
-        );
-        const data = await res.json();
-        setPages(data);
-      } catch (err) {
-        console.error("Failed to fetch pages:", err);
-        setPages([]);
-      } finally {
-        setLoadingPages(false);
-      }
-    };
-    fetchPages();
+    setLoadingPages(true);
+    fetch(`${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`)
+      .then((res) => res.json())
+      .then(setPages)
+      .catch(console.error)
+      .finally(() => setLoadingPages(false));
   }, [slug, chapterKey]);
 
-  // --- Fetch chapters + manga info concurrently ---
+  // Fetch chapters + manga info
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [chaptersRes, mangaRes] = await Promise.all([
-          fetch(`${API_BASE}/get_chapters?title=${slug}`),
-          fetch(`${API_BASE}/${slug}`),
-        ]);
-
-        const chaptersData = await chaptersRes.json();
-        const sortedChapters = chaptersData
+    fetch(`${API_BASE}/get_chapters?title=${slug}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const sorted = data
           .map((ch) => ({ ...ch, numberStr: ch.number.toString() }))
           .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
-        setChapters(sortedChapters);
+        setChapters(sorted);
+      })
+      .catch(console.error);
 
-        const mangaData = await mangaRes.json();
-        setMangaTitle(mangaData.title || slug);
-      } catch (err) {
-        console.error("Failed to fetch chapters/manga info:", err);
-        setMangaTitle(slug);
-        setChapters([]);
-      }
-    };
-    fetchData();
+    fetch(`${API_BASE}/${slug}`)
+      .then((res) => res.json())
+      .then((data) => setMangaTitle(data.title || slug))
+      .catch(() => setMangaTitle(slug));
   }, [slug]);
 
-  // --- Current chapter index & navigation ---
-  const currentIndex = useMemo(
-    () => chapters.findIndex((ch) => ch.numberStr === chapterNumberStr),
-    [chapters, chapterNumberStr]
+  const currentIndex = chapters.findIndex(
+    (ch) => ch.numberStr === chapterNumberStr
   );
-
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1
       ? chapters[currentIndex + 1]
       : null;
 
-  // --- Fullscreen toggle ---
   const toggleFullscreen = (index = null) => {
-    if (!fullscreen && index !== null) {
-      setFullscreenIndex(index);
-    } else if (fullscreen) {
-      setFullscreenIndex(null);
-    }
+    if (index !== null) setFullscreenIndex(index);
     setFullscreen((prev) => !prev);
   };
 
@@ -115,9 +89,9 @@ export default function ChapterPage() {
       <div className="chapter-images">
         {pages.map((page, idx) => (
           <ChapterImg
-            key={page.key || idx}
+            key={page.key}
             src={page.src}
-            alt={`Page ${page.key || idx}`}
+            alt={`Page ${page.key}`}
             index={idx}
             onOpenFullscreen={() => toggleFullscreen(idx)}
           />
@@ -128,8 +102,6 @@ export default function ChapterPage() {
         slug={slug}
         chapters={chapters}
         currentChapterNumberStr={chapterNumberStr}
-        prevChapter={prevChapter}
-        nextChapter={nextChapter}
       />
     </div>
   );
