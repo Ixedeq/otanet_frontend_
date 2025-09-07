@@ -90,7 +90,9 @@ export default function ChapterPage() {
 
   return (
     <div
-      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
+      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""} ${
+        horizontalScroll ? "horizontal-scroll" : ""
+      }`}
       ref={pageContainerRef}
     >
       <Link to="/" className="back-link">
@@ -101,24 +103,16 @@ export default function ChapterPage() {
         {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
 
-      {/* Toggle button only when NOT in fullscreen */}
-      {!fullscreen && (
-        <button
-          className="toggle-scroll-btn"
-          onClick={() => setHorizontalScroll((prev) => !prev)}
-        >
-          {horizontalScroll ? "Vertical Scroll" : "Horizontal Scroll"}
-        </button>
-      )}
+      <button
+        className="toggle-scroll-btn"
+        onClick={() => setHorizontalScroll((prev) => !prev)}
+      >
+        {horizontalScroll ? "Vertical Scroll" : "Horizontal Scroll"}
+      </button>
 
       {loadingPages && <p>Loading pages...</p>}
 
-      {/* Horizontal scroll class applied to chapter-images */}
-      <div
-        className={`chapter-images ${
-          horizontalScroll && !fullscreen ? "horizontal-scroll" : ""
-        }`}
-      >
+      <div className="chapter-images">
         {pages.map((page, idx) => (
           <ChapterImg
             key={page.key || idx}
