@@ -95,6 +95,14 @@ export default function ChapterPage() {
     return () => (document.body.style.overflow = "");
   }, [fullscreen]);
 
+  // --- Scroll to top on new chapter in vertical fullscreen ---
+  useEffect(() => {
+    if (fullscreen && !horizontalScroll && pageContainerRef.current) {
+      pageContainerRef.current.scrollTop = 0;
+      window.scrollTo(0, 0);
+    }
+  }, [chapterKey, fullscreen, horizontalScroll]);
+
   return (
     <div
       className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
