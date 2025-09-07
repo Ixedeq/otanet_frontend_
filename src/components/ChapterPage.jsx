@@ -15,8 +15,10 @@ export default function ChapterPage() {
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
   const [horizontalScroll, setHorizontalScroll] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
-  const verticalOverlayRef = useRef(null);
+
+  const pageContainerRef = useRef(null);
 
   // Fetch pages
   useEffect(() => {
@@ -55,12 +57,21 @@ export default function ChapterPage() {
       ? chapters[currentIndex + 1]
       : null;
 
-  const openFullscreen = (index) => setFullscreenIndex(index);
-  const closeFullscreen = () => setFullscreenIndex(null);
+  const toggleFullscreen = (index = null) => {
+    if (index !== null) setFullscreenIndex(index);
+    setFullscreen((prev) => !prev);
+  };
 
   return (
-    <div className="chapter-page">
-      <Link to="/" className="back-link">← Back to Home</Link>
+    <div
+      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""} ${
+        horizontalScroll ? "horizontal-scroll" : ""
+      }`}
+      ref={pageContainerRef}
+    >
+      <Link to="/" className="back-link">
+        ← Back to Home
+      </Link>
 
       <h1 className="chapter-title">
         {mangaTitle} – Chapter {chapterNumberStr}
@@ -75,14 +86,14 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      <div className={`chapter-images ${horizontalScroll ? "horizontal-scroll" : ""}`}>
+      <div className="chapter-images">
         {pages.map((page, idx) => (
           <ChapterImg
             key={page.key}
             src={page.src}
             alt={`Page ${page.key}`}
             index={idx}
-            onOpenFullscreen={() => openFullscreen(idx)}
+            onOpenFullscreen={() => toggleFullscreen(idx)}
           />
         ))}
       </div>
@@ -92,49 +103,6 @@ export default function ChapterPage() {
         chapters={chapters}
         currentChapterNumberStr={chapterNumberStr}
       />
-
-      {/* Fullscreen Overlay */}
-      {fullscreenIndex !== null && (
-        <>
-          {horizontalScroll ? (
-            <div className="fullscreen-overlay horizontal" onClick={closeFullscreen}>
-              <div className="horizontal-images-wrapper">
-                {pages.map((page) => (
-                  <div
-                    key={page.key}
-                    className="chapter-img-wrapper horizontal-fullscreen"
-                  >
-                    <img
-                      src={page.src}
-                      alt={`Page ${page.key}`}
-                      className="fullscreen-img"
-                      draggable={false}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div
-              className="fullscreen-overlay"
-              onClick={closeFullscreen}
-              ref={verticalOverlayRef}
-            >
-              <div className="vertical-images-container">
-                {pages.map((page) => (
-                  <img
-                    key={page.key}
-                    src={page.src}
-                    alt={`Page ${page.key}`}
-                    className="fullscreen-img"
-                    draggable={false}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      )}
     </div>
   );
 }
