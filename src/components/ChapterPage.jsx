@@ -8,7 +8,7 @@ import "../css/ChapterPage.css";
 export default function ChapterPage() {
   const { slug, chapter } = useParams();
   const chapterKey = chapter.replace("-", "_");
-  const chapterNumberStr = chapter.split [1];
+  const chapterNumberStr = chapter.split[1];
 
   const [mangaTitle, setMangaTitle] = useState("");
   const [pages, setPages] = useState([]);
