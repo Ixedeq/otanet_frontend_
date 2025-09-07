@@ -18,7 +18,6 @@ export default function ChapterPage() {
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
 
   const pageContainerRef = useRef(null);
-  const fullscreenRef = useRef(null);
 
   // Fetch pages
   useEffect(() => {
@@ -54,31 +53,11 @@ export default function ChapterPage() {
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1
-      ? chapters[currentIndex + 1] : null;
+      ? chapters[currentIndex + 1]
+      : null;
 
-  const openFullscreen = (index) => {
-    setFullscreenIndex(index);
-
-    // Sync scroll: scroll overlay to match main page
-    if (pageContainerRef.current && fullscreenRef.current) {
-      fullscreenRef.current.scrollTop = pageContainerRef.current.scrollTop;
-    }
-  };
-
+  const openFullscreen = (index) => setFullscreenIndex(index);
   const closeFullscreen = () => setFullscreenIndex(null);
-
-  // Sync scroll between main page and vertical fullscreen
-  const handleMainScroll = () => {
-    if (fullscreenIndex !== null && fullscreenRef.current && pageContainerRef.current) {
-      fullscreenRef.current.scrollTop = pageContainerRef.current.scrollTop;
-    }
-  };
-
-  const handleFullscreenScroll = () => {
-    if (fullscreenIndex !== null && fullscreenRef.current && pageContainerRef.current) {
-      pageContainerRef.current.scrollTop = fullscreenRef.current.scrollTop;
-    }
-  };
 
   return (
     <div className="chapter-page">
@@ -97,11 +76,10 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      {/* Chapter images */}
+      {/* Main chapter images */}
       <div
         className={`chapter-images ${horizontalScroll ? "horizontal-scroll" : ""}`}
         ref={pageContainerRef}
-        onScroll={handleMainScroll}
       >
         {pages.map((page, idx) => (
           <ChapterImg
@@ -114,29 +92,25 @@ export default function ChapterPage() {
         ))}
       </div>
 
-      {/* Navigation buttons */}
+      {/* Navigation */}
       <ChapterNavigation
         slug={slug}
         chapters={chapters}
         currentChapterNumberStr={chapterNumberStr}
       />
 
-      {/* Fullscreen vertical overlay */}
+      {/* Fullscreen overlay (option 2: reuse main scroll) */}
       {fullscreenIndex !== null && !horizontalScroll && (
-        <div
-          className="fullscreen-overlay"
-          ref={fullscreenRef}
-          onScroll={handleFullscreenScroll}
-          onClick={closeFullscreen}
-        >
+        <div className="fullscreen-overlay" onClick={closeFullscreen}>
+          {/* Just render the same content, no separate scroll */}
           <div className="vertical-images-container">
-            {pages.map((page) => (
-              <img
+            {pages.map((page, idx) => (
+              <ChapterImg
                 key={page.key}
                 src={page.src}
                 alt={`Page ${page.key}`}
-                className="fullscreen-img"
-                draggable={false}
+                index={idx}
+                onOpenFullscreen={() => {}}
               />
             ))}
           </div>
@@ -163,4 +137,3 @@ export default function ChapterPage() {
     </div>
   );
 }
-
