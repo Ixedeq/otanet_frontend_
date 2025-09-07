@@ -1,6 +1,3 @@
-/* ============================ */
-/* Chapter Page Base Styles      */
-/* ============================ */
 .chapter-page {
   display: flex;
   flex-direction: column;
@@ -11,6 +8,7 @@
   min-height: 100vh;
   box-sizing: border-box;
   font-family: sans-serif;
+  transition: background 0.3s, color 0.3s;
 }
 
 /* Back to Home Link */
@@ -25,9 +23,8 @@
   font-weight: bold;
   transition: background 0.3s;
 }
-.back-link:hover {
-  background-color: #c32f64;
-}
+.back-link:hover,
+.back-link:focus { background-color: #c32f64; outline: none; }
 
 /* Chapter Title */
 .chapter-title {
@@ -36,9 +33,22 @@
   text-align: center;
 }
 
-/* ============================ */
-/* Chapter Images - Vertical     */
-/* ============================ */
+/* Toggle button */
+.toggle-scroll-btn {
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
+  color: #fff;
+  transition: opacity 0.3s;
+}
+.toggle-scroll-btn:hover,
+.toggle-scroll-btn:focus { opacity: 0.85; outline: none; }
+
+/* Chapter Images */
 .chapter-images {
   display: flex;
   flex-direction: column;
@@ -67,16 +77,13 @@
   -webkit-user-drag: none;
 }
 
-/* ============================ */
-/* Horizontal Scroll Styles      */
-/* ============================ */
+/* Horizontal Scroll */
 .chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   gap: 1rem;
   padding: 0 1rem;
-  scroll-behavior: smooth;
 }
 
 .chapter-images.horizontal-scroll .chapter-img-wrapper {
@@ -91,45 +98,10 @@
 .chapter-images.horizontal-scroll .chapter-img {
   width: 100%;
   max-height: 70vh;
-  object-fit: contain;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
-  pointer-events: none;
+  pointer-events: none; /* prevent accidental drags */
 }
 
-/* Scrollbar for horizontal mode */
-.chapter-images.horizontal-scroll::-webkit-scrollbar {
-  height: 0.5rem;
-}
-.chapter-images.horizontal-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.3);
-  border-radius: 0.25rem;
-}
-.chapter-images.horizontal-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* ============================ */
-/* Toggle Scroll Button          */
-/* ============================ */
-.toggle-scroll-btn {
-  margin-bottom: 1rem;
-  padding: 0.5rem 1rem;
-  font-weight: bold;
-  border-radius: 0.5rem;
-  border: none;
-  cursor: pointer;
-  background: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
-  color: #fff;
-  transition: opacity 0.3s;
-}
-.toggle-scroll-btn:hover {
-  opacity: 0.85;
-}
-
-/* ============================ */
-/* Chapter Navigation Buttons    */
-/* ============================ */
+/* Navigation Buttons */
 .chapter-navigation {
   display: flex;
   justify-content: space-between;
@@ -150,75 +122,100 @@
   transition: background 0.3s, color 0.3s;
 }
 
-.prev-chapter {
-  background-color: #3498db;
-  color: #fff;
-}
-.prev-chapter:hover {
-  background-color: #2980b9;
-}
-.next-chapter {
-  background-color: #2ecc71;
-  color: #fff;
-}
-.next-chapter:hover {
-  background-color: #27ae60;
-}
-.disabled {
-  background-color: #7f8c8d;
-  color: #bdc3c7;
-  cursor: not-allowed;
-}
+.prev-chapter { background-color: #3498db; color: #fff; }
+.prev-chapter:hover,
+.prev-chapter:focus { background-color: #2980b9; outline: none; }
+.next-chapter { background-color: #2ecc71; color: #fff; }
+.next-chapter:hover,
+.next-chapter:focus { background-color: #27ae60; outline: none; }
+.disabled { background-color: #7f8c8d; color: #bdc3c7; cursor: not-allowed; }
 
-/* ============================ */
-/* Mobile Adjustments            */
-/* ============================ */
+/* Mobile adjustments */
 @media (max-width: 600px) {
-  .chapter-images {
-    width: 100%;
-    gap: 1rem;
-  }
-  .chapter-images .chapter-img {
-    max-height: 80vh;
-  }
-  .chapter-images.horizontal-scroll .chapter-img {
-    flex: 0 0 90%;
-    max-height: 75vh;
-  }
+  .chapter-images { width: 100%; gap: 1rem; }
+  .chapter-images .chapter-img { max-height: 80vh; }
+  .chapter-images.horizontal-scroll .chapter-img-wrapper { flex: 0 0 90%; }
+  .chapter-images.horizontal-scroll .chapter-img { max-height: 75vh; }
 }
 
-/* ============================ */
-/* Fullscreen / Immersive Mode   */
-/* ============================ */
-.chapter-page.fullscreen-mode {
+/* ============================= */
+/* Fullscreen Vertical Mode */
+.fullscreen-mode {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background: #000;
   z-index: 9999;
-  overflow: hidden; /* hide toolbars and scrollbars */
-  padding: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 2rem 1rem;
 }
 
-.chapter-images.fullscreen {
+.fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  padding: 2rem 0;
+  cursor: zoom-out;
+  touch-action: pan-y;
+}
+
+.vertical-images-container {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto; /* allow vertical scroll */
-  -webkit-overflow-scrolling: touch; /* smooth scroll on iOS */
-  scroll-behavior: smooth;
-  padding: 2rem 0;
+  width: 95%;
+  max-width: 800px;
 }
 
-.chapter-images.fullscreen .chapter-img {
+.vertical-images-container .fullscreen-img {
   width: 100%;
   object-fit: contain;
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
-  user-select: none;
-  -webkit-user-drag: none;
+  background: #000;
+}
+
+/* Horizontal Fullscreen */
+.fullscreen-overlay.horizontal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding: 2rem 0;
+}
+
+.fullscreen-overlay.horizontal .horizontal-images-wrapper {
+  display: flex;
+  gap: 1rem;
+  padding: 0 1rem;
+}
+
+.fullscreen-overlay.horizontal .fullscreen-img {
+  width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
+}
+
+/* Scrollbar Styling */
+.chapter-images.horizontal-scroll::-webkit-scrollbar {
+  height: 0.5rem;
+}
+.chapter-images.horizontal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.3);
+  border-radius: 0.25rem;
+}
+.chapter-images.horizontal-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
