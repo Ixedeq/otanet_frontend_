@@ -47,7 +47,6 @@ export default function ChapterPage() {
 
   const currentIndex = chapters.findIndex(
     (ch) => ch.numberStr === chapterNumberStr
-  
   );
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
@@ -56,13 +55,20 @@ export default function ChapterPage() {
       : null;
 
   const openFullscreen = (index) => setFullscreenIndex(index);
-  const closeFullscreen = () => setFullscreenIndex(null);
+
+  // Sync scroll when exiting fullscreen
+  const closeFullscreen = () => {
+    if (fullscreenIndex !== null) {
+      const lastPage = document.getElementById(`page-${fullscreenIndex}`);
+      if (lastPage) lastPage.scrollIntoView({ behavior: "smooth" });
+    }
+    setFullscreenIndex(null);
+  };
 
   return (
     <div className="chapter-page">
       <Link to="/" className="back-link">← Back to Home</Link>
 
-      {/* Title now shows proper manga title */}
       <h1 className="chapter-title">
         {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
@@ -80,6 +86,7 @@ export default function ChapterPage() {
         {pages.map((page, idx) => (
           <ChapterImg
             key={page.key}
+            id={`page-${idx}`} // <-- Important for scroll syncing
             src={page.src}
             alt={`Page ${page.key}`}
             index={idx}
@@ -100,13 +107,17 @@ export default function ChapterPage() {
           {horizontalScroll ? (
             <div className="fullscreen-overlay horizontal" onClick={closeFullscreen}>
               <div className="horizontal-images-wrapper">
-                {pages.map((page) => (
-                  <div key={page.key} className="chapter-img-wrapper horizontal-fullscreen">
+                {pages.map((page, idx) => (
+                  <div
+                    key={page.key}
+                    className="chapter-img-wrapper horizontal-fullscreen"
+                  >
                     <img
                       src={page.src}
                       alt={`Page ${page.key}`}
                       className="fullscreen-img"
                       draggable={false}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </div>
                 ))}
@@ -115,13 +126,15 @@ export default function ChapterPage() {
           ) : (
             <div className="fullscreen-overlay" onClick={closeFullscreen}>
               <div className="vertical-images-container">
-                {pages.map((page) => (
+                {pages.map((page, idx) => (
                   <img
                     key={page.key}
+                    id={`fullscreen-page-${idx}`} // optional
                     src={page.src}
                     alt={`Page ${page.key}`}
                     className="fullscreen-img"
                     draggable={false}
+                    onClick={(e) => e.stopPropagation()}
                   />
                 ))}
               </div>
