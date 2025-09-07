@@ -57,16 +57,15 @@ export default function ChapterPage() {
       ? chapters[currentIndex + 1]
       : null;
 
-  const toggleFullscreen = (index = null) => {
-    if (index !== null) setFullscreenIndex(index);
-    setFullscreen((prev) => !prev);
+  const openFullscreen = (index) => {
+    setFullscreenIndex(index);
+    setFullscreen(true);
   };
+  const closeFullscreen = () => setFullscreen(false);
 
   return (
     <div
-      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""} ${
-        horizontalScroll ? "horizontal-scroll" : ""
-      }`}
+      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
       ref={pageContainerRef}
     >
       <Link to="/" className="back-link">
@@ -77,26 +76,68 @@ export default function ChapterPage() {
         {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
 
-      <button
-        className="toggle-scroll-btn"
-        onClick={() => setHorizontalScroll((prev) => !prev)}
-      >
-        {horizontalScroll ? "Vertical Scroll" : "Horizontal Scroll"}
-      </button>
+      {/* Toggle only visible when NOT fullscreen */}
+      {!fullscreen && (
+        <button
+          className="toggle-scroll-btn"
+          onClick={() => setHorizontalScroll((prev) => !prev)}
+        >
+          {horizontalScroll ? "Vertical Scroll" : "Horizontal Scroll"}
+        </button>
+      )}
 
       {loadingPages && <p>Loading pages...</p>}
 
-      <div className="chapter-images">
-        {pages.map((page, idx) => (
-          <ChapterImg
-            key={page.key}
-            src={page.src}
-            alt={`Page ${page.key}`}
-            index={idx}
-            onOpenFullscreen={() => toggleFullscreen(idx)}
-          />
-        ))}
-      </div>
+      {/* Chapter images container */}
+      {!fullscreen ? (
+        <div
+          className={`chapter-images ${horizontalScroll ? "horizontal-scroll" : ""}`}
+        >
+          {pages.map((page, idx) => (
+            <ChapterImg
+              key={page.key}
+              src={page.src}
+              alt={`Page ${page.key}`}
+              index={idx}
+              onOpenFullscreen={() => openFullscreen(idx)}
+            />
+          ))}
+        </div>
+      ) : (
+        // Fullscreen overlay
+        <>
+          {horizontalScroll ? (
+            <div className="fullscreen-overlay horizontal" onClick={closeFullscreen}>
+              <div className="horizontal-images-wrapper">
+                {pages.map((page) => (
+                  <div key={page.key} className="chapter-img-wrapper horizontal-fullscreen">
+                    <img
+                      src={page.src}
+                      alt={`Page ${page.key}`}
+                      className="fullscreen-img"
+                      draggable={false}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="fullscreen-overlay" onClick={closeFullscreen}>
+              <div className="vertical-images-container">
+                {pages.map((page) => (
+                  <img
+                    key={page.key}
+                    src={page.src}
+                    alt={`Page ${page.key}`}
+                    className="fullscreen-img"
+                    draggable={false}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       <ChapterNavigation
         slug={slug}
