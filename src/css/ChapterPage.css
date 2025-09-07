@@ -321,10 +321,17 @@
   }
 }
 
-/* Fullscreen vertical */
+/* Fullscreen vertical container */
 .chapter-images.fullscreen.vertical-scroll {
+  display: flex;
   flex-direction: column;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   height: 100vh;
-  padding-bottom: 4rem; /* extra space for last page and navigation */
 }
+
+/* Add extra space after last image */
+.chapter-images.fullscreen.vertical-scroll .chapter-img-wrapper:last-child {
+  margin-bottom: 5rem; /* enough space for navigation + iOS toolbar */
+}
+
