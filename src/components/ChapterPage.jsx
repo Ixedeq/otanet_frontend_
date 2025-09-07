@@ -90,9 +90,7 @@ export default function ChapterPage() {
 
   return (
     <div
-      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""} ${
-        horizontalScroll ? "horizontal-scroll" : ""
-      }`}
+      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
       ref={pageContainerRef}
     >
       <Link to="/" className="back-link">
@@ -112,7 +110,8 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      <div className="chapter-images">
+      {/* Apply horizontal-scroll class to chapter-images */}
+      <div className={`chapter-images ${horizontalScroll ? "horizontal-scroll" : ""}`}>
         {pages.map((page, idx) => (
           <ChapterImg
             key={page.key || idx}
