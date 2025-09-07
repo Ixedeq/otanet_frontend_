@@ -10,11 +10,11 @@ export default function ChapterPage() {
   const chapterKey = chapter.replace("-", "_");
   const chapterNumberStr = chapter.replace("-", ".");
 
+  const [mangaTitle, setMangaTitle] = useState("");
   const [pages, setPages] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
   const [horizontalScroll, setHorizontalScroll] = useState(false);
-
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
 
   // Fetch pages
@@ -27,7 +27,7 @@ export default function ChapterPage() {
       .finally(() => setLoadingPages(false));
   }, [slug, chapterKey]);
 
-  // Fetch chapters
+  // Fetch chapters + manga info
   useEffect(() => {
     fetch(`${API_BASE}/get_chapters?title=${slug}`)
       .then((res) => res.json())
@@ -38,6 +38,12 @@ export default function ChapterPage() {
         setChapters(sorted);
       })
       .catch(console.error);
+
+    // Fetch manga info (to get proper title)
+    fetch(`${API_BASE}/${slug}`)
+      .then((res) => res.json())
+      .then((data) => setMangaTitle(data.title || slug))
+      .catch(() => setMangaTitle(slug));
   }, [slug]);
 
   const currentIndex = chapters.findIndex(
@@ -55,7 +61,11 @@ export default function ChapterPage() {
   return (
     <div className="chapter-page">
       <Link to="/" className="back-link">← Back to Home</Link>
-      <h1 className="chapter-title">{slug}</h1>
+
+      {/* ✅ Use real manga title instead of slug */}
+      <h1 className="chapter-title">
+        {mangaTitle} – Chapter {chapterNumberStr}
+      </h1>
 
       <button
         className="toggle-scroll-btn"
@@ -88,10 +98,9 @@ export default function ChapterPage() {
       {fullscreenIndex !== null && (
         <>
           {horizontalScroll ? (
-            // Horizontal fullscreen
             <div className="fullscreen-overlay horizontal" onClick={closeFullscreen}>
               <div className="horizontal-images-wrapper">
-                {pages.map((page, idx) => (
+                {pages.map((page) => (
                   <div
                     key={page.key}
                     className="chapter-img-wrapper"
@@ -114,7 +123,6 @@ export default function ChapterPage() {
               </div>
             </div>
           ) : (
-            // Vertical fullscreen (stacked Webtoon)
             <div className="fullscreen-overlay" onClick={closeFullscreen}>
               <div className="vertical-images-container">
                 {pages.map((page) => (
