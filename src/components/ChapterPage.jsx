@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import ChapterImg from "./components/ChapterImg";
 import ChapterNavigation from "./components/ChapterNavigation";
@@ -16,9 +16,6 @@ export default function ChapterPage() {
   const [loadingPages, setLoadingPages] = useState(true);
   const [horizontalScroll, setHorizontalScroll] = useState(false);
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
-
-  const verticalOverlayRef = useRef(null);
-  const pageContainerRef = useRef(null);
 
   // Fetch pages
   useEffect(() => {
@@ -60,44 +57,8 @@ export default function ChapterPage() {
   const openFullscreen = (index) => setFullscreenIndex(index);
   const closeFullscreen = () => setFullscreenIndex(null);
 
-  // ================================
-  // Scroll syncing logic
-  // ================================
-  useEffect(() => {
-    if (!fullscreenIndex && verticalOverlayRef.current && pageContainerRef.current) return;
-
-    const verticalOverlay = verticalOverlayRef.current;
-    const pageContainer = pageContainerRef.current;
-
-    if (!verticalOverlay || !pageContainer) return;
-
-    const syncOverlayToPage = () => {
-      const ratio =
-        pageContainer.scrollTop /
-        (pageContainer.scrollHeight - pageContainer.clientHeight);
-      verticalOverlay.scrollTop =
-        ratio * (verticalOverlay.scrollHeight - verticalOverlay.clientHeight);
-    };
-
-    const syncPageToOverlay = () => {
-      const ratio =
-        verticalOverlay.scrollTop /
-        (verticalOverlay.scrollHeight - verticalOverlay.clientHeight);
-      pageContainer.scrollTop =
-        ratio * (pageContainer.scrollHeight - pageContainer.clientHeight);
-    };
-
-    verticalOverlay.addEventListener("scroll", syncPageToOverlay);
-    pageContainer.addEventListener("scroll", syncOverlayToPage);
-
-    return () => {
-      verticalOverlay.removeEventListener("scroll", syncPageToOverlay);
-      pageContainer.removeEventListener("scroll", syncOverlayToPage);
-    };
-  }, [fullscreenIndex]);
-
   return (
-    <div className="chapter-page" ref={pageContainerRef}>
+    <div className="chapter-page">
       <Link to="/" className="back-link">← Back to Home</Link>
 
       <h1 className="chapter-title">
@@ -113,6 +74,7 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
+      {/* Chapter images */}
       <div className={`chapter-images ${horizontalScroll ? "horizontal-scroll" : ""}`}>
         {pages.map((page, idx) => (
           <ChapterImg
@@ -125,50 +87,26 @@ export default function ChapterPage() {
         ))}
       </div>
 
+      {/* Navigation buttons */}
       <ChapterNavigation
         slug={slug}
         chapters={chapters}
         currentChapterNumberStr={chapterNumberStr}
       />
 
-      {/* Fullscreen Overlay */}
+      {/* Fullscreen image (inline) */}
       {fullscreenIndex !== null && (
-        <>
-          {horizontalScroll ? (
-            <div className="fullscreen-overlay horizontal" onClick={closeFullscreen}>
-              <div className="horizontal-images-wrapper">
-                {pages.map((page) => (
-                  <div key={page.key} className="chapter-img-wrapper horizontal-fullscreen">
-                    <img
-                      src={page.src}
-                      alt={`Page ${page.key}`}
-                      className="fullscreen-img"
-                      draggable={false}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div
-              className="fullscreen-overlay"
-              onClick={closeFullscreen}
-              ref={verticalOverlayRef}
-            >
-              <div className="vertical-images-container">
-                {pages.map((page) => (
-                  <img
-                    key={page.key}
-                    src={page.src}
-                    alt={`Page ${page.key}`}
-                    className="fullscreen-img"
-                    draggable={false}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </>
+        <div
+          className="fullscreen-inline"
+          onClick={closeFullscreen}
+        >
+          <img
+            src={pages[fullscreenIndex].src}
+            alt={`Page ${pages[fullscreenIndex].key}`}
+            className="fullscreen-img"
+            draggable={false}
+          />
+        </div>
       )}
     </div>
   );
