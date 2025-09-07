@@ -8,7 +8,7 @@ import "../css/ChapterPage.css";
 export default function ChapterPage() {
   const { slug, chapter } = useParams();
   const chapterKey = chapter.replace("-", "_");
-  const chapterNumberStr = chapter.replace("-", ".");
+  const chapterNumberStr = chapter.split("-")[1];
 
   const [mangaTitle, setMangaTitle] = useState("");
   const [pages, setPages] = useState([]);
@@ -47,6 +47,7 @@ export default function ChapterPage() {
 
   const currentIndex = chapters.findIndex(
     (ch) => ch.numberStr === chapterNumberStr
+  
   );
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
@@ -61,7 +62,7 @@ export default function ChapterPage() {
     <div className="chapter-page">
       <Link to="/" className="back-link">← Back to Home</Link>
 
-      {/* ✅ Title now shows proper manga title */}
+      {/* Title now shows proper manga title */}
       <h1 className="chapter-title">
         {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
