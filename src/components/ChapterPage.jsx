@@ -17,9 +17,8 @@ export default function ChapterPage() {
   const [horizontalScroll, setHorizontalScroll] = useState(false);
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
 
-  const chapterContainerRef = useRef(null); // main scroll container
-  const fullscreenRef = useRef(null); // fullscreen container
-  const savedScrollPos = useRef(0); // track vertical scroll
+  const pageContainerRef = useRef(null);
+  const fullscreenRef = useRef(null);
 
   // Fetch pages
   useEffect(() => {
@@ -49,36 +48,31 @@ export default function ChapterPage() {
       .catch(() => setMangaTitle(slug));
   }, [slug]);
 
-  const currentIndex = chapters.findIndex(
-    (ch) => ch.numberStr === chapterNumberStr
-  );
+  const currentIndex = chapters.findIndex((ch) => ch.numberStr === chapterNumberStr);
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1
       ? chapters[currentIndex + 1]
       : null;
 
-  const openFullscreen = (index) => {
-    // save current scroll position before opening fullscreen
-    if (chapterContainerRef.current) {
-      savedScrollPos.current = chapterContainerRef.current.scrollTop;
-    }
-    setFullscreenIndex(index);
-  };
+  const openFullscreen = (index) => setFullscreenIndex(index);
+  const closeFullscreen = () => setFullscreenIndex(null);
 
-  const closeFullscreen = () => {
-    setFullscreenIndex(null);
-    // restore scroll position after exiting fullscreen
-    if (chapterContainerRef.current) {
-      chapterContainerRef.current.scrollTo({
-        top: savedScrollPos.current,
-        behavior: "smooth",
-      });
-    }
-  };
+  // Sync scroll between fullscreen and main page
+  useEffect(() => {
+    if (!fullscreenRef.current || !pageContainerRef.current) return;
+
+    const handleScroll = () => {
+      pageContainerRef.current.scrollTop = fullscreenRef.current.scrollTop;
+    };
+
+    const fs = fullscreenRef.current;
+    fs.addEventListener("scroll", handleScroll);
+    return () => fs.removeEventListener("scroll", handleScroll);
+  }, [fullscreenIndex]);
 
   return (
-    <div className="chapter-page" ref={chapterContainerRef}>
+    <div className="chapter-page" ref={pageContainerRef}>
       <Link to="/" className="back-link">← Back to Home</Link>
 
       <h1 className="chapter-title">
@@ -112,9 +106,11 @@ export default function ChapterPage() {
         currentChapterNumberStr={chapterNumberStr}
       />
 
+      {/* Fullscreen Overlay */}
       {fullscreenIndex !== null && (
         <>
           {horizontalScroll ? (
+            // Horizontal fullscreen
             <div className="fullscreen-overlay horizontal" ref={fullscreenRef} onClick={closeFullscreen}>
               <div className="horizontal-images-wrapper">
                 {pages.map((page) => (
@@ -124,13 +120,13 @@ export default function ChapterPage() {
                       alt={`Page ${page.key}`}
                       className="fullscreen-img"
                       draggable={false}
-                      onClick={(e) => e.stopPropagation()}
                     />
                   </div>
                 ))}
               </div>
             </div>
           ) : (
+            // Vertical fullscreen (Webtoon)
             <div className="fullscreen-overlay" ref={fullscreenRef} onClick={closeFullscreen}>
               <div className="vertical-images-container">
                 {pages.map((page) => (
@@ -140,7 +136,6 @@ export default function ChapterPage() {
                     alt={`Page ${page.key}`}
                     className="fullscreen-img"
                     draggable={false}
-                    onClick={(e) => e.stopPropagation()}
                   />
                 ))}
               </div>
