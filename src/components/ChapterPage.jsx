@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import ChapterImg from "./components/ChapterImg";
 import ChapterNavigation from "./components/ChapterNavigation";
@@ -15,10 +15,7 @@ export default function ChapterPage() {
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
   const [horizontalScroll, setHorizontalScroll] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
-
-  const pageContainerRef = useRef(null);
 
   // Fetch pages
   useEffect(() => {
@@ -30,7 +27,7 @@ export default function ChapterPage() {
       .finally(() => setLoadingPages(false));
   }, [slug, chapterKey]);
 
-  // Fetch chapters + manga info
+  // Fetch chapters + manga title
   useEffect(() => {
     fetch(`${API_BASE}/get_chapters?title=${slug}`)
       .then((res) => res.json())
@@ -57,17 +54,11 @@ export default function ChapterPage() {
       ? chapters[currentIndex + 1]
       : null;
 
-  const openFullscreen = (index) => {
-    setFullscreenIndex(index);
-    setFullscreen(true);
-  };
-  const closeFullscreen = () => setFullscreen(false);
+  const openFullscreen = (index) => setFullscreenIndex(index);
+  const closeFullscreen = () => setFullscreenIndex(null);
 
   return (
-    <div
-      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
-      ref={pageContainerRef}
-    >
+    <div className="chapter-page">
       <Link to="/" className="back-link">
         ← Back to Home
       </Link>
@@ -76,8 +67,7 @@ export default function ChapterPage() {
         {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
 
-      {/* Show toggle only if NOT fullscreen */}
-      {!fullscreen && (
+      {!fullscreenIndex && (
         <button
           className="toggle-scroll-btn"
           onClick={() => setHorizontalScroll((prev) => !prev)}
@@ -88,39 +78,39 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      {/* Horizontal / Vertical container */}
-      {!fullscreen ? (
-        horizontalScroll ? (
-          <div className="chapter-images horizontal-scroll">
-            {pages.map((page, idx) => (
-              <div
-                key={page.key}
-                className="chapter-img-wrapper horizontal-fullscreen"
-              >
-                <ChapterImg
-                  src={page.src}
-                  alt={`Page ${page.key}`}
-                  index={idx}
-                  onOpenFullscreen={() => openFullscreen(idx)}
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="chapter-images">
-            {pages.map((page, idx) => (
+      {/* Main Page Scroll */}
+      {!fullscreenIndex && (
+        <div
+          className={`chapter-images ${
+            horizontalScroll ? "horizontal-scroll" : ""
+          }`}
+        >
+          {pages.map((page, idx) => (
+            <div
+              key={page.key}
+              className={`chapter-img-wrapper ${
+                horizontalScroll ? "horizontal" : "vertical"
+              }`}
+            >
               <ChapterImg
-                key={page.key}
                 src={page.src}
                 alt={`Page ${page.key}`}
                 index={idx}
                 onOpenFullscreen={() => openFullscreen(idx)}
               />
-            ))}
-          </div>
-        )
-      ) : (
-        // FULLSCREEN MODE
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ChapterNavigation
+        slug={slug}
+        chapters={chapters}
+        currentChapterNumberStr={chapterNumberStr}
+      />
+
+      {/* Fullscreen Overlay */}
+      {fullscreenIndex !== null && (
         <>
           {horizontalScroll ? (
             <div className="fullscreen-overlay horizontal" onClick={closeFullscreen}>
@@ -141,7 +131,7 @@ export default function ChapterPage() {
               </div>
             </div>
           ) : (
-            <div className="fullscreen-overlay" onClick={closeFullscreen}>
+            <div className="fullscreen-overlay vertical" onClick={closeFullscreen}>
               <div className="vertical-images-container">
                 {pages.map((page) => (
                   <img
@@ -157,12 +147,6 @@ export default function ChapterPage() {
           )}
         </>
       )}
-
-      <ChapterNavigation
-        slug={slug}
-        chapters={chapters}
-        currentChapterNumberStr={chapterNumberStr}
-      />
     </div>
   );
 }
