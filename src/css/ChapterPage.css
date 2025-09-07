@@ -320,3 +320,11 @@
     max-height: 75vh;
   }
 }
+
+/* Fullscreen vertical */
+.chapter-images.fullscreen.vertical-scroll {
+  flex-direction: column;
+  overflow-y: auto;
+  height: 100vh;
+  padding-bottom: 4rem; /* extra space for last page and navigation */
+}
