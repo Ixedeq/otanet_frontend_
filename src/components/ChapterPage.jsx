@@ -64,9 +64,7 @@ export default function ChapterPage() {
 
   return (
     <div
-      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""} ${
-        horizontalScroll ? "horizontal-scroll" : ""
-      }`}
+      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
       ref={pageContainerRef}
     >
       <Link to="/" className="back-link">
@@ -86,17 +84,33 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      <div className="chapter-images">
-        {pages.map((page, idx) => (
-          <ChapterImg
-            key={page.key}
-            src={page.src}
-            alt={`Page ${page.key}`}
-            index={idx}
-            onOpenFullscreen={() => toggleFullscreen(idx)}
-          />
-        ))}
-      </div>
+      {/* Horizontal / Vertical container */}
+      {horizontalScroll ? (
+        <div className="chapter-images horizontal-scroll">
+          {pages.map((page, idx) => (
+            <div key={page.key} className="chapter-img-wrapper horizontal-fullscreen">
+              <ChapterImg
+                src={page.src}
+                alt={`Page ${page.key}`}
+                index={idx}
+                onOpenFullscreen={() => toggleFullscreen(idx)}
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="chapter-images">
+          {pages.map((page, idx) => (
+            <ChapterImg
+              key={page.key}
+              src={page.src}
+              alt={`Page ${page.key}`}
+              index={idx}
+              onOpenFullscreen={() => toggleFullscreen(idx)}
+            />
+          ))}
+        </div>
+      )}
 
       <ChapterNavigation
         slug={slug}
