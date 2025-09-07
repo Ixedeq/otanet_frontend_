@@ -15,10 +15,10 @@ export default function ChapterPage() {
   const [chapters, setChapters] = useState([]);
   const [loadingPages, setLoadingPages] = useState(true);
   const [horizontalScroll, setHorizontalScroll] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
 
   const pageContainerRef = useRef(null);
-  const fullscreenRef = useRef(null);
 
   // Fetch pages
   useEffect(() => {
@@ -48,32 +48,30 @@ export default function ChapterPage() {
       .catch(() => setMangaTitle(slug));
   }, [slug]);
 
-  const currentIndex = chapters.findIndex((ch) => ch.numberStr === chapterNumberStr);
+  const currentIndex = chapters.findIndex(
+    (ch) => ch.numberStr === chapterNumberStr
+  );
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1
       ? chapters[currentIndex + 1]
       : null;
 
-  const openFullscreen = (index) => setFullscreenIndex(index);
-  const closeFullscreen = () => setFullscreenIndex(null);
-
-  // Sync scroll between fullscreen and main page
-  useEffect(() => {
-    if (!fullscreenRef.current || !pageContainerRef.current) return;
-
-    const handleScroll = () => {
-      pageContainerRef.current.scrollTop = fullscreenRef.current.scrollTop;
-    };
-
-    const fs = fullscreenRef.current;
-    fs.addEventListener("scroll", handleScroll);
-    return () => fs.removeEventListener("scroll", handleScroll);
-  }, [fullscreenIndex]);
+  const toggleFullscreen = (index = null) => {
+    if (index !== null) setFullscreenIndex(index);
+    setFullscreen((prev) => !prev);
+  };
 
   return (
-    <div className="chapter-page" ref={pageContainerRef}>
-      <Link to="/" className="back-link">← Back to Home</Link>
+    <div
+      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""} ${
+        horizontalScroll ? "horizontal-scroll" : ""
+      }`}
+      ref={pageContainerRef}
+    >
+      <Link to="/" className="back-link">
+        ← Back to Home
+      </Link>
 
       <h1 className="chapter-title">
         {mangaTitle} – Chapter {chapterNumberStr}
@@ -88,14 +86,14 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      <div className={`chapter-images ${horizontalScroll ? "horizontal-scroll" : ""}`}>
+      <div className="chapter-images">
         {pages.map((page, idx) => (
           <ChapterImg
             key={page.key}
             src={page.src}
             alt={`Page ${page.key}`}
             index={idx}
-            onOpenFullscreen={() => openFullscreen(idx)}
+            onOpenFullscreen={() => toggleFullscreen(idx)}
           />
         ))}
       </div>
@@ -105,44 +103,6 @@ export default function ChapterPage() {
         chapters={chapters}
         currentChapterNumberStr={chapterNumberStr}
       />
-
-      {/* Fullscreen Overlay */}
-      {fullscreenIndex !== null && (
-        <>
-          {horizontalScroll ? (
-            // Horizontal fullscreen
-            <div className="fullscreen-overlay horizontal" ref={fullscreenRef} onClick={closeFullscreen}>
-              <div className="horizontal-images-wrapper">
-                {pages.map((page) => (
-                  <div key={page.key} className="chapter-img-wrapper horizontal-fullscreen">
-                    <img
-                      src={page.src}
-                      alt={`Page ${page.key}`}
-                      className="fullscreen-img"
-                      draggable={false}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            // Vertical fullscreen (Webtoon)
-            <div className="fullscreen-overlay" ref={fullscreenRef} onClick={closeFullscreen}>
-              <div className="vertical-images-container">
-                {pages.map((page) => (
-                  <img
-                    key={page.key}
-                    src={page.src}
-                    alt={`Page ${page.key}`}
-                    className="fullscreen-img"
-                    draggable={false}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      )}
     </div>
   );
 }

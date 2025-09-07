@@ -258,3 +258,16 @@
   user-select: none;
   -webkit-user-drag: none;
 }
+
+.chapter-page.fullscreen-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  z-index: 9999;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* smooth scroll on iOS */
+  padding: 2rem 1rem;
+}
