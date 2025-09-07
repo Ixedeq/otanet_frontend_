@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import ChapterImg from "./components/ChapterImg";
 import ChapterNavigation from "./components/ChapterNavigation";
@@ -8,7 +8,7 @@ import "../css/ChapterPage.css";
 export default function ChapterPage() {
   const { slug, chapter } = useParams();
   const chapterKey = chapter.replace("-", "_");
-  const chapterNumberStr = chapter.split("-")[1];
+  const chapterNumberStr = chapter.split("-")[1] || "0";
 
   const [mangaTitle, setMangaTitle] = useState("");
   const [pages, setPages] = useState([]);
@@ -20,53 +20,77 @@ export default function ChapterPage() {
 
   const pageContainerRef = useRef(null);
 
-  // Fetch pages
+  // --- Fetch pages ---
   useEffect(() => {
-    setLoadingPages(true);
-    fetch(`${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`)
-      .then((res) => res.json())
-      .then(setPages)
-      .catch(console.error)
-      .finally(() => setLoadingPages(false));
+    const fetchPages = async () => {
+      setLoadingPages(true);
+      try {
+        const res = await fetch(
+          `${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`
+        );
+        const data = await res.json();
+        setPages(data);
+      } catch (err) {
+        console.error("Failed to fetch pages:", err);
+        setPages([]);
+      } finally {
+        setLoadingPages(false);
+      }
+    };
+    fetchPages();
   }, [slug, chapterKey]);
 
-  // Fetch chapters + manga info
+  // --- Fetch chapters + manga info concurrently ---
   useEffect(() => {
-    fetch(`${API_BASE}/get_chapters?title=${slug}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const sorted = data
+    const fetchData = async () => {
+      try {
+        const [chaptersRes, mangaRes] = await Promise.all([
+          fetch(`${API_BASE}/get_chapters?title=${slug}`),
+          fetch(`${API_BASE}/${slug}`),
+        ]);
+
+        const chaptersData = await chaptersRes.json();
+        const sortedChapters = chaptersData
           .map((ch) => ({ ...ch, numberStr: ch.number.toString() }))
           .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
-        setChapters(sorted);
-      })
-      .catch(console.error);
+        setChapters(sortedChapters);
 
-    fetch(`${API_BASE}/${slug}`)
-      .then((res) => res.json())
-      .then((data) => setMangaTitle(data.title || slug))
-      .catch(() => setMangaTitle(slug));
+        const mangaData = await mangaRes.json();
+        setMangaTitle(mangaData.title || slug);
+      } catch (err) {
+        console.error("Failed to fetch chapters/manga info:", err);
+        setMangaTitle(slug);
+        setChapters([]);
+      }
+    };
+    fetchData();
   }, [slug]);
 
-  const currentIndex = chapters.findIndex(
-    (ch) => ch.numberStr === chapterNumberStr
+  // --- Current chapter index & navigation ---
+  const currentIndex = useMemo(
+    () => chapters.findIndex((ch) => ch.numberStr === chapterNumberStr),
+    [chapters, chapterNumberStr]
   );
+
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1
       ? chapters[currentIndex + 1]
       : null;
 
+  // --- Fullscreen toggle ---
   const toggleFullscreen = (index = null) => {
-    if (index !== null) setFullscreenIndex(index);
+    if (!fullscreen && index !== null) {
+      setFullscreenIndex(index);
+    } else if (fullscreen) {
+      setFullscreenIndex(null);
+    }
     setFullscreen((prev) => !prev);
   };
 
   return (
     <div
-      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""} ${
-        horizontalScroll ? "horizontal-scroll" : ""
-      }`}
+      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
       ref={pageContainerRef}
     >
       <Link to="/" className="back-link">
@@ -86,12 +110,13 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      <div className="chapter-images">
+      {/* Apply horizontal-scroll class to chapter-images */}
+      <div className={`chapter-images ${horizontalScroll ? "horizontal-scroll" : ""}`}>
         {pages.map((page, idx) => (
           <ChapterImg
-            key={page.key}
+            key={page.key || idx}
             src={page.src}
-            alt={`Page ${page.key}`}
+            alt={`Page ${page.key || idx}`}
             index={idx}
             onOpenFullscreen={() => toggleFullscreen(idx)}
           />
@@ -102,6 +127,8 @@ export default function ChapterPage() {
         slug={slug}
         chapters={chapters}
         currentChapterNumberStr={chapterNumberStr}
+        prevChapter={prevChapter}
+        nextChapter={nextChapter}
       />
     </div>
   );
