@@ -48,6 +48,7 @@ export default function ChapterPage() {
           fetch(`${API_BASE}/get_chapters?title=${slug}`),
           fetch(`${API_BASE}/${slug}`),
         ]);
+
         const chaptersData = await chaptersRes.json();
         const sortedChapters = chaptersData
           .map((ch) => ({ ...ch, numberStr: ch.number.toString() }))
@@ -65,11 +66,11 @@ export default function ChapterPage() {
     fetchData();
   }, [slug]);
 
+  // Current chapter index
   const currentIndex = useMemo(
     () => chapters.findIndex((ch) => ch.numberStr === chapterNumberStr),
     [chapters, chapterNumberStr]
   );
-
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1
@@ -83,11 +84,11 @@ export default function ChapterPage() {
     setFullscreen((prev) => !prev);
   };
 
-  // Disable body scroll in fullscreen (desktop + iOS)
+  // Prevent body scroll in fullscreen (desktop + iOS)
   useEffect(() => {
     if (fullscreen) {
       document.body.style.overflow = "hidden";
-      window.scrollTo(0, 0);
+      window.scrollTo(0, 0); // hide iOS toolbar
     } else {
       document.body.style.overflow = "";
     }
@@ -107,7 +108,7 @@ export default function ChapterPage() {
         {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
 
-      {/* Toggle button only when NOT in fullscreen */}
+      {/* Horizontal toggle only when NOT fullscreen */}
       {!fullscreen && (
         <button
           className="toggle-scroll-btn"
@@ -119,10 +120,13 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      {/* Apply horizontal-scroll regardless of fullscreen */}
       <div
-        className={`chapter-images ${fullscreen ? "fullscreen-mode" : ""} ${
-          horizontalScroll ? "horizontal-scroll" : ""
+        className={`chapter-images ${
+          fullscreen
+            ? "fullscreen"
+            : horizontalScroll
+            ? "horizontal-scroll"
+            : ""
         }`}
       >
         {pages.map((page, idx) => (
