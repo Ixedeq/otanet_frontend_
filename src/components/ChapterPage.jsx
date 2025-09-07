@@ -8,7 +8,7 @@ import "../css/ChapterPage.css";
 export default function ChapterPage() {
   const { slug, chapter } = useParams();
   const chapterKey = chapter.replace("-", "_");
-  const chapterNumberStr = chapter.split[1];
+  const chapterNumberStr = chapter.split("-")[1];
 
   const [mangaTitle, setMangaTitle] = useState("");
   const [pages, setPages] = useState([]);
@@ -63,7 +63,7 @@ export default function ChapterPage() {
 
       {/* Title now shows proper manga title */}
       <h1 className="chapter-title">
-        {mangaTitle} – {chapterNumberStr}
+        {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
 
       <button
