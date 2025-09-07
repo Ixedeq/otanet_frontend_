@@ -39,7 +39,6 @@ export default function ChapterPage() {
       })
       .catch(console.error);
 
-    // Fetch manga info (to get proper title)
     fetch(`${API_BASE}/${slug}`)
       .then((res) => res.json())
       .then((data) => setMangaTitle(data.title || slug))
@@ -62,7 +61,7 @@ export default function ChapterPage() {
     <div className="chapter-page">
       <Link to="/" className="back-link">← Back to Home</Link>
 
-      {/* ✅ Use real manga title instead of slug */}
+      {/* ✅ Title now shows proper manga title */}
       <h1 className="chapter-title">
         {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
@@ -101,17 +100,7 @@ export default function ChapterPage() {
             <div className="fullscreen-overlay horizontal" onClick={closeFullscreen}>
               <div className="horizontal-images-wrapper">
                 {pages.map((page) => (
-                  <div
-                    key={page.key}
-                    className="chapter-img-wrapper"
-                    style={{
-                      flex: "0 0 85%",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      scrollSnapAlign: "center",
-                    }}
-                  >
+                  <div key={page.key} className="chapter-img-wrapper horizontal-fullscreen">
                     <img
                       src={page.src}
                       alt={`Page ${page.key}`}
