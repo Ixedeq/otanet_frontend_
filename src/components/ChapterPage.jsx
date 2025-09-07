@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import ChapterImg from "./components/ChapterImg";
 import ChapterNavigation from "./components/ChapterNavigation";
@@ -16,6 +16,10 @@ export default function ChapterPage() {
   const [loadingPages, setLoadingPages] = useState(true);
   const [horizontalScroll, setHorizontalScroll] = useState(false);
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
+
+  const chapterContainerRef = useRef(null); // main scroll container
+  const fullscreenRef = useRef(null); // fullscreen container
+  const savedScrollPos = useRef(0); // track vertical scroll
 
   // Fetch pages
   useEffect(() => {
@@ -54,19 +58,27 @@ export default function ChapterPage() {
       ? chapters[currentIndex + 1]
       : null;
 
-  const openFullscreen = (index) => setFullscreenIndex(index);
-
-  // Sync scroll when exiting fullscreen
-  const closeFullscreen = () => {
-    if (fullscreenIndex !== null) {
-      const lastPage = document.getElementById(`page-${fullscreenIndex}`);
-      if (lastPage) lastPage.scrollIntoView({ behavior: "smooth" });
+  const openFullscreen = (index) => {
+    // save current scroll position before opening fullscreen
+    if (chapterContainerRef.current) {
+      savedScrollPos.current = chapterContainerRef.current.scrollTop;
     }
+    setFullscreenIndex(index);
+  };
+
+  const closeFullscreen = () => {
     setFullscreenIndex(null);
+    // restore scroll position after exiting fullscreen
+    if (chapterContainerRef.current) {
+      chapterContainerRef.current.scrollTo({
+        top: savedScrollPos.current,
+        behavior: "smooth",
+      });
+    }
   };
 
   return (
-    <div className="chapter-page">
+    <div className="chapter-page" ref={chapterContainerRef}>
       <Link to="/" className="back-link">← Back to Home</Link>
 
       <h1 className="chapter-title">
@@ -86,7 +98,6 @@ export default function ChapterPage() {
         {pages.map((page, idx) => (
           <ChapterImg
             key={page.key}
-            id={`page-${idx}`} // <-- Important for scroll syncing
             src={page.src}
             alt={`Page ${page.key}`}
             index={idx}
@@ -101,17 +112,13 @@ export default function ChapterPage() {
         currentChapterNumberStr={chapterNumberStr}
       />
 
-      {/* Fullscreen Overlay */}
       {fullscreenIndex !== null && (
         <>
           {horizontalScroll ? (
-            <div className="fullscreen-overlay horizontal" onClick={closeFullscreen}>
+            <div className="fullscreen-overlay horizontal" ref={fullscreenRef} onClick={closeFullscreen}>
               <div className="horizontal-images-wrapper">
-                {pages.map((page, idx) => (
-                  <div
-                    key={page.key}
-                    className="chapter-img-wrapper horizontal-fullscreen"
-                  >
+                {pages.map((page) => (
+                  <div key={page.key} className="chapter-img-wrapper horizontal-fullscreen">
                     <img
                       src={page.src}
                       alt={`Page ${page.key}`}
@@ -124,12 +131,11 @@ export default function ChapterPage() {
               </div>
             </div>
           ) : (
-            <div className="fullscreen-overlay" onClick={closeFullscreen}>
+            <div className="fullscreen-overlay" ref={fullscreenRef} onClick={closeFullscreen}>
               <div className="vertical-images-container">
-                {pages.map((page, idx) => (
+                {pages.map((page) => (
                   <img
                     key={page.key}
-                    id={`fullscreen-page-${idx}`} // optional
                     src={page.src}
                     alt={`Page ${page.key}`}
                     className="fullscreen-img"
