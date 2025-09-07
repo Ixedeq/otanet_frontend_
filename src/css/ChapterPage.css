@@ -86,6 +86,30 @@
   padding: 0 1rem;
 }
 
+/* Fullscreen + horizontal */
+.fullscreen-mode.horizontal-scroll {
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  gap: 1rem;
+  padding: 2rem 1rem;
+}
+
+.fullscreen-mode.horizontal-scroll .chapter-img-wrapper {
+  flex: 0 0 85%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  scroll-snap-align: center;
+}
+
+.fullscreen-mode.horizontal-scroll .chapter-img {
+  max-height: 80vh;
+  pointer-events: none;
+}
+
+
 .chapter-images.horizontal-scroll .chapter-img-wrapper {
   flex: 0 0 85%;
   display: flex;
