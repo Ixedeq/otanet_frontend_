@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import ChapterImg from "./components/ChapterImg";
 import ChapterNavigation from "./components/ChapterNavigation";
@@ -16,8 +16,6 @@ export default function ChapterPage() {
   const [loadingPages, setLoadingPages] = useState(true);
   const [horizontalScroll, setHorizontalScroll] = useState(false);
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
-
-  const pageContainerRef = useRef(null);
 
   // Fetch pages
   useEffect(() => {
@@ -76,11 +74,8 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
-      {/* Main chapter images */}
-      <div
-        className={`chapter-images ${horizontalScroll ? "horizontal-scroll" : ""}`}
-        ref={pageContainerRef}
-      >
+      {/* Chapter images */}
+      <div className={`chapter-images ${horizontalScroll ? "horizontal-scroll" : ""}`}>
         {pages.map((page, idx) => (
           <ChapterImg
             key={page.key}
@@ -92,46 +87,25 @@ export default function ChapterPage() {
         ))}
       </div>
 
-      {/* Navigation */}
+      {/* Navigation buttons */}
       <ChapterNavigation
         slug={slug}
         chapters={chapters}
         currentChapterNumberStr={chapterNumberStr}
       />
 
-      {/* Fullscreen overlay (option 2: reuse main scroll) */}
-      {fullscreenIndex !== null && !horizontalScroll && (
-        <div className="fullscreen-overlay" onClick={closeFullscreen}>
-          {/* Just render the same content, no separate scroll */}
-          <div className="vertical-images-container">
-            {pages.map((page, idx) => (
-              <ChapterImg
-                key={page.key}
-                src={page.src}
-                alt={`Page ${page.key}`}
-                index={idx}
-                onOpenFullscreen={() => {}}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Horizontal fullscreen */}
-      {fullscreenIndex !== null && horizontalScroll && (
-        <div className="fullscreen-overlay horizontal" onClick={closeFullscreen}>
-          <div className="horizontal-images-wrapper">
-            {pages.map((page) => (
-              <div key={page.key} className="chapter-img-wrapper horizontal-fullscreen">
-                <img
-                  src={page.src}
-                  alt={`Page ${page.key}`}
-                  className="fullscreen-img"
-                  draggable={false}
-                />
-              </div>
-            ))}
-          </div>
+      {/* Fullscreen image (inline) */}
+      {fullscreenIndex !== null && (
+        <div
+          className="fullscreen-inline"
+          onClick={closeFullscreen}
+        >
+          <img
+            src={pages[fullscreenIndex].src}
+            alt={`Page ${pages[fullscreenIndex].key}`}
+            className="fullscreen-img"
+            draggable={false}
+          />
         </div>
       )}
     </div>
