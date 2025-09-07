@@ -71,6 +71,7 @@ export default function ChapterPage() {
     () => chapters.findIndex((ch) => ch.numberStr === chapterNumberStr),
     [chapters, chapterNumberStr]
   );
+
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1
@@ -84,11 +85,11 @@ export default function ChapterPage() {
     setFullscreen((prev) => !prev);
   };
 
-  // --- Disable body scroll in fullscreen ---
+  // --- Prevent body scroll in fullscreen (desktop + iOS) ---
   useEffect(() => {
     if (fullscreen) {
       document.body.style.overflow = "hidden";
-      window.scrollTo(0, 0); // hides iOS toolbar
+      window.scrollTo(0, 0);
     } else {
       document.body.style.overflow = "";
     }
@@ -97,9 +98,7 @@ export default function ChapterPage() {
 
   return (
     <div
-      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""} ${
-        horizontalScroll ? "horizontal-scroll" : ""
-      }`}
+      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
       ref={pageContainerRef}
     >
       <Link to="/" className="back-link">
@@ -110,7 +109,7 @@ export default function ChapterPage() {
         {mangaTitle} – Chapter {chapterNumberStr}
       </h1>
 
-      {/* Toggle button only when NOT in fullscreen */}
+      {/* Only show toggle in non-fullscreen */}
       {!fullscreen && (
         <button
           className="toggle-scroll-btn"
@@ -122,13 +121,10 @@ export default function ChapterPage() {
 
       {loadingPages && <p>Loading pages...</p>}
 
+      {/* Horizontal scroll applies ONLY outside fullscreen */}
       <div
         className={`chapter-images ${
-          fullscreen
-            ? "fullscreen horizontal-scroll" // fullscreen respects horizontal mode
-            : horizontalScroll
-            ? "horizontal-scroll"
-            : ""
+          fullscreen ? "" : horizontalScroll ? "horizontal-scroll" : ""
         }`}
       >
         {pages.map((page, idx) => (
