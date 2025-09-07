@@ -9,12 +9,14 @@ import MangaPage from "./components/MangaPage";
 import ChapterPage from "./components/ChapterPage";
 import SearchResult from "./components/SearchResult";
 import "./css/App.css";
+import ScrollToTop from "./components/components/ScrollToTop";
 
 export default function App() {
   return (
     <div className="app">
       <Header />
       <main>
+        <ScrollToTop />
         <Routes>
           {/* Home page shows carousel only */}
           <Route
