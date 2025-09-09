@@ -114,6 +114,19 @@ export default function ChapterPage() {
     }
   }, [chapterKey, fullscreen, horizontalScroll]);
 
+  // --- Mark current chapter as read in localStorage ---
+  useEffect(() => {
+    const chapterNumber = parseFloat(chapterNumberStr);
+    const key = `${slug}-readChapters`;
+    const saved = localStorage.getItem(key);
+    const readChapters = saved ? JSON.parse(saved) : [];
+
+    if (!readChapters.includes(chapterNumber)) {
+      const updated = [...readChapters, chapterNumber];
+      localStorage.setItem(key, JSON.stringify(updated));
+    }
+  }, [slug, chapterNumberStr]);
+
   return (
     <div
       className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
