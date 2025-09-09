@@ -57,7 +57,7 @@
 }
 
 /* ============================= */
-/* Chapter Images (default vertical) */
+/* Chapter Images (Vertical & Horizontal) */
 .chapter-images {
   display: flex;
   flex-direction: column;
@@ -76,9 +76,9 @@
 
 .chapter-images .chapter-img {
   display: block;
-  width: 100%;
-  height: auto; /* natural height for webtoon strips */
-  max-height: none; /* allow long strips */
+  width: 100%;       /* full container width */
+  height: auto;      /* natural height for webtoon strips */
+  max-height: none;  /* allow long strips */
   object-fit: contain;
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
@@ -88,13 +88,14 @@
   -webkit-user-drag: none;
 }
 
-/* Horizontal Scroll Mode */
+/* Horizontal Scroll Mode (Normal & Fullscreen) */
 .chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  overflow-y: hidden;
   gap: 1rem;
   padding: 0 1rem;
+  scroll-snap-type: x mandatory;
 }
 
 .chapter-images.horizontal-scroll .chapter-img-wrapper {
@@ -110,7 +111,7 @@
   width: auto;
   height: 100%; /* full height in horizontal scroll */
   max-height: 70vh;
-  pointer-events: none; /* prevent accidental drags */
+  pointer-events: none; /* prevent accidental drag */
 }
 
 /* ============================= */
@@ -122,12 +123,12 @@
   z-index: 9999;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 2rem 1rem 4rem; /* extra bottom padding for iOS */
+  padding: 2rem 1rem 4rem; /* extra bottom padding for iOS / next button */
 }
 
 .fullscreen-mode .chapter-img {
   width: 100%;
-  height: auto; /* full width, natural height */
+  height: auto;     /* full width, natural height */
   max-height: none; /* allow very tall strips */
   object-fit: contain;
   border-radius: 0.5rem;
@@ -141,9 +142,9 @@
   flex-direction: row;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-snap-type: x mandatory;
   gap: 1rem;
   padding: 2rem 1rem;
+  scroll-snap-type: x mandatory;
 }
 
 .fullscreen-mode.horizontal-scroll .chapter-img-wrapper {
@@ -231,9 +232,9 @@
   .chapter-images.horizontal-scroll .chapter-img-wrapper { flex: 0 0 90%; }
   .chapter-images.horizontal-scroll .chapter-img { max-height: 75vh; }
 
-  /* Fullscreen vertical images = full screen height on mobile */
+  /* Fullscreen vertical images = natural height for webtoon strips */
   .fullscreen-mode .chapter-img {
-    height: auto; /* allow natural height for webtoon strips */
+    height: auto;
     max-height: none;
   }
 }
