@@ -20,14 +20,13 @@ export default function MangaPage() {
 
   // Listen for updates from ChapterPage
   useEffect(() => {
-    const handleStorage = (e) => {
-      if (!e.key || e.key === `${slug}-readChapters`) {
-        const saved = localStorage.getItem(`${slug}-readChapters`);
-        setReadChapters(saved ? JSON.parse(saved) : []);
+    const handleReadChaptersUpdate = (e) => {
+      if (e.detail.slug === slug) {
+        setReadChapters(e.detail.updatedChapters);
       }
     };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener("readChaptersUpdated", handleReadChaptersUpdate);
+    return () => window.removeEventListener("readChaptersUpdated", handleReadChaptersUpdate);
   }, [slug]);
 
   const markChapterAsRead = (number) => {
@@ -35,7 +34,11 @@ export default function MangaPage() {
       const updated = [...readChapters, number];
       setReadChapters(updated);
       localStorage.setItem(`${slug}-readChapters`, JSON.stringify(updated));
-      window.dispatchEvent(new Event("storage")); // notify other components
+      window.dispatchEvent(
+        new CustomEvent("readChaptersUpdated", {
+          detail: { slug, updatedChapters: updated },
+        })
+      );
     }
   };
 

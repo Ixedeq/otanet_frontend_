@@ -22,17 +22,21 @@ export default function ChapterPage() {
 
   const pageContainerRef = useRef(null);
 
-  // inside the useEffect for marking chapter as read
-  useEffect(() => {
+  // inside ChapterPage component, add this function:
+  const markChapterAsRead = (number) => {
     const saved = JSON.parse(localStorage.getItem(`${slug}-readChapters`)) || [];
-    if (!saved.includes(chapterNumber)) {
-      const updated = [...saved, chapterNumber];
+    if (!saved.includes(number)) {
+      const updated = [...saved, number];
       localStorage.setItem(`${slug}-readChapters`, JSON.stringify(updated));
 
-      // dispatch a custom storage event so MangaPage updates immediately
-      window.dispatchEvent(new Event("storage"));
+      // Dispatch custom event so MangaPage updates immediately
+      window.dispatchEvent(
+        new CustomEvent("readChaptersUpdated", {
+          detail: { slug, updatedChapters: updated },
+        })
+      );
     }
-  }, [slug, chapterNumber]);
+  };
 
 
   // --- Fetch pages ---
