@@ -1,53 +1,76 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import "../css/BookmarksPage.css";
+import "../css/Recent_Manga.css"; // using your existing manga-list CSS
 import API_BASE from "./Config";
 
 export default function BookmarksPage() {
   const [bookmarkedManga, setBookmarkedManga] = useState([]);
+  const [mangaData, setMangaData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const savedBookmarks = JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
+  // --- Fetch bookmarks from localStorage ---
+  const updateBookmarks = () => {
+    const saved = JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
+    setBookmarkedManga(saved);
+  };
 
-    const fetchMangaData = async () => {
+  useEffect(() => {
+    updateBookmarks();
+
+    // Listen for tab focus or other storage changes
+    window.addEventListener("focus", updateBookmarks);
+    window.addEventListener("storage", updateBookmarks);
+
+    return () => {
+      window.removeEventListener("focus", updateBookmarks);
+      window.removeEventListener("storage", updateBookmarks);
+    };
+  }, []);
+
+  // --- Fetch manga info for each bookmarked slug ---
+  useEffect(() => {
+    if (bookmarkedManga.length === 0) {
+      setMangaData([]);
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const mangaList = await Promise.all(
-          savedBookmarks.map(async (slug) => {
-            const res = await fetch(`${API_BASE}/${slug}`);
-            if (!res.ok) return null;
-            const data = await res.json();
-            if (!data.cover)
-              data.cover =
-                "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
-            return { ...data, slug };
-          })
+        const requests = bookmarkedManga.map((slug) =>
+          fetch(`${API_BASE}/${slug}`).then((res) => res.json())
         );
-        setBookmarkedManga(mangaList.filter(Boolean));
+        const results = await Promise.all(requests);
+        setMangaData(results);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to fetch bookmarked manga:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    if (savedBookmarks.length > 0) fetchMangaData();
-    else setLoading(false);
-  }, []);
+    fetchData();
+  }, [bookmarkedManga]);
 
   if (loading) return <div>Loading...</div>;
-  if (bookmarkedManga.length === 0) return <div>No bookmarked manga found.</div>;
+  if (mangaData.length === 0) return <div>No bookmarked manga.</div>;
 
   return (
-    <div className="bookmarks-list">
-      {bookmarkedManga.map(({ title, description, cover, slug }) => (
-        <Link key={slug} to={`/${slug}`} className="bookmarks-card">
-          <img src={cover} alt={title} className="bookmarks-thumb" />
-          <div className="bookmarks-info">
-            <div className="bookmarks-title-text">{title}</div>
-            {description && <div className="bookmarks-description-text">{description}</div>}
+    <div className="manga-list">
+      {mangaData.map((manga) => (
+        <a key={manga.slug} href={`/${manga.slug}`} className="manga-card">
+          <img
+            src={manga.cover}
+            alt={manga.title}
+            className="manga-thumb"
+          />
+          <div className="manga-info">
+            <h2 className="manga-title-text">{manga.title}</h2>
+            <p className="manga-description-text">
+              {manga.description || "No description available."}
+            </p>
           </div>
-        </Link>
+        </a>
       ))}
     </div>
   );
