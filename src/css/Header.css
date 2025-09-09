@@ -139,31 +139,36 @@ a {
 .sidebar {
     position: fixed;
     top: 0;
-    right: 0; /* changed from left: 0 */
+    right: 0;
     width: 240px;
     height: 100vh;
     background-color: var(--main-bg, #333);
     color: var(--font-color, white);
     padding: 1rem;
-    box-shadow: -2px 0 8px rgba(0,0,0,0.3); /* shadow on left */
+    box-shadow: -2px 0 8px rgba(0,0,0,0.3);
     z-index: 1000;
     display: flex;
     flex-direction: column;
     transition: transform 0.3s ease;
-    transform: translateX(100%); /* hidden to the right by default */
+    transform: translateX(100%);
+    box-sizing: border-box; /* include padding inside width */
 }
 
 .sidebar.open {
-    transform: translateX(0); /* slide in */
+    transform: translateX(0);
 }
 
-/* Mobile - cover entire screen */
+/* Mobile - cover entire screen properly */
 @media (max-width: 600px) {
     .sidebar {
-        width: 100vw;
+        width: 100%; /* use 100% instead of 100vw */
+        max-width: 100%;
         height: 100vh;
+        padding: 1rem;
+        box-sizing: border-box; /* ensures padding doesn’t overflow */
     }
 }
+
 
 
 nav ul {
