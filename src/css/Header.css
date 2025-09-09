@@ -5,9 +5,6 @@
     --header-font-size: 3.5em;
     --header-height: 8em;
     --menu-color: white;
-
-    --search-width-desktop: 175px;
-    --search-width-mobile: 11rem;
 }
 
 header {
@@ -22,7 +19,7 @@ header {
     transform-origin: top center;
 }
 
-/* Centered Logo */
+/* Logo centered absolutely */
 .site-title {
     position: absolute;
     left: 50%;
@@ -32,7 +29,6 @@ header {
     color: white;
     z-index: 1;
     white-space: nowrap;
-    transition: opacity 0.3s ease;
 }
 
 header h1 span {
@@ -83,7 +79,7 @@ a {
     padding: 0 10px;
     border: none;
     border-radius: 20px;
-    background: var(--color-back-light);
+    background: var(--color-back-light); 
     color: white;
     font-size: 16px;
     line-height: 40px;
@@ -94,20 +90,111 @@ a {
 
 .searchBox:hover,
 .searchBox:focus-within {
-    width: 240px;
+    width: 240px;                 
 }
 
 .searchBox:hover > .searchInput,
 .searchBox:focus-within > .searchInput {
-    width: var(--search-width-desktop);
+    outline: 0;
+    width: 175px;                 
     opacity: 1;
 }
 
-/* Hide logo when search is active on mobile */
-.searchBox:hover ~ .site-title,
-.searchBox:focus-within ~ .site-title {
-    opacity: 0;
-    pointer-events: none;
+/* Menu Box */
+.MenuBox {
+    background: var(--color-primary);
+    border-radius: 40px;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    z-index: 2;
+}
+
+.MenuBox .searchButton {
+    background: var(--color-back-light);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.MenuBox .searchButton:hover {
+    background: var(--color-back-light);
+    color: #2f3640;
+}
+
+.net {
+  color: aliceblue;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 100vh;
+  background-color: var(--main-bg, #333);
+  color: var(--font-color, white);
+  padding: 1rem;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.close-button {
+  align-self: flex-end;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+nav ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 2rem;
+}
+
+nav li {
+  margin-bottom: 1rem;
+}
+
+nav a {
+  color: inherit;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+nav a:hover {
+  color: var(--accent-color, #d0368a);
+}
+
+@media (max-width: 600px) {
+  header {
+    height: auto; /* let it grow if needed */
+    padding: 0.5em 1em;
+  }
+
+  .site-title {
+    font-size: 2em;      /* smaller logo text */
+    white-space: normal;  /* allow wrapping if needed */
+  }
+
+  .MenuBox {
+    flex-wrap: wrap;      /* wrap menu items */
+    gap: 0.5em;           /* spacing between buttons */
+  }
+
+  .searchBox:hover > .searchInput,
+  .searchBox:focus-within > .searchInput {
+    width: 100px;         /* smaller search input */
+  }
 }
 
 /* Menu Box */
@@ -124,6 +211,13 @@ a {
 .MenuBox .searchButton {
     background: var(--color-back-light);
     color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
 }
 
 .MenuBox .searchButton:hover {
@@ -131,67 +225,15 @@ a {
     color: #2f3640;
 }
 
-/* Sidebar */
-.sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 240px;
-    height: 100vh;
-    background-color: var(--main-bg, #333);
-    color: var(--font-color, white);
-    padding: 1rem;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.3);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s ease;
-    transform: translateX(-100%);
-}
-
-.sidebar.open {
-    transform: translateX(0);
-}
-
-.close-button {
-    align-self: flex-end;
-    font-size: 1.5rem;
-    background: none;
-    border: none;
-    color: inherit;
-    cursor: pointer;
-}
-
-nav ul {
-    list-style: none;
-    padding: 0;
-    margin-top: 2rem;
-}
-
-nav li {
-    margin-bottom: 1rem;
-}
-
-nav a {
-    color: inherit;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-nav a:hover {
-    color: var(--accent-color, #d0368a);
-}
-
 /* Mobile adjustments */
 @media (max-width: 600px) {
     header {
         height: 5.5rem;
-        padding: 0.5em 1em;
     }
 
     .site-title {
-        font-size: 2em;
-        white-space: normal;
+        font-size: var(--header-font-size);
+        white-space: nowrap;
     }
 
     .MenuBox {
@@ -199,8 +241,20 @@ nav a:hover {
         justify-content: flex-end;
     }
 
+    /* Keep search width fixed on mobile */
     .searchBox:hover > .searchInput,
     .searchBox:focus-within > .searchInput {
-        width: var(--search-width-mobile);
+        width: 11rem;
+    }
+
+    /* Hide logo when search is open */
+    .searchBox:hover ~ .site-title,
+    .searchBox:focus-within ~ .site-title {
+        opacity: 0;
+        pointer-events: none;
     }
 }
+
+
+
+
