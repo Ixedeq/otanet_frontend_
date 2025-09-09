@@ -10,7 +10,6 @@ export default function Sidebar({ isOpen, onClose }) {
         <ul>
           <li><a href="/">Home</a></li>
           <li><a href="/recent/1">Recent Manga</a></li>
-          <li><a href="/search">Search</a></li>
         </ul>
       </nav>
     </div>
