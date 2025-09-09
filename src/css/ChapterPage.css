@@ -24,7 +24,10 @@
   transition: background 0.3s;
 }
 .back-link:hover,
-.back-link:focus { background-color: #c32f64; outline: none; }
+.back-link:focus {
+  background-color: #c32f64;
+  outline: none;
+}
 
 /* Chapter Title */
 .chapter-title {
@@ -46,9 +49,13 @@
   transition: opacity 0.3s;
 }
 .toggle-scroll-btn:hover,
-.toggle-scroll-btn:focus { opacity: 0.85; outline: none; }
+.toggle-scroll-btn:focus {
+  opacity: 0.85;
+  outline: none;
+}
 
-/* Chapter Images */
+/* ============================= */
+/* Chapter Images (default vertical) */
 .chapter-images {
   display: flex;
   flex-direction: column;
@@ -77,7 +84,7 @@
   -webkit-user-drag: none;
 }
 
-/* Horizontal Scroll */
+/* Horizontal Scroll Mode */
 .chapter-images.horizontal-scroll {
   flex-direction: row;
   overflow-x: auto;
@@ -86,8 +93,45 @@
   padding: 0 1rem;
 }
 
-/* Fullscreen + horizontal */
+.chapter-images.horizontal-scroll .chapter-img-wrapper {
+  flex: 0 0 85%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  scroll-snap-align: center;
+  transition: transform 0.25s ease-out;
+}
+
+.chapter-images.horizontal-scroll .chapter-img {
+  width: 100%;
+  max-height: 70vh;
+  pointer-events: none; /* prevent accidental drags */
+}
+
+/* ============================= */
+/* Fullscreen Vertical Mode */
+.fullscreen-mode {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 2rem 1rem 4rem; /* extra bottom padding for iOS */
+}
+
+.fullscreen-mode .chapter-img {
+  width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
+  background: #000;
+}
+
+/* Fullscreen Horizontal Mode */
 .fullscreen-mode.horizontal-scroll {
+  display: flex;
   flex-direction: row;
   overflow-x: auto;
   overflow-y: hidden;
@@ -106,25 +150,11 @@
 
 .fullscreen-mode.horizontal-scroll .chapter-img {
   max-height: 80vh;
-  pointer-events: none;
+  pointer-events: auto; /* allow swipe/drag */
+  cursor: grab;
 }
 
-
-.chapter-images.horizontal-scroll .chapter-img-wrapper {
-  flex: 0 0 85%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  scroll-snap-align: center;
-  transition: transform 0.25s ease-out;
-}
-
-.chapter-images.horizontal-scroll .chapter-img {
-  width: 100%;
-  max-height: 70vh;
-  pointer-events: none; /* prevent accidental drags */
-}
-
+/* ============================= */
 /* Navigation Buttons */
 .chapter-navigation {
   display: flex;
@@ -146,93 +176,34 @@
   transition: background 0.3s, color 0.3s;
 }
 
-.prev-chapter { background-color: #3498db; color: #fff; }
+.prev-chapter {
+  background-color: #3498db;
+  color: #fff;
+}
 .prev-chapter:hover,
-.prev-chapter:focus { background-color: #2980b9; outline: none; }
-.next-chapter { background-color: #2ecc71; color: #fff; }
-.next-chapter:hover,
-.next-chapter:focus { background-color: #27ae60; outline: none; }
-.disabled { background-color: #7f8c8d; color: #bdc3c7; cursor: not-allowed; }
+.prev-chapter:focus {
+  background-color: #2980b9;
+  outline: none;
+}
 
-/* Mobile adjustments */
-@media (max-width: 600px) {
-  .chapter-images { width: 100%; gap: 1rem; }
-  .chapter-images .chapter-img { max-height: 80vh; }
-  .chapter-images.horizontal-scroll .chapter-img-wrapper { flex: 0 0 90%; }
-  .chapter-images.horizontal-scroll .chapter-img { max-height: 75vh; }
+.next-chapter {
+  background-color: #2ecc71;
+  color: #fff;
+}
+.next-chapter:hover,
+.next-chapter:focus {
+  background-color: #27ae60;
+  outline: none;
+}
+
+.disabled {
+  background-color: #7f8c8d;
+  color: #bdc3c7;
+  cursor: not-allowed;
 }
 
 /* ============================= */
-/* Fullscreen Vertical Mode */
-.fullscreen-mode {
-  position: fixed;
-  inset: 0;
-  background: #000;
-  z-index: 9999;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 2rem 1rem;
-}
-
-.fullscreen-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: #000;
-  display: flex;
-  justify-content: center;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  padding: 2rem 0;
-  cursor: zoom-out;
-  touch-action: pan-y;
-}
-
-.vertical-images-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 99%;
-  max-width: 900px;
-}
-
-.vertical-images-container .fullscreen-img {
-  width: 100%;
-  object-fit: contain;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
-  background: #000;
-}
-
-/* Horizontal Fullscreen */
-.fullscreen-overlay.horizontal {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  padding: 2rem 0;
-}
-
-.fullscreen-overlay.horizontal .horizontal-images-wrapper {
-  display: flex;
-  gap: 1rem;
-  padding: 0 1rem;
-}
-
-.fullscreen-overlay.horizontal .fullscreen-img {
-  width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
-}
-
-/* Scrollbar Styling */
+/* Scrollbar Styling (horizontal only) */
 .chapter-images.horizontal-scroll::-webkit-scrollbar {
   height: 0.5rem;
 }
@@ -244,80 +215,17 @@
   background: transparent;
 }
 
-/* Chapter images default */
-.chapter-images {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  width: 99%;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-/* Horizontal scroll */
-.chapter-images.horizontal-scroll {
-  flex-direction: row;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  gap: 1rem;
-  padding: 0 1rem;
-}
-
-.chapter-images.horizontal-scroll .chapter-img-wrapper {
-  flex: 0 0 85%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  scroll-snap-align: center;
-}
-
-.chapter-images.horizontal-scroll .chapter-img {
-  width: 100%;
-  max-height: 70vh;
-  user-select: none;
-}
-
-/* Fullscreen vertical or horizontal */
-.fullscreen-mode {
-  position: fixed;
-  inset: 0;
-  background: #000;
-  z-index: 9999;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 2rem 1rem;
-}
-
-/* Fullscreen horizontal support */
-.fullscreen-mode.horizontal-scroll {
-  flex-direction: row;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-}
-
-.fullscreen-mode.horizontal-scroll .chapter-img-wrapper {
-  flex: 0 0 85%;
-}
-
-.fullscreen-mode.horizontal-scroll .chapter-img {
-  max-height: 80vh;
-  pointer-events: auto; /* allow swipe */
-  cursor: grab;
-}
-
-/* Prevent pointer-events blocking scroll in non-fullscreen horizontal */
-.chapter-images.horizontal-scroll:not(.fullscreen-mode) .chapter-img {
-  pointer-events: none;
-}
-
+/* ============================= */
 /* Mobile adjustments */
 @media (max-width: 600px) {
-  .chapter-images.horizontal-scroll .chapter-img-wrapper {
-    flex: 0 0 90%;
-  }
-  .chapter-images.horizontal-scroll .chapter-img {
-    max-height: 75vh;
+  .chapter-images { width: 100%; gap: 1rem; }
+  .chapter-images .chapter-img { max-height: 80vh; }
+  .chapter-images.horizontal-scroll .chapter-img-wrapper { flex: 0 0 90%; }
+  .chapter-images.horizontal-scroll .chapter-img { max-height: 75vh; }
+
+  /* Fullscreen vertical images = full screen height on mobile */
+  .fullscreen-mode .chapter-img {
+    height: 100vh;
+    max-height: none; /* override desktop rule */
   }
 }
-
