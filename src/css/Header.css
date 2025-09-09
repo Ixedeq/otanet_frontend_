@@ -158,6 +158,28 @@ a {
     transform: translateX(0);
 }
 
+/* Sidebar Close Button */
+.close-button {
+    align-self: flex-end;
+    font-size: 1.5rem;
+    background-color: var(--color-back-light); /* dark circle background */
+    color: white;
+    border: none;
+    border-radius: 50%; /* circular */
+    width: 36px;
+    height: 36px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.close-button:hover {
+    background-color: #5553b5; /* accent hover color */
+    transform: scale(1.1); /* slight pop effect */
+}
+
 /* Mobile - cover entire screen properly */
 @media (max-width: 600px) {
     .sidebar {
