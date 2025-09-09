@@ -239,11 +239,5 @@
   }
 }
 
-@media (max-width: 600px) {
-  .chapter-images.vertical-scroll,
-  .fullscreen-mode {
-    padding-bottom: 5rem; /* slightly smaller on mobile */
-  }
-}
 
 
