@@ -21,10 +21,6 @@ export default function ChapterPage() {
 
   const pageContainerRef = useRef(null);
 
-  // ... rest of your code unchanged ...
-}
-
-
   // --- Fetch pages ---
   useEffect(() => {
     const fetchPages = async () => {
