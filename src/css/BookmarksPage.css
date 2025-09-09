@@ -1,0 +1,59 @@
+.bookmarks-page {
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--main-bg);
+  color: var(--main-text);
+  min-height: 100vh;
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+.bookmarks-page h1 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.manga-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.manga-card {
+  background-color: var(--card-bg, #1e1e1e);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+  text-align: center;
+}
+
+.manga-card:hover {
+  transform: translateY(-3px);
+}
+
+.manga-card a {
+  color: inherit;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.manga-cover {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.manga-title {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 0 0.5rem;
+}
