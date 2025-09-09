@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import "../css/MangaPage.css";
 import API_BASE from "./Config";
-import BookmarkButton from "./components/BookmarkButton";
 
 const DEFAULT_COVER =
   "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
@@ -27,21 +26,20 @@ export default function MangaPage() {
     }
   };
 
-  // --- Bookmarks tracking ---
+  // --- Manga-level bookmarks ---
   const [bookmarks, setBookmarks] = useState(() => {
-    const saved = localStorage.getItem(`${slug}-bookmarks`);
-    return saved ? JSON.parse(saved) : [];
+    return JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
   });
 
-  const toggleBookmark = (number) => {
+  const toggleBookmark = () => {
     let updated;
-    if (bookmarks.includes(number)) {
-      updated = bookmarks.filter((n) => n !== number);
+    if (bookmarks.includes(slug)) {
+      updated = bookmarks.filter((s) => s !== slug);
     } else {
-      updated = [...bookmarks, number];
+      updated = [...bookmarks, slug];
     }
     setBookmarks(updated);
-    localStorage.setItem(`${slug}-bookmarks`, JSON.stringify(updated));
+    localStorage.setItem("bookmarkedManga", JSON.stringify(updated));
   };
   // --------------------------------
 
@@ -49,7 +47,7 @@ export default function MangaPage() {
     const fetchChapters = async () => {
       try {
         const response = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
-        if (!response.ok) throw new Error("Chpaters not found!");
+        if (!response.ok) throw new Error("Chapters not found!");
         const data = await response.json();
         setChapters(data);
       } catch (error) {
@@ -109,6 +107,14 @@ export default function MangaPage() {
           <p className="detail-description">
             {manga.description || "No description available."}
           </p>
+
+          {/* Manga-level bookmark button */}
+          <button
+            onClick={toggleBookmark}
+            className={bookmarks.includes(slug) ? "bookmarked" : ""}
+          >
+            {bookmarks.includes(slug) ? "★ Bookmarked" : "☆ Bookmark"}
+          </button>
         </div>
       </div>
 
@@ -141,11 +147,6 @@ export default function MangaPage() {
                 >
                   {ch.title || `Chapter ${ch.number}`}
                 </a>
-                <BookmarkButton
-                  chapter={ch.number}
-                  bookmarks={bookmarks}
-                  toggleBookmark={toggleBookmark}
-                />
               </div>
             ))}
           </div>
