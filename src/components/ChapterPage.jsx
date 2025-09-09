@@ -22,14 +22,18 @@ export default function ChapterPage() {
 
   const pageContainerRef = useRef(null);
 
-  // --- Mark chapter as read in localStorage immediately ---
+  // inside the useEffect for marking chapter as read
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem(`${slug}-readChapters`)) || [];
     if (!saved.includes(chapterNumber)) {
       const updated = [...saved, chapterNumber];
       localStorage.setItem(`${slug}-readChapters`, JSON.stringify(updated));
+
+      // dispatch a custom storage event so MangaPage updates immediately
+      window.dispatchEvent(new Event("storage"));
     }
   }, [slug, chapterNumber]);
+
 
   // --- Fetch pages ---
   useEffect(() => {

@@ -14,17 +14,20 @@ export default function MangaPage() {
 
   // --- Read chapters tracking ---
   const [readChapters, setReadChapters] = useState(() => {
-    return JSON.parse(localStorage.getItem(`${slug}-readChapters`)) || [];
+    const saved = localStorage.getItem(`${slug}-readChapters`);
+    return saved ? JSON.parse(saved) : [];
   });
 
-  // --- Sync readChapters with localStorage on focus ---
+  // Listen for updates from ChapterPage
   useEffect(() => {
-    const handleFocus = () => {
-      const saved = JSON.parse(localStorage.getItem(`${slug}-readChapters`)) || [];
-      setReadChapters(saved);
+    const handleStorage = (e) => {
+      if (!e.key || e.key === `${slug}-readChapters`) {
+        const saved = localStorage.getItem(`${slug}-readChapters`);
+        setReadChapters(saved ? JSON.parse(saved) : []);
+      }
     };
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, [slug]);
 
   const markChapterAsRead = (number) => {
@@ -32,6 +35,7 @@ export default function MangaPage() {
       const updated = [...readChapters, number];
       setReadChapters(updated);
       localStorage.setItem(`${slug}-readChapters`, JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage")); // notify other components
     }
   };
 
@@ -50,17 +54,17 @@ export default function MangaPage() {
     setBookmarks(updated);
     localStorage.setItem("bookmarkedManga", JSON.stringify(updated));
   };
-  // --------------------------------
 
+  // --- Fetch chapters and manga ---
   useEffect(() => {
     const fetchChapters = async () => {
       try {
-        const response = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
-        if (!response.ok) throw new Error("Chapters not found!");
-        const data = await response.json();
+        const res = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
+        if (!res.ok) throw new Error("Chapters not found!");
+        const data = await res.json();
         setChapters(data);
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -68,9 +72,9 @@ export default function MangaPage() {
 
     const fetchManga = async () => {
       try {
-        const response = await fetch(`${API_BASE}/${slug}`);
-        if (!response.ok) throw new Error("Manga not found");
-        const data = await response.json();
+        const res = await fetch(`${API_BASE}/${slug}`);
+        if (!res.ok) throw new Error("Manga not found");
+        const data = await res.json();
 
         if (!data.cover) data.cover = DEFAULT_COVER;
 
@@ -93,8 +97,8 @@ export default function MangaPage() {
         );
 
         setManga(data);
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
