@@ -200,7 +200,7 @@ nav a:hover {
 /* Mobile adjustments */
 @media (max-width: 600px) {
     header {
-        height: var(6em);
+        height: var(7em);
     }
 
     .site-title {
