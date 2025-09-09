@@ -3,13 +3,13 @@ import { useParams, Link } from "react-router-dom";
 import ChapterImg from "./components/ChapterImg";
 import ChapterNavigation from "./components/ChapterNavigation";
 import API_BASE from "./Config";
+import parseChapterNumber from "./components/ParseChapterNumber";   // ✅ new import
 import "../css/ChapterPage.css";
 
 export default function ChapterPage() {
   const { slug, chapter } = useParams();
   const chapterKey = chapter.replace("-", "_");
-  const chapterNumberStr = chapter.replace("chapter-", "");
-  chapterNumberStr = chapter.replace("-", ".");
+  const chapterNumberStr = parseChapterNumber(chapter); // ✅ cleaner now
 
   const [mangaTitle, setMangaTitle] = useState("");
   const [pages, setPages] = useState([]);
@@ -20,6 +20,10 @@ export default function ChapterPage() {
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
 
   const pageContainerRef = useRef(null);
+
+  // ... rest of your code unchanged ...
+}
+
 
   // --- Fetch pages ---
   useEffect(() => {
