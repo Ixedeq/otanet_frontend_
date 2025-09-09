@@ -180,6 +180,32 @@ a {
     transform: scale(1.1); /* slight pop effect */
 }
 
+.sidebar nav ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* space between items */
+}
+
+.sidebar nav li a {
+    display: block;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #d0368a 0%, #708ad4 100%);
+    color: white;
+    font-weight: bold;
+    text-decoration: none;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.sidebar nav li a:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
 /* Mobile - cover entire screen properly */
 @media (max-width: 600px) {
     .sidebar {
