@@ -18,6 +18,12 @@ export default function MangaPage() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // --- Sync read chapters whenever slug changes (fixes ChapterPage navigation) ---
+  useEffect(() => {
+    const saved = localStorage.getItem(`${slug}-readChapters`);
+    setReadChapters(saved ? JSON.parse(saved) : []);
+  }, [slug]);
+
   const markChapterAsRead = (number) => {
     if (!readChapters.includes(number)) {
       const updated = [...readChapters, number];
