@@ -1,10 +1,10 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
 
-export default function ChapterNavigation({ chapters }) {
+export default function ChapterNavigation({ chapters, markChapterAsRead }) {
   const { slug, chapter } = useParams();
 
-  // Normalize chapter from URL: remove "chapter-" prefix and convert dashes to dots
+  // Normalize chapter from URL
   const chapterNumberStr = chapter.replace("chapter-", "").replace(/-/g, ".");
 
   // Find current chapter index
@@ -15,12 +15,17 @@ export default function ChapterNavigation({ chapters }) {
     ? chapters[currentIndex + 1]
     : null;
 
+  const handleClick = (chNumber) => {
+    if (markChapterAsRead) markChapterAsRead(parseFloat(chNumber));
+  };
+
   return (
     <div className="chapter-navigation">
       {prevChapter ? (
         <Link
           to={`/read/${slug}/chapter-${prevChapter.numberStr.replace(/\./g, "-")}`}
           className="prev-chapter"
+          onClick={() => handleClick(prevChapter.numberStr)}
         >
           ← Previous Chapter
         </Link>
@@ -32,6 +37,7 @@ export default function ChapterNavigation({ chapters }) {
         <Link
           to={`/read/${slug}/chapter-${nextChapter.numberStr.replace(/\./g, "-")}`}
           className="next-chapter"
+          onClick={() => handleClick(nextChapter.numberStr)}
         >
           Next Chapter →
         </Link>

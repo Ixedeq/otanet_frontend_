@@ -115,16 +115,21 @@ export default function ChapterPage() {
   }, [chapterKey, fullscreen, horizontalScroll]);
 
   // --- Mark current chapter as read in localStorage ---
-  useEffect(() => {
-    const chapterNumber = parseFloat(chapterNumberStr);
+  const markChapterAsRead = (number) => {
     const key = `${slug}-readChapters`;
     const saved = localStorage.getItem(key);
     const readChapters = saved ? JSON.parse(saved) : [];
 
-    if (!readChapters.includes(chapterNumber)) {
-      const updated = [...readChapters, chapterNumber];
+    if (!readChapters.includes(number)) {
+      const updated = [...readChapters, number];
       localStorage.setItem(key, JSON.stringify(updated));
     }
+  };
+
+  // --- Automatically mark chapter as read on page load ---
+  useEffect(() => {
+    const chapterNumber = parseFloat(chapterNumberStr);
+    markChapterAsRead(chapterNumber);
   }, [slug, chapterNumberStr]);
 
   return (
@@ -182,6 +187,7 @@ export default function ChapterPage() {
         currentChapterNumberStr={chapterNumberStr}
         prevChapter={prevChapter}
         nextChapter={nextChapter}
+        markChapterAsRead={markChapterAsRead}
       />
 
       {/* Spacer under the buttons */}
