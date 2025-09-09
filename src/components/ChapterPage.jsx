@@ -88,21 +88,16 @@ export default function ChapterPage() {
   // --- Prevent body scroll in fullscreen & handle scroll position ---
   useEffect(() => {
     if (fullscreen) {
-      // Entering fullscreen
       document.body.style.overflow = "hidden";
       window.scrollTo(0, 0);
     } else {
-      // Exiting fullscreen
       document.body.style.overflow = "";
-
-      // Scroll to bottom of the chapter container
       if (pageContainerRef.current) {
         const container = pageContainerRef.current;
         container.scrollTop = container.scrollHeight;
         window.scrollTo(0, container.scrollHeight);
       }
     }
-
     return () => (document.body.style.overflow = "");
   }, [fullscreen]);
 
@@ -114,23 +109,19 @@ export default function ChapterPage() {
     }
   }, [chapterKey, fullscreen, horizontalScroll]);
 
-  // --- Mark current chapter as read in localStorage ---
-  const markChapterAsRead = (number) => {
+  // --- Automatically mark current chapter as read on chapter param change ---
+  useEffect(() => {
+    if (!chapter) return;
+    const chapterNumber = parseFloat(chapter.replace("chapter-", "").replace(/-/g, "."));
     const key = `${slug}-readChapters`;
     const saved = localStorage.getItem(key);
     const readChapters = saved ? JSON.parse(saved) : [];
 
-    if (!readChapters.includes(number)) {
-      const updated = [...readChapters, number];
+    if (!readChapters.includes(chapterNumber)) {
+      const updated = [...readChapters, chapterNumber];
       localStorage.setItem(key, JSON.stringify(updated));
     }
-  };
-
-  // --- Automatically mark chapter as read on page load ---
-  useEffect(() => {
-    const chapterNumber = parseFloat(chapterNumberStr);
-    markChapterAsRead(chapterNumber);
-  }, [slug, chapterNumberStr]);
+  }, [slug, chapter]);
 
   return (
     <div
@@ -147,7 +138,6 @@ export default function ChapterPage() {
         </h1>
       </Link>
 
-      {/* Toggle horizontal only when NOT fullscreen */}
       {!fullscreen && (
         <button
           className="toggle-scroll-btn"
@@ -187,10 +177,9 @@ export default function ChapterPage() {
         currentChapterNumberStr={chapterNumberStr}
         prevChapter={prevChapter}
         nextChapter={nextChapter}
-        markChapterAsRead={markChapterAsRead}
+        markChapterAsRead={() => {}}
       />
 
-      {/* Spacer under the buttons */}
       {!horizontalScroll && <div className="chapter-bottom-spacer" />}
     </div>
   );
