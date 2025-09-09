@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "../css/Recent_Manga.css"; // your existing CSS
+import "../css/Recent_Manga.css";
 import API_BASE from "./Config";
 
 export default function BookmarksPage() {
@@ -7,13 +7,11 @@ export default function BookmarksPage() {
   const [mangaData, setMangaData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- Function to load bookmarks from localStorage ---
   const loadBookmarks = () => {
     const saved = JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
     setBookmarkedManga(saved);
   };
 
-  // --- On mount and focus / storage change, reload bookmarks ---
   useEffect(() => {
     loadBookmarks();
     window.addEventListener("focus", loadBookmarks);
@@ -24,7 +22,6 @@ export default function BookmarksPage() {
     };
   }, []);
 
-  // --- Fetch manga data whenever bookmarkedManga changes ---
   useEffect(() => {
     if (bookmarkedManga.length === 0) {
       setMangaData([]);
@@ -36,11 +33,12 @@ export default function BookmarksPage() {
       setLoading(true);
       try {
         const results = await Promise.all(
-          bookmarkedManga.map((slug) =>
-            fetch(`${API_BASE}/${slug}`)
-              .then((res) => res.json())
-              .catch(() => null)
-          )
+          bookmarkedManga.map(async (slug) => {
+            const res = await fetch(`${API_BASE}/${slug}`);
+            if (!res.ok) return null;
+            const data = await res.json();
+            return { ...data, slug }; // <--- ensure slug exists
+          })
         );
         setMangaData(results.filter((m) => m !== null));
       } catch (err) {
