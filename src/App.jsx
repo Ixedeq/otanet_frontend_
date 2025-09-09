@@ -8,6 +8,7 @@ import Recent_Manga from "./components/Recent_Manga";
 import MangaPage from "./components/MangaPage";
 import ChapterPage from "./components/ChapterPage";
 import SearchResult from "./components/SearchResult";
+import BookmarksPage from "./components/BookmarksPage";
 import "./css/App.css";
 import ScrollToTop from "./components/components/ScrollToTop";
 
