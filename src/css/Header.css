@@ -201,7 +201,6 @@ nav a:hover {
 @media (max-width: 600px) {
     header {
         height: var(--header-height);
-        padding: 0.5rem 1rem;
     }
 
     .site-title {
