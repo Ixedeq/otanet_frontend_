@@ -151,9 +151,6 @@ export default function ChapterPage() {
             onOpenFullscreen={() => toggleFullscreen(idx)}
           />
         ))}
-
-        {/* Spacer to push navigation buttons up in vertical mode */}
-        {!horizontalScroll && <div className="chapter-bottom-spacer" />}
       </div>
 
       <ChapterNavigation
@@ -163,6 +160,8 @@ export default function ChapterPage() {
         prevChapter={prevChapter}
         nextChapter={nextChapter}
       />
+      {!horizontalScroll && <div className="chapter-bottom-spacer" />}
     </div>
+    
   );
 }
