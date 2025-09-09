@@ -35,6 +35,10 @@ header {
     transition: opacity 0.3s ease;
 }
 
+.net{
+  color: aliceblue;
+}
+
 header h1 span {
     background: var(--color-primary);
     background-clip: text;
