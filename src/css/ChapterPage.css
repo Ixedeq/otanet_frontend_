@@ -1,6 +1,5 @@
-/* --- ChapterPage.css --- */
-
-/* Page container */
+/* ============================= */
+/* Chapter Page */
 .chapter-page {
   display: flex;
   flex-direction: column;
@@ -14,121 +13,227 @@
   transition: background 0.3s, color 0.3s;
 }
 
-/* Back link */
+/* Back to Home Link */
 .back-link {
   align-self: flex-start;
   margin-bottom: 1rem;
-  color: var(--link-color, #3498db);
+  padding: 0.5rem 1rem;
+  background-color: var(--accent-color, #e00b72);
+  color: #fff;
   text-decoration: none;
-  font-size: 1rem;
+  border-radius: 0.5rem;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+.back-link:hover,
+.back-link:focus {
+  background-color: #c32f64;
+  outline: none;
 }
 
-.back-link:hover {
-  text-decoration: underline;
-}
-
-/* Chapter title */
+/* Chapter Title */
 .chapter-title {
-  font-size: 1.5rem;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
   text-align: center;
-  margin-bottom: 1rem;
 }
 
-/* Toggle scroll button */
+/* Toggle button */
 .toggle-scroll-btn {
   margin-bottom: 1rem;
   padding: 0.5rem 1rem;
-  background-color: var(--btn-bg, #3498db);
-  color: var(--btn-text, #fff);
+  font-weight: bold;
+  border-radius: 0.5rem;
   border: none;
-  border-radius: 0.25rem;
   cursor: pointer;
+  background: linear-gradient(180deg, #d0368a 0%, #708ad4 99%);
+  color: #fff;
+  transition: opacity 0.3s;
+}
+.toggle-scroll-btn:hover,
+.toggle-scroll-btn:focus {
+  opacity: 0.85;
+  outline: none;
 }
 
-.toggle-scroll-btn:hover {
-  opacity: 0.9;
-}
-
-/* --- Chapter images container --- */
+/* ============================= */
+/* Chapter Images (default vertical) */
 .chapter-images {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  box-sizing: border-box;
-  gap: 1rem;
-}
-
-/* Vertical scroll (normal & fullscreen) */
-.chapter-images.vertical-scroll,
-.chapter-images.fullscreen.vertical-scroll {
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.chapter-images.vertical-scroll img,
-.chapter-images.fullscreen.vertical-scroll img {
-  display: block;
-  width: 100%;       /* full container width */
-  height: auto;      /* natural height */
-  object-fit: contain;
+  gap: 1.5rem;
+  width: 95%;
+  max-width: 800px;
   margin: 0 auto;
-  padding-bottom: 1rem; /* gap for next button */
 }
 
-/* Horizontal scroll (normal & fullscreen) */
-.chapter-images.horizontal-scroll,
-.chapter-images.fullscreen.horizontal-scroll {
+.chapter-img-wrapper {
+  display: block;
+  width: 100%;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chapter-images .chapter-img {
+  display: block;
+  width: 100%;
+  height: auto; /* natural height for webtoon strips */
+  max-height: none; /* allow long strips */
+  object-fit: contain;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
+  background: #000;
+  scroll-behavior: smooth;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Horizontal Scroll Mode */
+.chapter-images.horizontal-scroll {
+  flex-direction: row;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  gap: 1rem;
+  padding: 0 1rem;
+}
+
+.chapter-images.horizontal-scroll .chapter-img-wrapper {
+  flex: 0 0 85%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  scroll-snap-align: center;
+  transition: transform 0.25s ease-out;
+}
+
+.chapter-images.horizontal-scroll .chapter-img {
+  width: auto;
+  height: 100%; /* full height in horizontal scroll */
+  max-height: 70vh;
+  pointer-events: none; /* prevent accidental drags */
+}
+
+/* ============================= */
+/* Fullscreen Vertical Mode */
+.fullscreen-mode {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 2rem 1rem 4rem; /* extra bottom padding for iOS */
+}
+
+.fullscreen-mode .chapter-img {
+  width: 100%;
+  height: auto; /* full width, natural height */
+  max-height: none; /* allow very tall strips */
+  object-fit: contain;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.25);
+  background: #000;
+}
+
+/* Fullscreen Horizontal Mode */
+.fullscreen-mode.horizontal-scroll {
   display: flex;
   flex-direction: row;
   overflow-x: auto;
   overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  gap: 1rem;
+  padding: 2rem 1rem;
 }
 
-.chapter-images.horizontal-scroll img,
-.chapter-images.fullscreen.horizontal-scroll img {
-  display: block;
-  height: 100%;     /* fill container height */
-  width: auto;      /* maintain aspect ratio */
-  object-fit: contain;
-  margin: 0 auto;
+.fullscreen-mode.horizontal-scroll .chapter-img-wrapper {
+  flex: 0 0 85%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  scroll-snap-align: center;
 }
 
-/* Fullscreen mode */
-.fullscreen-mode {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  z-index: 9999;
-  background-color: var(--main-bg);
+.fullscreen-mode.horizontal-scroll .chapter-img {
+  width: auto;
+  height: 100%; /* full height in horizontal fullscreen */
+  max-height: 80vh;
+  pointer-events: auto;
+  cursor: grab;
 }
 
-/* Fullscreen vertical scroll */
-.chapter-images.fullscreen.vertical-scroll {
-  height: 100%;
-  overflow-y: auto;
-  padding-bottom: 2rem; /* extra space so next button visible */
-}
-
-/* Fullscreen horizontal scroll */
-.chapter-images.fullscreen.horizontal-scroll {
-  height: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
-/* Loading text */
-p {
-  text-align: center;
+/* ============================= */
+/* Navigation Buttons */
+.chapter-navigation {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 800px;
   margin-top: 2rem;
+  gap: 1rem;
 }
 
-/* Smooth scroll for better UX */
-.chapter-images.vertical-scroll,
-.chapter-images.fullscreen.vertical-scroll,
-.chapter-images.horizontal-scroll,
-.chapter-images.fullscreen.horizontal-scroll {
-  scroll-behavior: smooth;
+.chapter-navigation a,
+.chapter-navigation span {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: bold;
+  text-align: center;
+  flex: 1;
+  transition: background 0.3s, color 0.3s;
+}
+
+.prev-chapter {
+  background-color: #3498db;
+  color: #fff;
+}
+.prev-chapter:hover,
+.prev-chapter:focus {
+  background-color: #2980b9;
+  outline: none;
+}
+
+.next-chapter {
+  background-color: #2ecc71;
+  color: #fff;
+}
+.next-chapter:hover,
+.next-chapter:focus {
+  background-color: #27ae60;
+  outline: none;
+}
+
+.disabled {
+  background-color: #7f8c8d;
+  color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+/* ============================= */
+/* Scrollbar Styling (horizontal only) */
+.chapter-images.horizontal-scroll::-webkit-scrollbar {
+  height: 0.5rem;
+}
+.chapter-images.horizontal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.3);
+  border-radius: 0.25rem;
+}
+.chapter-images.horizontal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ============================= */
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .chapter-images { width: 100%; gap: 1rem; }
+  .chapter-images .chapter-img { max-height: 80vh; }
+  .chapter-images.horizontal-scroll .chapter-img-wrapper { flex: 0 0 90%; }
+  .chapter-images.horizontal-scroll .chapter-img { max-height: 75vh; }
+
+  /* Fullscreen vertical images = full screen height on mobile */
+  .fullscreen-mode .chapter-img {
+    height: auto; /* allow natural height for webtoon strips */
+    max-height: none;
+  }
 }
