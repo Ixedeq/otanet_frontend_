@@ -10,6 +10,7 @@ export default function ChapterPage() {
   const { slug, chapter } = useParams();
   const chapterKey = chapter.replace("-", "_");
   const chapterNumberStr = parseChapterNumber(chapter); 
+  const chapterNumber = parseFloat(chapterNumberStr); // numeric
 
   const [mangaTitle, setMangaTitle] = useState("");
   const [pages, setPages] = useState([]);
@@ -20,6 +21,15 @@ export default function ChapterPage() {
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
 
   const pageContainerRef = useRef(null);
+
+  // --- Mark chapter as read in localStorage immediately ---
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem(`${slug}-readChapters`)) || [];
+    if (!saved.includes(chapterNumber)) {
+      const updated = [...saved, chapterNumber];
+      localStorage.setItem(`${slug}-readChapters`, JSON.stringify(updated));
+    }
+  }, [slug, chapterNumber]);
 
   // --- Fetch pages ---
   useEffect(() => {
@@ -109,20 +119,6 @@ export default function ChapterPage() {
     }
   }, [chapterKey, fullscreen, horizontalScroll]);
 
-  // --- Automatically mark current chapter as read on chapter param change ---
-  useEffect(() => {
-    if (!chapter) return;
-    const chapterNumber = parseFloat(chapter.replace("chapter-", "").replace(/-/g, "."));
-    const key = `${slug}-readChapters`;
-    const saved = localStorage.getItem(key);
-    const readChapters = saved ? JSON.parse(saved) : [];
-
-    if (!readChapters.includes(chapterNumber)) {
-      const updated = [...readChapters, chapterNumber];
-      localStorage.setItem(key, JSON.stringify(updated));
-    }
-  }, [slug, chapter]);
-
   return (
     <div
       className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
@@ -177,7 +173,6 @@ export default function ChapterPage() {
         currentChapterNumberStr={chapterNumberStr}
         prevChapter={prevChapter}
         nextChapter={nextChapter}
-        markChapterAsRead={() => {}}
       />
 
       {!horizontalScroll && <div className="chapter-bottom-spacer" />}
