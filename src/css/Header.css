@@ -135,36 +135,36 @@ a {
     color: #2f3640;
 }
 
-/* Sidebar */
+/* Sidebar - slides from right */
 .sidebar {
     position: fixed;
     top: 0;
-    left: 0;
+    right: 0; /* changed from left: 0 */
     width: 240px;
     height: 100vh;
     background-color: var(--main-bg, #333);
     color: var(--font-color, white);
     padding: 1rem;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+    box-shadow: -2px 0 8px rgba(0,0,0,0.3); /* shadow on left */
     z-index: 1000;
     display: flex;
     flex-direction: column;
     transition: transform 0.3s ease;
-    transform: translateX(-100%);
+    transform: translateX(100%); /* hidden to the right by default */
 }
 
 .sidebar.open {
-    transform: translateX(0);
+    transform: translateX(0); /* slide in */
 }
 
-.close-button {
-    align-self: flex-end;
-    font-size: 1.5rem;
-    background: none;
-    border: none;
-    color: inherit;
-    cursor: pointer;
+/* Mobile - cover entire screen */
+@media (max-width: 600px) {
+    .sidebar {
+        width: 100vw;
+        height: 100vh;
+    }
 }
+
 
 nav ul {
     list-style: none;
