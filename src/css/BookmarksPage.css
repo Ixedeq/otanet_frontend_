@@ -1,55 +1,99 @@
-.bookmarks-page {
-  padding: 2rem 1rem;
+.bookmarks-list {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  background-color: var(--main-bg);
-  color: var(--main-text);
-  min-height: 100vh;
-  font-family: sans-serif;
-}
-
-.bookmarks-page h1 {
-  font-size: 2rem;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.bookmarks-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 1rem;
+  padding: 1rem 1rem 1rem 2rem;
+  overflow-y: auto;
+  overflow-x: hidden;
   width: 100%;
-  max-width: 1200px;
+  box-sizing: border-box;
 }
 
 .bookmarks-card {
-  background-color: var(--card-bg, #1e1e1e);
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transition: transform 0.2s, box-shadow 0.2s;
-  text-align: center;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  gap: 2%;
+  background-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  transition: transform 0.2s ease;
   text-decoration: none;
   color: inherit;
 }
 
 .bookmarks-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  transform: scale(1.03);
+  border-color: #708bd40d;
+  border-style: solid;
 }
 
-.bookmarks-cover {
-  width: 100%;
-  height: 200px;
+.bookmarks-thumb {
+  width: 20%;
+  min-width: 80px;
+  height: auto;
+  aspect-ratio: 120 / 170;
   object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
-.bookmarks-title {
-  margin: 0.5rem 0;
-  font-size: 1rem;
+.bookmarks-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  flex: 1;
+  padding-left: 3%;
+  min-width: 150px;
+}
+
+.bookmarks-title-text {
+  font-size: 1.7rem;
   font-weight: bold;
-  padding: 0 0.5rem;
+  color: var(--main-text);
+  text-align: center;
+  margin-bottom: 0.3rem;
+  width: 100%;
+}
+
+.bookmarks-description-text {
+  font-size: 1.0rem;
+  color: var(--main-text);
+  text-align: center;
+  width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .bookmarks-list {
+    padding-left: 0.5rem;
+  }
+
+  .bookmarks-thumb {
+    width: 30%;
+  }
+
+  .bookmarks-info {
+    width: 70%;
+    padding-left: 3%;
+  }
+
+  .bookmarks-title-text {
+    font-size: 1rem;
+  }
+
+  .bookmarks-description-text {
+    font-size: 0.8rem;
+  }
 }

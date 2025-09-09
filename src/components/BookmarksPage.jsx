@@ -39,16 +39,16 @@ export default function BookmarksPage() {
   if (bookmarkedManga.length === 0) return <div>No bookmarked manga found.</div>;
 
   return (
-    <div className="bookmarks-page">
-      <h1>Bookmarked Manga</h1>
-      <div className="bookmarks-grid">
-        {bookmarkedManga.map(({ title, cover, slug }) => (
-          <Link key={slug} to={`/${slug}`} className="bookmarks-card">
-            <img src={cover} alt={title} className="bookmarks-cover" />
-            <h2 className="bookmarks-title">{title}</h2>
-          </Link>
-        ))}
-      </div>
+    <div className="bookmarks-list">
+      {bookmarkedManga.map(({ title, description, cover, slug }) => (
+        <Link key={slug} to={`/${slug}`} className="bookmarks-card">
+          <img src={cover} alt={title} className="bookmarks-thumb" />
+          <div className="bookmarks-info">
+            <div className="bookmarks-title-text">{title}</div>
+            {description && <div className="bookmarks-description-text">{description}</div>}
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
