@@ -265,3 +265,19 @@
     padding-bottom: 6rem;
   }
 }
+
+/* Fullscreen vertical mode: keep navigation visible above the bottom */
+.fullscreen-mode.vertical-scroll .chapter-navigation {
+  margin-top: 0;
+  position: sticky;    /* sticks relative to viewport */
+  bottom: 1.5rem;      /* space above bottom of screen */
+  align-self: center;   /* center in horizontal */
+  z-index: 10;
+  background: transparent; /* keep look clean */
+  width: 95%;
+  max-width: 800px;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
