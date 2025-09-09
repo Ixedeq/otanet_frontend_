@@ -252,21 +252,16 @@
   }
 }
 
-/* Fullscreen vertical navigation stays above bottom padding */
-.fullscreen-mode .chapter-navigation {
-  position: absolute;
-  bottom: 2rem; /* sits above extra padding */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 95%;
-  max-width: 800px;
-  gap: 1rem;
-  display: flex;
-  justify-content: space-between;
-  z-index: 10; /* make sure it's above images */
+/* Extra bottom gap so navigation buttons sit above the very bottom */
+.chapter-images.vertical-scroll,
+.fullscreen-mode.vertical-scroll {
+  padding-bottom: 8rem; /* extra space for navigation buttons */
 }
 
-/* Normal vertical mode: add a small gap if needed */
-.chapter-images.vertical-scroll + .chapter-navigation {
-  margin-top: 1rem;
+/* On mobile, slightly less */
+@media (max-width: 600px) {
+  .chapter-images.vertical-scroll,
+  .fullscreen-mode.vertical-scroll {
+    padding-bottom: 6rem;
+  }
 }
