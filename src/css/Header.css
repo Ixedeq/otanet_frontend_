@@ -197,6 +197,37 @@ nav a:hover {
   }
 }
 
+/* Mobile adjustments */
+@media (max-width: 600px) {
+    header {
+        height: var(--header-height);
+        padding: 0.5rem 1rem;
+    }
+
+    .site-title {
+        font-size: var(--header-font-size);
+        white-space: nowrap;
+    }
+
+    .MenuBox {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    /* Keep search width fixed on mobile */
+    .searchBox:hover > .searchInput,
+    .searchBox:focus-within > .searchInput {
+        width: 11rem;
+    }
+
+    /* Hide logo when search is open */
+    .searchBox:hover ~ .site-title,
+    .searchBox:focus-within ~ .site-title {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
 
 
 
