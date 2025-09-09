@@ -239,3 +239,30 @@
   }
 }
 
+/* Extra bottom gap so navigation buttons sit higher */
+.chapter-images.vertical-scroll,
+.fullscreen-mode {
+  padding-bottom: 6rem; /* more space at the bottom */
+}
+
+@media (max-width: 600px) {
+  .chapter-images.vertical-scroll,
+  .fullscreen-mode {
+    padding-bottom: 5rem; /* slightly smaller on mobile */
+  }
+}
+
+/* Extra bottom gap so navigation buttons sit above the very bottom */
+.chapter-images.vertical-scroll,
+.fullscreen-mode.vertical-scroll {
+  padding-bottom: 8rem; /* extra space for navigation buttons */
+}
+
+/* On mobile, slightly less */
+@media (max-width: 600px) {
+  .chapter-images.vertical-scroll,
+  .fullscreen-mode.vertical-scroll {
+    padding-bottom: 6rem;
+  }
+}
+
