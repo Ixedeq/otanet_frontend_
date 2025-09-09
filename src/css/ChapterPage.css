@@ -224,6 +224,12 @@
   background: transparent;
 }
 
+.chapter-bottom-spacer {
+  height: 6rem; /* adjust as needed */
+  flex-shrink: 0;
+}
+
+
 /* ============================= */
 /* Mobile adjustments */
 @media (max-width: 600px) {
