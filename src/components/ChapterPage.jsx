@@ -85,14 +85,24 @@ export default function ChapterPage() {
     setFullscreen((prev) => !prev);
   };
 
-  // --- Prevent body scroll in fullscreen ---
+  // --- Prevent body scroll in fullscreen & handle scroll position ---
   useEffect(() => {
     if (fullscreen) {
+      // Entering fullscreen
       document.body.style.overflow = "hidden";
       window.scrollTo(0, 0);
     } else {
+      // Exiting fullscreen
       document.body.style.overflow = "";
+
+      // Scroll to bottom of the chapter container
+      if (pageContainerRef.current) {
+        const container = pageContainerRef.current;
+        container.scrollTop = container.scrollHeight;
+        window.scrollTo(0, container.scrollHeight);
+      }
     }
+
     return () => (document.body.style.overflow = "");
   }, [fullscreen]);
 
@@ -160,8 +170,9 @@ export default function ChapterPage() {
         prevChapter={prevChapter}
         nextChapter={nextChapter}
       />
+
+      {/* Spacer under the buttons */}
       {!horizontalScroll && <div className="chapter-bottom-spacer" />}
     </div>
-    
   );
 }
