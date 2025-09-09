@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import "../css/MangaPage.css";
 import API_BASE from "./Config";
+import BookmarkButton from "./components/BookmarkButton";
 
 const DEFAULT_COVER =
   "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
@@ -9,17 +10,49 @@ const DEFAULT_COVER =
 export default function MangaPage() {
   const { slug } = useParams();
   const [manga, setManga] = useState(null);
-  const [chapters, setChapters] = useState([])
+  const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // --- Read chapters tracking ---
+  const [readChapters, setReadChapters] = useState(() => {
+    const saved = localStorage.getItem(`${slug}-readChapters`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const markChapterAsRead = (number) => {
+    if (!readChapters.includes(number)) {
+      const updated = [...readChapters, number];
+      setReadChapters(updated);
+      localStorage.setItem(`${slug}-readChapters`, JSON.stringify(updated));
+    }
+  };
+
+  // --- Bookmarks tracking ---
+  const [bookmarks, setBookmarks] = useState(() => {
+    const saved = localStorage.getItem(`${slug}-bookmarks`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const toggleBookmark = (number) => {
+    let updated;
+    if (bookmarks.includes(number)) {
+      updated = bookmarks.filter((n) => n !== number);
+    } else {
+      updated = [...bookmarks, number];
+    }
+    setBookmarks(updated);
+    localStorage.setItem(`${slug}-bookmarks`, JSON.stringify(updated));
+  };
+  // --------------------------------
 
   useEffect(() => {
     const fetchChapters = async () => {
       try {
         const response = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
-        if(!response.ok) throw new Error("Chpaters not found!")
+        if (!response.ok) throw new Error("Chpaters not found!");
         const data = await response.json();
-        setChapters(data)
-      }catch (error) {
+        setChapters(data);
+      } catch (error) {
         console.error(error);
       } finally {
         setLoading(false);
@@ -96,13 +129,24 @@ export default function MangaPage() {
         {chapters && chapters.length > 0 ? (
           <div className="chapter-grid">
             {chapters.map((ch) => (
-              <a
-                key={ch.number}
-                href={`/read/${slug}/chapter-${ch.number.toString().replace(/\./g, "-")}`}
-                className="chapter-item"
-              >
-                {ch.title || `Chapter ${ch.number}`}
-              </a>
+              <div key={ch.number} className="chapter-item-wrapper">
+                <a
+                  href={`/read/${slug}/chapter-${ch.number
+                    .toString()
+                    .replace(/\./g, "-")}`}
+                  className={`chapter-item ${
+                    readChapters.includes(ch.number) ? "read" : ""
+                  }`}
+                  onClick={() => markChapterAsRead(ch.number)}
+                >
+                  {ch.title || `Chapter ${ch.number}`}
+                </a>
+                <BookmarkButton
+                  chapter={ch.number}
+                  bookmarks={bookmarks}
+                  toggleBookmark={toggleBookmark}
+                />
+              </div>
             ))}
           </div>
         ) : (

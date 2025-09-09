@@ -18,6 +18,21 @@ export default function Recent_Manga() {
   const itemsPerPage = 10;
   const currentPage = Number(page) || 1;
 
+  // --- New: read manga tracking ---
+  const [readManga, setReadManga] = useState(() => {
+    const saved = localStorage.getItem("readManga");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const markAsRead = (title) => {
+    if (!readManga.includes(title)) {
+      const updated = [...readManga, title];
+      setReadManga(updated);
+      localStorage.setItem("readManga", JSON.stringify(updated));
+    }
+  };
+  // ---------------------------------
+
   useEffect(() => {
     const fetchManga = async () => {
       setLoading(true);
@@ -74,12 +89,14 @@ export default function Recent_Manga() {
           ))
         : currentManga.length > 0
         ? currentManga.map(({ title, description, cover_img }, idx) => (
-            <MangaCard
-              key={startIndex + idx}
-              title={title}
-              description={description}
-              cover={cover_img}
-            />
+            <div key={startIndex + idx} onClick={() => markAsRead(title)}>
+              <MangaCard
+                title={title}
+                description={description}
+                cover={cover_img}
+                read={readManga.includes(title)}
+              />
+            </div>
           ))
         : "No manga found."}
 

@@ -40,6 +40,9 @@ export default function App() {
           {/*future chapter page */}
           <Route path="/read/:slug/:chapter" element={<ChapterPage />} />
           <Route path="/search/:search" element={<SearchResult/>} />
+
+          {/* Bookmarks page */}
+          <Route path="/bookmarks" element={<BookmarksPage />} />
         </Routes>
       </main>
       <Footer />
