@@ -12,10 +12,20 @@ export default function MangaPage() {
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // --- Read chapters tracking ---
   const [readChapters, setReadChapters] = useState(() => {
-    const saved = localStorage.getItem(`${slug}-readChapters`);
-    return saved ? JSON.parse(saved) : [];
+    return JSON.parse(localStorage.getItem(`${slug}-readChapters`)) || [];
   });
+
+  // --- Sync readChapters with localStorage on focus ---
+  useEffect(() => {
+    const handleFocus = () => {
+      const saved = JSON.parse(localStorage.getItem(`${slug}-readChapters`)) || [];
+      setReadChapters(saved);
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [slug]);
 
   const markChapterAsRead = (number) => {
     if (!readChapters.includes(number)) {
@@ -25,7 +35,7 @@ export default function MangaPage() {
     }
   };
 
-  // --- Manga bookmarks ---
+  // --- Manga-level bookmarks ---
   const [bookmarks, setBookmarks] = useState(() => {
     return JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
   });
@@ -40,8 +50,8 @@ export default function MangaPage() {
     setBookmarks(updated);
     localStorage.setItem("bookmarkedManga", JSON.stringify(updated));
   };
+  // --------------------------------
 
-  // --- Fetch manga & chapters ---
   useEffect(() => {
     const fetchChapters = async () => {
       try {
@@ -75,6 +85,7 @@ export default function MangaPage() {
           data.tags = [];
         }
 
+        // generate chapters from single number
         const latestChapterNumber = Number(data.chapters) || 0;
         data.chapters = Array.from(
           { length: latestChapterNumber },
@@ -93,24 +104,6 @@ export default function MangaPage() {
     fetchManga();
   }, [slug]);
 
-  // --- NEW: Update readChapters when the page becomes visible or storage changes ---
-  useEffect(() => {
-    const updateReadChapters = () => {
-      const saved = localStorage.getItem(`${slug}-readChapters`);
-      setReadChapters(saved ? JSON.parse(saved) : []);
-    };
-
-    // Listen for tab focus
-    window.addEventListener("focus", updateReadChapters);
-    // Listen for other tabs changing storage
-    window.addEventListener("storage", updateReadChapters);
-
-    return () => {
-      window.removeEventListener("focus", updateReadChapters);
-      window.removeEventListener("storage", updateReadChapters);
-    };
-  }, [slug]);
-
   if (loading) return <div>Loading...</div>;
   if (!manga) return <div>Manga not found</div>;
 
@@ -124,6 +117,7 @@ export default function MangaPage() {
             {manga.description || "No description available."}
           </p>
 
+          {/* Manga-level bookmark button */}
           <button
             onClick={toggleBookmark}
             className={bookmarks.includes(slug) ? "bookmarked" : ""}
