@@ -197,6 +197,34 @@ nav a:hover {
   }
 }
 
+/* Menu Box */
+.MenuBox {
+    background: var(--color-primary);
+    border-radius: 40px;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 2;
+}
+
+.MenuBox .searchButton {
+    background: var(--color-back-light);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.MenuBox .searchButton:hover {
+    background: var(--color-back-light);
+    color: #2f3640;
+}
+
 /* Mobile adjustments */
 @media (max-width: 600px) {
     header {
