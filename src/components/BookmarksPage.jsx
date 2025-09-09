@@ -41,11 +41,11 @@ export default function BookmarksPage() {
   return (
     <div className="bookmarks-page">
       <h1>Bookmarked Manga</h1>
-      <div className="manga-grid">
+      <div className="bookmarks-grid">
         {bookmarkedManga.map(({ title, cover, slug }) => (
-          <Link key={slug} to={`/${slug}`} className="manga-card">
-            <img src={cover} alt={title} className="manga-cover" />
-            <h2 className="manga-title">{title}</h2>
+          <Link key={slug} to={`/${slug}`} className="bookmarks-card">
+            <img src={cover} alt={title} className="bookmarks-cover" />
+            <h2 className="bookmarks-title">{title}</h2>
           </Link>
         ))}
       </div>

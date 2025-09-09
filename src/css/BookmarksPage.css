@@ -15,7 +15,7 @@
   text-align: center;
 }
 
-.manga-grid {
+.bookmarks-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 1rem;
@@ -23,7 +23,7 @@
   max-width: 1200px;
 }
 
-.manga-card {
+.bookmarks-card {
   background-color: var(--card-bg, #1e1e1e);
   border-radius: 10px;
   overflow: hidden;
@@ -32,23 +32,22 @@
   text-align: center;
   display: flex;
   flex-direction: column;
-  text-decoration: none; /* important for Link */
+  text-decoration: none;
   color: inherit;
 }
 
-.manga-card:hover {
+.bookmarks-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 12px rgba(0,0,0,0.3);
 }
 
-.manga-cover {
+.bookmarks-cover {
   width: 100%;
   height: 200px;
   object-fit: cover;
-  border-radius: 10px;
 }
 
-.manga-title {
+.bookmarks-title {
   margin: 0.5rem 0;
   font-size: 1rem;
   font-weight: bold;
