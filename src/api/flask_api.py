@@ -109,13 +109,20 @@ def search_by_title():
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
     cursor.execute(
-        "SELECT title, description FROM manga_metadata WHERE title LIKE ?",
+        "SELECT title, description,  FROM manga_metadata WHERE title LIKE ?",
         ('%' + query + '%',)
     )
     rows = cursor.fetchall()
+    data = []
+    for row in rows:
+        cleaned_title = to_slug(row[0])
+        presigned_url_get = S3CLIENT.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': 'otanet-manga-devo', 'Key': f"{cleaned_title}/0_title/cover_img"},
+            ExpiresIn=900
+        )
+        data.append({"title": row[0], "description": row[1], "cover_img": presigned_url_get})
     con.close()
-
-    data = [{"title": row[0], "description": row[1]} for row in rows]
     return jsonify(data)
 
 @app.route('/get_chapters', methods=['GET'])

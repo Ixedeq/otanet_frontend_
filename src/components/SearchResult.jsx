@@ -36,12 +36,12 @@ export default function SearchResult() {
  return (
     <div className="manga-list">
           {currentManga.length > 0
-            ? currentManga.map(({ title, description }, idx) => (
+            ? currentManga.map(({ title, description, cover_img}, idx) => (
                 <MangaCard
                   key={startIndex + idx}
                   title={title}
                   description={description}
-                  cover={''}
+                  cover={cover_img}
                 />
               ))
             : "Loading..."}
