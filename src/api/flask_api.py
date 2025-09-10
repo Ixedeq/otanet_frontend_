@@ -109,7 +109,7 @@ def search_by_title():
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
     cursor.execute(
-        "SELECT title, description,  FROM manga_metadata WHERE title LIKE ?",
+        "SELECT title, description FROM manga_metadata WHERE title LIKE ?",
         ('%' + query + '%',)
     )
     rows = cursor.fetchall()
