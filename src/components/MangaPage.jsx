@@ -9,18 +9,65 @@ const DEFAULT_COVER =
 export default function MangaPage() {
   const { slug } = useParams();
   const [manga, setManga] = useState(null);
-  const [chapters, setChapters] = useState([])
+  const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // --- Read chapters tracking ---
+  const [readChapters, setReadChapters] = useState(() => {
+    const saved = localStorage.getItem(`${slug}-readChapters`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Listen for updates from ChapterPage
+  useEffect(() => {
+    const handleReadChaptersUpdate = (e) => {
+      if (e.detail.slug === slug) {
+        setReadChapters(e.detail.updatedChapters);
+      }
+    };
+    window.addEventListener("readChaptersUpdated", handleReadChaptersUpdate);
+    return () => window.removeEventListener("readChaptersUpdated", handleReadChaptersUpdate);
+  }, [slug]);
+
+  const markChapterAsRead = (number) => {
+    if (!readChapters.includes(number)) {
+      const updated = [...readChapters, number];
+      setReadChapters(updated);
+      localStorage.setItem(`${slug}-readChapters`, JSON.stringify(updated));
+      window.dispatchEvent(
+        new CustomEvent("readChaptersUpdated", {
+          detail: { slug, updatedChapters: updated },
+        })
+      );
+    }
+  };
+
+  // --- Manga-level bookmarks ---
+  const [bookmarks, setBookmarks] = useState(() => {
+    return JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
+  });
+
+  const toggleBookmark = () => {
+    let updated;
+    if (bookmarks.includes(slug)) {
+      updated = bookmarks.filter((s) => s !== slug);
+    } else {
+      updated = [...bookmarks, slug];
+    }
+    setBookmarks(updated);
+    localStorage.setItem("bookmarkedManga", JSON.stringify(updated));
+  };
+
+  // --- Fetch chapters and manga ---
   useEffect(() => {
     const fetchChapters = async () => {
       try {
-        const response = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
-        if(!response.ok) throw new Error("Chpaters not found!")
-        const data = await response.json();
-        setChapters(data)
-      }catch (error) {
-        console.error(error);
+        const res = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
+        if (!res.ok) throw new Error("Chapters not found!");
+        const data = await res.json();
+        setChapters(data);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -28,9 +75,9 @@ export default function MangaPage() {
 
     const fetchManga = async () => {
       try {
-        const response = await fetch(`${API_BASE}/${slug}`);
-        if (!response.ok) throw new Error("Manga not found");
-        const data = await response.json();
+        const res = await fetch(`${API_BASE}/${slug}`);
+        if (!res.ok) throw new Error("Manga not found");
+        const data = await res.json();
 
         if (!data.cover) data.cover = DEFAULT_COVER;
 
@@ -53,8 +100,8 @@ export default function MangaPage() {
         );
 
         setManga(data);
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -76,6 +123,14 @@ export default function MangaPage() {
           <p className="detail-description">
             {manga.description || "No description available."}
           </p>
+
+          {/* Manga-level bookmark button */}
+          <button
+            onClick={toggleBookmark}
+            className={bookmarks.includes(slug) ? "bookmarked" : ""}
+          >
+            {bookmarks.includes(slug) ? "★ Bookmarked" : "☆ Bookmark"}
+          </button>
         </div>
       </div>
 
@@ -96,13 +151,19 @@ export default function MangaPage() {
         {chapters && chapters.length > 0 ? (
           <div className="chapter-grid">
             {chapters.map((ch) => (
-              <a
-                key={ch.number}
-                href={`/read/${slug}/chapter-${ch.number.toString().replace(/\./g, "-")}`}
-                className="chapter-item"
-              >
-                {ch.title || `Chapter ${ch.number}`}
-              </a>
+              <div key={ch.number} className="chapter-item-wrapper">
+                <a
+                  href={`/read/${slug}/chapter-${ch.number
+                    .toString()
+                    .replace(/\./g, "-")}`}
+                  className={`chapter-item ${
+                    readChapters.includes(ch.number) ? "read" : ""
+                  }`}
+                  onClick={() => markChapterAsRead(ch.number)}
+                >
+                  {ch.title || `Chapter ${ch.number}`}
+                </a>
+              </div>
             ))}
           </div>
         ) : (

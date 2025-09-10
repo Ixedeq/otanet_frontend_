@@ -5,6 +5,9 @@
     --header-font-size: 3.5em;
     --header-height: 8em;
     --menu-color: white;
+
+    --search-width-desktop: 175px;
+    --search-width-mobile: 11rem;
 }
 
 header {
@@ -19,7 +22,7 @@ header {
     transform-origin: top center;
 }
 
-/* Logo centered absolutely */
+/* Centered Logo */
 .site-title {
     position: absolute;
     left: 50%;
@@ -29,6 +32,11 @@ header {
     color: white;
     z-index: 1;
     white-space: nowrap;
+    transition: opacity 0.3s ease;
+}
+
+.net{
+  color: aliceblue;
 }
 
 header h1 span {
@@ -79,7 +87,7 @@ a {
     padding: 0 10px;
     border: none;
     border-radius: 20px;
-    background: var(--color-back-light); 
+    background: var(--color-back-light);
     color: white;
     font-size: 16px;
     line-height: 40px;
@@ -90,14 +98,20 @@ a {
 
 .searchBox:hover,
 .searchBox:focus-within {
-    width: 240px;                 
+    width: 240px;
 }
 
 .searchBox:hover > .searchInput,
 .searchBox:focus-within > .searchInput {
-    outline: 0;
-    width: 175px;                 
+    width: var(--search-width-desktop);
     opacity: 1;
+}
+
+/* Hide logo when search is active on mobile */
+.searchBox:hover ~ .site-title,
+.searchBox:focus-within ~ .site-title {
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* Menu Box */
@@ -107,19 +121,13 @@ a {
     padding: 2px;
     display: flex;
     align-items: center;
+    gap: 0.5rem;
     z-index: 2;
 }
 
 .MenuBox .searchButton {
     background: var(--color-back-light);
     color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
 }
 
 .MenuBox .searchButton:hover {
@@ -127,76 +135,129 @@ a {
     color: #2f3640;
 }
 
-.net {
-  color: aliceblue;
-}
-
+/* Sidebar - slides from right */
 .sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 240px;
-  height: 100vh;
-  background-color: var(--main-bg, #333);
-  color: var(--font-color, white);
-  padding: 1rem;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.3);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 240px;
+    height: 100vh;
+    background-color: var(--main-bg, #333);
+    color: var(--font-color, white);
+    padding: 1rem;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.3);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    transform: translateX(100%);
+    box-sizing: border-box; /* include padding inside width */
 }
 
-.close-button {
-  align-self: flex-end;
-  font-size: 1.5rem;
-  background: none;
-  border: none;
-  color: inherit;
-  cursor: pointer;
+.sidebar.open {
+    transform: translateX(0);
 }
+
+/* Sidebar Close Button */
+.close-button {
+    align-self: flex-end;
+    font-size: 1.5rem;
+    background-color: var(--color-back-light); /* dark circle background */
+    color: white;
+    border: none;
+    border-radius: 50%; /* circular */
+    width: 36px;
+    height: 36px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.close-button:hover {
+    background-color: #5553b5; /* accent hover color */
+    transform: scale(1.1); /* slight pop effect */
+}
+
+.sidebar nav ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* space between items */
+}
+
+.sidebar nav li a {
+    display: block;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #d0368a 0%, #708ad4 100%);
+    color: white;
+    font-weight: bold;
+    text-decoration: none;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.sidebar nav li a:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Mobile - cover entire screen properly */
+@media (max-width: 600px) {
+    .sidebar {
+        width: 100%; /* use 100% instead of 100vw */
+        max-width: 100%;
+        height: 100vh;
+        padding: 1rem;
+        box-sizing: border-box; /* ensures padding doesn’t overflow */
+    }
+}
+
+
 
 nav ul {
-  list-style: none;
-  padding: 0;
-  margin-top: 2rem;
+    list-style: none;
+    padding: 0;
+    margin-top: 2rem;
 }
 
 nav li {
-  margin-bottom: 1rem;
+    margin-bottom: 1rem;
 }
 
 nav a {
-  color: inherit;
-  text-decoration: none;
-  font-weight: bold;
+    color: inherit;
+    text-decoration: none;
+    font-weight: bold;
 }
 
 nav a:hover {
-  color: var(--accent-color, #d0368a);
+    color: var(--accent-color, #d0368a);
 }
 
+/* Mobile adjustments */
 @media (max-width: 600px) {
-  header {
-    height: auto; /* let it grow if needed */
-    padding: 0.5em 1em;
-  }
+    header {
+        height: 5.5rem;
+        padding: 0.5em 1em;
+    }
 
-  .site-title {
-    font-size: 2em;      /* smaller logo text */
-    white-space: normal;  /* allow wrapping if needed */
-  }
+    .site-title {
+        font-size: 3em;
+        white-space: normal;
+    }
 
-  .MenuBox {
-    flex-wrap: wrap;      /* wrap menu items */
-    gap: 0.5em;           /* spacing between buttons */
-  }
+    .MenuBox {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
 
-  .searchBox:hover > .searchInput,
-  .searchBox:focus-within > .searchInput {
-    width: 100px;         /* smaller search input */
-  }
+    .searchBox:hover > .searchInput,
+    .searchBox:focus-within > .searchInput {
+        width: var(--search-width-mobile);
+    }
 }
-
-
-
-

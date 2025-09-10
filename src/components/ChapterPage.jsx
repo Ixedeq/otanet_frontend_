@@ -3,12 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import ChapterImg from "./components/ChapterImg";
 import ChapterNavigation from "./components/ChapterNavigation";
 import API_BASE from "./Config";
+import parseChapterNumber from "./components/ParseChapterNumber"; 
 import "../css/ChapterPage.css";
 
 export default function ChapterPage() {
   const { slug, chapter } = useParams();
   const chapterKey = chapter.replace("-", "_");
-  const chapterNumberStr = chapter.split("-")[1] || "0";
+  const chapterNumberStr = parseChapterNumber(chapter); 
+  const chapterNumber = parseFloat(chapterNumberStr); // numeric
 
   const [mangaTitle, setMangaTitle] = useState("");
   const [pages, setPages] = useState([]);
@@ -19,6 +21,23 @@ export default function ChapterPage() {
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
 
   const pageContainerRef = useRef(null);
+
+  // inside ChapterPage component, add this function:
+  const markChapterAsRead = (number) => {
+    const saved = JSON.parse(localStorage.getItem(`${slug}-readChapters`)) || [];
+    if (!saved.includes(number)) {
+      const updated = [...saved, number];
+      localStorage.setItem(`${slug}-readChapters`, JSON.stringify(updated));
+
+      // Dispatch custom event so MangaPage updates immediately
+      window.dispatchEvent(
+        new CustomEvent("readChaptersUpdated", {
+          detail: { slug, updatedChapters: updated },
+        })
+      );
+    }
+  };
+
 
   // --- Fetch pages ---
   useEffect(() => {
@@ -84,13 +103,18 @@ export default function ChapterPage() {
     setFullscreen((prev) => !prev);
   };
 
-  // --- Prevent body scroll in fullscreen ---
+  // --- Prevent body scroll in fullscreen & handle scroll position ---
   useEffect(() => {
     if (fullscreen) {
       document.body.style.overflow = "hidden";
       window.scrollTo(0, 0);
     } else {
       document.body.style.overflow = "";
+      if (pageContainerRef.current) {
+        const container = pageContainerRef.current;
+        container.scrollTop = container.scrollHeight;
+        window.scrollTo(0, container.scrollHeight);
+      }
     }
     return () => (document.body.style.overflow = "");
   }, [fullscreen]);
@@ -118,7 +142,6 @@ export default function ChapterPage() {
         </h1>
       </Link>
 
-      {/* Toggle horizontal only when NOT fullscreen */}
       {!fullscreen && (
         <button
           className="toggle-scroll-btn"
@@ -159,6 +182,8 @@ export default function ChapterPage() {
         prevChapter={prevChapter}
         nextChapter={nextChapter}
       />
+
+      {!horizontalScroll && <div className="chapter-bottom-spacer" />}
     </div>
   );
 }
