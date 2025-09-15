@@ -7,6 +7,7 @@
   overflow-x: hidden;
   width: 100%;
   box-sizing: border-box;
+  scrollbar-gutter: stable; /* prevents layout shift when scrollbar shows */
 }
 
 .manga-card {
@@ -30,15 +31,13 @@
 
 .manga-card:hover {
   transform: scale(1.03);
-  border-color: #708bd40d;
-  border-style: solid;
+  border: 1px solid #708bd40d;
 }
 
 .manga-thumb {
-  width: 20%;
+  flex: 0 0 20%;            /* keeps same sizing as before */
   min-width: 80px;
-  height: auto;
-  aspect-ratio: 120 / 170;
+  aspect-ratio: 120 / 170;  /* keeps ratio consistent */
   object-fit: cover;
   border-radius: 8px;
   cursor: pointer;
@@ -64,7 +63,7 @@
 }
 
 .manga-description-text {
-  font-size: 1.0rem;
+  font-size: 1rem;
   color: var(--main-text);
   text-align: center;
   width: 100%;
@@ -90,6 +89,16 @@
   color: var(--main-text);
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  background-color: var(--highlight, #708bd4);
+  color: #fff;
+}
+
+.pagination-controls button:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .pagination-controls button:disabled {
@@ -106,7 +115,7 @@
   background: var(--card-bg, #3636367a);
 }
 
-/* Base shimmer background */
+/* shimmer placeholders */
 .skeleton-cover,
 .skeleton-title,
 .skeleton-desc {
@@ -116,20 +125,17 @@
   border-radius: 4px;
 }
 
-/* Cover size */
 .skeleton-cover {
   width: 100%;
-  height: 250px;   /* same as real cover */
+  aspect-ratio: 120 / 170; /* match manga-thumb */
   border-radius: 0.5rem;
 }
 
-/* Title size */
 .skeleton-title {
   width: 70%;
   height: 18px;
 }
 
-/* Description lines */
 .skeleton-desc {
   width: 90%;
   height: 14px;
@@ -140,7 +146,6 @@
   width: 60%;
 }
 
-/* Shimmer on each element */
 .skeleton-cover::before,
 .skeleton-title::before,
 .skeleton-desc::before {
@@ -160,17 +165,10 @@
   animation: shimmer 1.5s infinite linear;
 }
 
-
 @keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
-
-
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
@@ -179,7 +177,7 @@
   }
 
   .manga-thumb {
-    width: 30%;
+    flex: 0 0 30%;
   }
 
   .manga-info {
@@ -195,6 +193,3 @@
     font-size: 0.8rem;
   }
 }
-
-
-
