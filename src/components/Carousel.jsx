@@ -6,10 +6,8 @@ export default function Carousel() {
   const [mangaList, setMangaList] = useState([]);
   const scrollRef = useRef(null);
   const isPausedRef = useRef(false);
+  const userInteractingRef = useRef(false);
   const animationRef = useRef(null);
-
-  const noCover =
-    "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
 
   // Fetch random manga
   const fetchRandomManga = async (count = 10) => {
@@ -21,7 +19,7 @@ export default function Carousel() {
       return data.map((m) => ({
         slug: m.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         title: m.title,
-        cover: m.cover_img || noCover,
+        cover: m.cover_img,
       }));
     } catch (err) {
       console.error("Failed to fetch random manga:", err);
@@ -42,9 +40,10 @@ export default function Carousel() {
     const container = scrollRef.current;
     if (!container) return;
 
-    const scrollSpeed = 1;
+    const scrollSpeed = 1; // pixels per frame
+
     const step = () => {
-      if (!isPausedRef.current) {
+      if (!isPausedRef.current && !userInteractingRef.current) {
         container.scrollLeft += scrollSpeed;
         if (container.scrollLeft >= container.scrollWidth / 2) {
           container.scrollLeft = 0;
@@ -57,8 +56,7 @@ export default function Carousel() {
     return () => cancelAnimationFrame(animationRef.current);
   }, [mangaList]);
 
-  if (!mangaList.length)
-    return <div className="carousel-empty">No manga available.</div>;
+  if (!mangaList.length) return <div className="carousel-empty">No manga available.</div>;
 
   return (
     <div
@@ -66,10 +64,18 @@ export default function Carousel() {
       ref={scrollRef}
       onMouseEnter={() => (isPausedRef.current = true)}
       onMouseLeave={() => (isPausedRef.current = false)}
+      onMouseDown={() => (userInteractingRef.current = true)}
+      onMouseUp={() => (userInteractingRef.current = false)}
+      onTouchStart={() => (userInteractingRef.current = true)}
+      onTouchEnd={() => (userInteractingRef.current = false)}
+      onWheel={() => {
+        userInteractingRef.current = true;
+        setTimeout(() => (userInteractingRef.current = false), 300);
+      }}
     >
       {[...mangaList, ...mangaList].map(({ slug, title, cover }, index) => (
         <a key={index} href={`/${slug}`} className="carousel-item">
-          <img src={cover || noCover} alt={title} className="carousel-cover" />
+          <img src={cover} alt={title} className="carousel-cover" />
           <div className="carousel-title">{title}</div>
         </a>
       ))}
