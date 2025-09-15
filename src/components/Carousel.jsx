@@ -10,50 +10,38 @@ export default function Carousel() {
   const noCover =
     "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
 
-  // Load bookmarks safely
   const loadBookmarks = () => {
     try {
       return JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
-    } catch (err) {
-      console.error("Failed to load bookmarks:", err);
+    } catch {
       return [];
     }
   };
 
-  // Fetch bookmark details
   const fetchBookmarksData = async (bookmarks) => {
     if (bookmarks.length === 0) return [];
-    try {
-      const results = await Promise.all(
-        bookmarks.map(async (slug) => {
-          const res = await fetch(`${API_BASE}/${slug}`);
-          if (!res.ok) return null;
-          const data = await res.json();
-          return { ...data, slug };
-        })
-      );
-      return results.filter((m) => m !== null);
-    } catch (err) {
-      console.error("Error fetching bookmark data:", err);
-      return [];
-    }
+    const results = await Promise.all(
+      bookmarks.map(async (slug) => {
+        const res = await fetch(`${API_BASE}/${slug}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return { ...data, slug };
+      })
+    );
+    return results.filter(Boolean);
   };
 
-  // Fetch similar manga based on tags
-  const fetchSimilarManga = async (tags, excludeSlugs) => {
+  const fetchSimilarManga = async (tags) => {
     if (tags.length === 0) return [];
     try {
       const query = tags.join(",");
-      const excludeQuery = excludeSlugs.length > 0 ? excludeSlugs.join(",") : "";
-      const url = `${API_BASE}/search_by_tags?include_tags=${query}&exclude_tags=${excludeQuery}`;
-      const res = await fetch(url);
+      const res = await fetch(`${API_BASE}/search_by_tags?include_tags=${query}`);
       if (!res.ok) return [];
       const data = await res.json();
-
       return data.map((m) => ({
         slug: m.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         title: m.title,
-        cover: noCover, // fallback cover
+        cover: noCover,
       }));
     } catch (err) {
       console.error("Failed to fetch similar manga:", err);
@@ -61,29 +49,25 @@ export default function Carousel() {
     }
   };
 
-  // Load recommendations on mount
   useEffect(() => {
     const loadRecommendations = async () => {
       const bookmarks = loadBookmarks();
-      if (bookmarks.length === 0) return;
+      if (!bookmarks.length) return;
 
       const bookmarkData = await fetchBookmarksData(bookmarks);
 
-      // Collect unique tags safely
+      // Take the first tag of each bookmark for backend compatibility
       const tagsSet = new Set();
       bookmarkData.forEach((m) => {
         if (m.tags) {
-          m.tags.split(",").forEach((t) => {
-            const trimmed = t.trim();
-            if (trimmed) tagsSet.add(trimmed);
-          });
+          const firstTag = m.tags.split(",")[0].trim();
+          if (firstTag) tagsSet.add(firstTag);
         }
       });
       const tags = Array.from(tagsSet);
-      if (tags.length === 0) return;
+      if (!tags.length) return;
 
-      // Fetch similar manga excluding bookmarks
-      const similar = await fetchSimilarManga(tags, bookmarks);
+      const similar = await fetchSimilarManga(tags);
       setMangaList(similar);
     };
 
@@ -110,8 +94,7 @@ export default function Carousel() {
     return () => cancelAnimationFrame(animationRef.current);
   }, [mangaList]);
 
-  if (mangaList.length === 0)
-    return <div className="carousel-empty">No recommendations available.</div>;
+  if (!mangaList.length) return <div className="carousel-empty">No recommendations available.</div>;
 
   return (
     <div
