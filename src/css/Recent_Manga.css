@@ -116,44 +116,60 @@
 
 .manga-card.skeleton {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
+  flex-direction: row;   /* match real card layout */
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
   background: var(--card-bg, #3636367a);
+  max-width: 1000px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
-/* shimmer placeholders */
-.skeleton-cover,
-.skeleton-title,
-.skeleton-desc {
+/* Thumbnail placeholder */
+.skeleton-cover {
+  flex: 0 0 20%;
+  aspect-ratio: 120 / 170;
+  border-radius: 8px;
+  background: #3838387a;
   position: relative;
   overflow: hidden;
-  background: #3838387a;
-  border-radius: 4px;
 }
 
-.skeleton-cover {
-  width: 100%;
-  aspect-ratio: 120 / 170; /* match manga-thumb */
-  border-radius: 0.5rem;
+/* Info placeholders */
+.skeleton-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  padding-left: 3%;
 }
 
 .skeleton-title {
-  width: 70%;
-  height: 18px;
+  width: 60%;
+  height: 16px;
+  background: #3838387a;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
 }
 
 .skeleton-desc {
-  width: 90%;
-  height: 14px;
-  margin-top: 4px;
+  width: 80%;
+  height: 12px;
+  background: #3838387a;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
 }
 
 .skeleton-desc.short {
-  width: 60%;
+  width: 50%;
 }
 
+/* Shimmer effect */
 .skeleton-cover::before,
 .skeleton-title::before,
 .skeleton-desc::before {
@@ -177,6 +193,7 @@
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
