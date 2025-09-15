@@ -11,46 +11,77 @@ export default function Carousel() {
     "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
 
   // Load bookmarks from localStorage
-  const loadBookmarks = () => {
-    return JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
+  const loadBookmarks = () => JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
+
+  // Fetch bookmarks details
+  const fetchBookmarksData = async (bookmarks) => {
+    const results = await Promise.all(
+      bookmarks.map(async (slug) => {
+        const res = await fetch(`${API_BASE}/${slug}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return { ...data, slug };
+      })
+    );
+    return results.filter((m) => m !== null);
   };
 
-  // Fetch manga details for bookmarks
+  // Fetch similar manga based on tags/genres
+  const fetchSimilarManga = async (tags) => {
+    try {
+      // Example endpoint: filter manga by tags (adjust according to your API)
+      const query = tags.join(",");
+      const res = await fetch(`${API_BASE}/manga_by_tags?tags=${query}`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      console.error("Error fetching similar manga:", err);
+      return [];
+    }
+  };
+
   useEffect(() => {
-    const fetchBookmarksData = async () => {
+    const loadRecommendations = async () => {
       const bookmarks = loadBookmarks();
       if (bookmarks.length === 0) {
         setMangaList([]);
         return;
       }
 
-      try {
-        const results = await Promise.all(
-          bookmarks.map(async (slug) => {
-            const res = await fetch(`${API_BASE}/${slug}`);
-            if (!res.ok) return null;
-            const data = await res.json();
-            return { ...data, slug };
-          })
-        );
+      // 1. Fetch bookmarks details
+      const bookmarkData = await fetchBookmarksData(bookmarks);
 
-        setMangaList(results.filter((m) => m !== null));
-      } catch (err) {
-        console.error("Error fetching bookmark data:", err);
+      // 2. Collect unique tags/genres
+      const tagsSet = new Set();
+      bookmarkData.forEach((m) => {
+        (m.tags || []).forEach((t) => tagsSet.add(t));
+      });
+      const tags = Array.from(tagsSet);
+
+      if (tags.length === 0) {
         setMangaList([]);
+        return;
       }
+
+      // 3. Fetch similar manga
+      let similar = await fetchSimilarManga(tags);
+
+      // 4. Filter out bookmarks
+      similar = similar.filter((m) => !bookmarks.includes(m.slug));
+
+      setMangaList(similar);
     };
 
-    fetchBookmarksData();
+    loadRecommendations();
   }, []);
 
-  // Infinite horizontal scroll
+  // Infinite scroll
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
 
-    const scrollSpeed = 1; // px per frame
-
+    const scrollSpeed = 1;
     const step = () => {
       if (!isPausedRef.current) {
         container.scrollLeft += scrollSpeed;
@@ -66,7 +97,7 @@ export default function Carousel() {
   }, [mangaList]);
 
   if (mangaList.length === 0)
-    return <div className="carousel-empty">No bookmarks yet.</div>;
+    return <div className="carousel-empty">No recommendations available.</div>;
 
   return (
     <div
