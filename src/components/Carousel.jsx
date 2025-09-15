@@ -4,89 +4,80 @@ import API_BASE from "./Config";
 
 export default function Carousel() {
   const [manga, setManga] = useState([]);
-  const [cover, setCover] = useState("");
-  const isPausedRef = useRef(false);  // use ref for latest paused state
+  const isPausedRef = useRef(false);
   const scrollRef = useRef(null);
-  const perPage = 8;
+  const animationRef = useRef(null);
   const noCover =
     "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
 
-  // Fetch manga
-  const fetchManga = async () => {
-    try {
-      const response = await fetch(
-        `${API_BASE}/recent_manga?per_page=${perPage}`
-      );
-      if (!response.ok) throw new Error("Network response was not ok!");
-      const data = await response.json();
-      setManga(data);
-    } catch (error) {
-      console.error("Error fetching manga!", error);
-    }
+  // Load bookmarks from localStorage
+  const loadBookmarks = () => {
+    return JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
   };
 
-  // Fetch cover
-  const fetchCover = async () => {
-    try {
-      const response = await fetch("http://localhost:8000/get_cover");
-      if (!response.ok) throw new Error("Network response was not ok!");
-      const data = await response.json();
-      setCover(data);
-    } catch (error) {
-      console.error("Error fetching cover!", error);
-    }
-  };
-
-  // Fetch data once on mount
+  // Fetch details for bookmarks
   useEffect(() => {
-    fetchManga();
-    fetchCover();
+    const bookmarks = loadBookmarks();
+    if (bookmarks.length === 0) {
+      setManga([]);
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const results = await Promise.all(
+          bookmarks.map(async (slug) => {
+            const res = await fetch(`${API_BASE}/${slug}`);
+            if (!res.ok) return null;
+            const data = await res.json();
+            return { ...data, slug };
+          })
+        );
+        setManga(results.filter((m) => m !== null));
+      } catch (err) {
+        console.error("Error fetching bookmark data:", err);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  // Infinite scroll with pause-on-hover
+  // Infinite scroll
   useEffect(() => {
     const scrollContainer = scrollRef.current;
     if (!scrollContainer) return;
 
-    const scrollSpeed = 1; // pixels per frame
-
+    const scrollSpeed = 1;
     const step = () => {
       if (!isPausedRef.current) {
         scrollContainer.scrollLeft += scrollSpeed;
-
-        // Reset seamlessly at halfway (duplicated list)
         if (scrollContainer.scrollLeft >= scrollContainer.scrollWidth / 2) {
           scrollContainer.scrollLeft = 0;
         }
       }
-      requestAnimationFrame(step);
+      animationRef.current = requestAnimationFrame(step);
     };
 
-    const animationId = requestAnimationFrame(step);
-
-    return () => cancelAnimationFrame(animationId);
-  }, []); // run once on mount
+    animationRef.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animationRef.current);
+  }, []);
 
   return (
     <main
-      className="home"
+      className="carousel-container"
       ref={scrollRef}
       onMouseEnter={() => (isPausedRef.current = true)}
       onMouseLeave={() => (isPausedRef.current = false)}
     >
       {manga.length > 0 ? (
-        [...manga, ...manga].map(({ title, description, cover_img }, index) => (
-          <div key={index} className="manga-item">
-            <img
-              src={cover_img || noCover}
-              alt={title}
-              className="home-cover"
-            />
+        [...manga, ...manga].map(({ slug, title, cover }, index) => (
+          <a key={index} href={`/${slug}`} className="manga-item">
+            <img src={cover || noCover} alt={title} className="home-cover" />
             <div className="manga-title">{title}</div>
-          </div>
+          </a>
         ))
       ) : (
-        <div>Loading...</div>
+        <div>No bookmarks yet.</div>
       )}
     </main>
   );
