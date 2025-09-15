@@ -1,12 +1,12 @@
 .carousel-container {
   display: flex;
   gap: 0.8rem;
-  padding: 4rem;
+  padding: 1rem;
   overflow-x: hidden;       /* hide native scrollbar */
   overflow-y: hidden;
   white-space: nowrap;
   background-color: var(--main-bg);
-
+  
 }
 
 .carousel-item {
