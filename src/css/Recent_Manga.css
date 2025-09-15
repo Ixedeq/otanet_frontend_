@@ -60,7 +60,15 @@
   text-align: center;
   margin-bottom: 0.3rem;
   width: 100%;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;      /* clamp to 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
 }
+
 
 .manga-description-text {
   font-size: 1rem;
