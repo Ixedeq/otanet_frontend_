@@ -7,71 +7,34 @@ export default function Carousel() {
   const scrollRef = useRef(null);
   const isPausedRef = useRef(false);
   const animationRef = useRef(null);
+
   const noCover =
     "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
 
-  const loadBookmarks = () => {
+  // Fetch random manga
+  const fetchRandomManga = async (count = 10) => {
     try {
-      return JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
-    } catch {
-      return [];
-    }
-  };
-
-  const fetchBookmarksData = async (bookmarks) => {
-    if (bookmarks.length === 0) return [];
-    const results = await Promise.all(
-      bookmarks.map(async (slug) => {
-        const res = await fetch(`${API_BASE}/${slug}`);
-        if (!res.ok) return null;
-        const data = await res.json();
-        return { ...data, slug };
-      })
-    );
-    return results.filter(Boolean);
-  };
-
-  const fetchSimilarManga = async (tags) => {
-    if (tags.length === 0) return [];
-    try {
-      const query = tags.join(",");
-      const res = await fetch(`${API_BASE}/search_by_tags?include_tags=${query}`);
+      const page = Math.floor(Math.random() * 5) + 1; // random page 1–5
+      const res = await fetch(`${API_BASE}/recent_manga?per_page=${count}&page=${page}`);
       if (!res.ok) return [];
       const data = await res.json();
       return data.map((m) => ({
         slug: m.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         title: m.title,
-        cover: noCover,
+        cover: m.cover_img || noCover,
       }));
     } catch (err) {
-      console.error("Failed to fetch similar manga:", err);
+      console.error("Failed to fetch random manga:", err);
       return [];
     }
   };
 
   useEffect(() => {
-    const loadRecommendations = async () => {
-      const bookmarks = loadBookmarks();
-      if (!bookmarks.length) return;
-
-      const bookmarkData = await fetchBookmarksData(bookmarks);
-
-      // Take the first tag of each bookmark for backend compatibility
-      const tagsSet = new Set();
-      bookmarkData.forEach((m) => {
-        if (m.tags) {
-          const firstTag = m.tags.split(",")[0].trim();
-          if (firstTag) tagsSet.add(firstTag);
-        }
-      });
-      const tags = Array.from(tagsSet);
-      if (!tags.length) return;
-
-      const similar = await fetchSimilarManga(tags);
-      setMangaList(similar);
+    const loadManga = async () => {
+      const randomManga = await fetchRandomManga(10);
+      setMangaList(randomManga);
     };
-
-    loadRecommendations();
+    loadManga();
   }, []);
 
   // Infinite horizontal scroll
@@ -94,7 +57,8 @@ export default function Carousel() {
     return () => cancelAnimationFrame(animationRef.current);
   }, [mangaList]);
 
-  if (!mangaList.length) return <div className="carousel-empty">No recommendations available.</div>;
+  if (!mangaList.length)
+    return <div className="carousel-empty">No manga available.</div>;
 
   return (
     <div
