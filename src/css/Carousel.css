@@ -6,6 +6,13 @@
   overflow-y: hidden;
   white-space: nowrap;
   background-color: var(--main-bg);
+
+  /* Box container styling */
+  background-color: rgba(0, 0, 0, 0.3); /* semi-transparent background */
+  border-radius: 10px;                  /* rounded corners */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* subtle border */
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* optional shadow */
   
 }
 
