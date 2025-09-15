@@ -3,9 +3,9 @@ import "../css/Carousel.css";
 import API_BASE from "./Config";
 
 export default function Carousel() {
-  const [manga, setManga] = useState([]);
-  const isPausedRef = useRef(false);
+  const [mangaList, setMangaList] = useState([]);
   const scrollRef = useRef(null);
+  const isPausedRef = useRef(false);
   const animationRef = useRef(null);
   const noCover =
     "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
@@ -15,15 +15,15 @@ export default function Carousel() {
     return JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
   };
 
-  // Fetch details for bookmarks
+  // Fetch manga details for bookmarks
   useEffect(() => {
-    const bookmarks = loadBookmarks();
-    if (bookmarks.length === 0) {
-      setManga([]);
-      return;
-    }
+    const fetchBookmarksData = async () => {
+      const bookmarks = loadBookmarks();
+      if (bookmarks.length === 0) {
+        setMangaList([]);
+        return;
+      }
 
-    const fetchData = async () => {
       try {
         const results = await Promise.all(
           bookmarks.map(async (slug) => {
@@ -33,26 +33,29 @@ export default function Carousel() {
             return { ...data, slug };
           })
         );
-        setManga(results.filter((m) => m !== null));
+
+        setMangaList(results.filter((m) => m !== null));
       } catch (err) {
         console.error("Error fetching bookmark data:", err);
+        setMangaList([]);
       }
     };
 
-    fetchData();
+    fetchBookmarksData();
   }, []);
 
-  // Infinite scroll
+  // Infinite horizontal scroll
   useEffect(() => {
-    const scrollContainer = scrollRef.current;
-    if (!scrollContainer) return;
+    const container = scrollRef.current;
+    if (!container) return;
 
-    const scrollSpeed = 1;
+    const scrollSpeed = 1; // px per frame
+
     const step = () => {
       if (!isPausedRef.current) {
-        scrollContainer.scrollLeft += scrollSpeed;
-        if (scrollContainer.scrollLeft >= scrollContainer.scrollWidth / 2) {
-          scrollContainer.scrollLeft = 0;
+        container.scrollLeft += scrollSpeed;
+        if (container.scrollLeft >= container.scrollWidth / 2) {
+          container.scrollLeft = 0;
         }
       }
       animationRef.current = requestAnimationFrame(step);
@@ -60,25 +63,28 @@ export default function Carousel() {
 
     animationRef.current = requestAnimationFrame(step);
     return () => cancelAnimationFrame(animationRef.current);
-  }, []);
+  }, [mangaList]);
+
+  if (mangaList.length === 0)
+    return <div className="carousel-empty">No bookmarks yet.</div>;
 
   return (
-    <main
+    <div
       className="carousel-container"
       ref={scrollRef}
       onMouseEnter={() => (isPausedRef.current = true)}
       onMouseLeave={() => (isPausedRef.current = false)}
     >
-      {manga.length > 0 ? (
-        [...manga, ...manga].map(({ slug, title, cover }, index) => (
-          <a key={index} href={`/${slug}`} className="manga-item">
-            <img src={cover || noCover} alt={title} className="home-cover" />
-            <div className="manga-title">{title}</div>
-          </a>
-        ))
-      ) : (
-        <div>No bookmarks yet.</div>
-      )}
-    </main>
+      {[...mangaList, ...mangaList].map(({ slug, title, cover }, index) => (
+        <a key={index} href={`/${slug}`} className="carousel-item">
+          <img
+            src={cover || noCover}
+            alt={title}
+            className="carousel-cover"
+          />
+          <div className="carousel-title">{title}</div>
+        </a>
+      ))}
+    </div>
   );
 }
