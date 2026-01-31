@@ -60,7 +60,7 @@ def recent_manga():
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
     cursor.execute(
-        "SELECT title, description, hash FROM manga_metadata ORDER BY time DESC LIMIT ? OFFSET ?",
+        "SELECT title, description, hash, cover_img FROM manga_metadata ORDER BY time DESC LIMIT ? OFFSET ?",
         (10, offset)
     )
     rows = cursor.fetchall()
@@ -69,7 +69,7 @@ def recent_manga():
     for row in rows:
         cleaned_title = to_slug(row[0])
         cover_url = f"{PROXY_BASE_URL}/{cleaned_title}/0_title/cover_img"
-        data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": cover_url})
+        data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": row[3]})
     return jsonify(data)
 
 # Return default cover URL
@@ -107,7 +107,7 @@ def get_manga_by_slug(slug):
     search_title = slug.replace("-", " ")
 
     # Fetch all titles
-    cursor.execute("SELECT title, description, tags, latest_chapter FROM manga_metadata")
+    cursor.execute("SELECT title, description, tags, latest_chapter, cover_img FROM manga_metadata")
     rows = cursor.fetchall()
 
     result = None
@@ -120,7 +120,7 @@ def get_manga_by_slug(slug):
             result = {
                 "title": row[0],
                 "description": row[1],
-                "cover": cover_url,  # always provide a cover
+                "cover": row[4],  # always provide a cover
                 "tags": row[2],
                 "chapters": row[3]
             }
