@@ -338,17 +338,33 @@ def proxy_fetch():
             return jsonify({"error": "host_not_allowed"}), 403
 
     try:
-        # Fetch the remote resource into memory and return as a sent file (avoids CORS / streaming edge cases)
-        resp = requests.get(url, headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }, timeout=15)
-        resp.raise_for_status()
+        # Use more robust headers and allow redirects — some Mangadex hosts require Referer/User-Agent
+        req_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'image/*,*/*;q=0.8',
+            'Referer': 'https://mangadex.org'
+        }
+        resp = requests.get(url, headers=req_headers, stream=True, timeout=15, allow_redirects=True)
+        # Debug logging to help diagnose why images may not load
+        print(f"[proxy_fetch] url={url} status={resp.status_code} content-type={resp.headers.get('content-type')} content-length={resp.headers.get('content-length')}")
+        if resp.status_code != 200:
+            return jsonify({"error": "fetch_failed", "status": resp.status_code}), 502
+
         content = resp.content
         content_type = resp.headers.get('content-type', 'application/octet-stream')
-        return send_file(BytesIO(content), mimetype=content_type, as_attachment=False)
+        response = send_file(BytesIO(content), mimetype=content_type, as_attachment=False)
+        # Ensure the browser sees this as a cross-origin-allowed resource
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Expose-Headers'] = 'Content-Length,Content-Type'
+        response.headers['Cross-Origin-Resource-Policy'] = 'cross-origin'
+        # Include a short Cache-Control to reduce repeated fetches
+        response.headers['Cache-Control'] = 'public, max-age=300'
+        return response
     except requests.RequestException as e:
+        print(f"[proxy_fetch] request exception: {e}")
         return jsonify({"error": "fetch_failed", "detail": str(e)}), 502
     except Exception as e:
+        print(f"[proxy_fetch] exception: {e}")
         return jsonify({"error": "fetch_failed", "detail": str(e)}), 502
 
 
