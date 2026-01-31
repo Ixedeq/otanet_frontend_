@@ -11,7 +11,6 @@ export default function Recent_Manga() {
   const navigate = useNavigate();
 
   const [manga, setManga] = useState([]);
-  const [covers, setCovers] = useState({});
   const [mangaCount, setMangaCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -89,15 +88,15 @@ export default function Recent_Manga() {
           ))
         : currentManga.length > 0
         ? currentManga.map(({ title, description, hash, cover_img }, idx) => (
-            <div key={startIndex + idx} onClick={() => markAsRead(title)}>
-              <MangaCard
-                title={title}
-                description={description}
-		            hash={hash}
-                cover={cover_img}
-                read={readManga.includes(title)}
-              />
-            </div>
+            <MangaCard
+              key={startIndex + idx}
+              title={title}
+              description={description}
+              hash={hash}
+              cover={cover_img}
+              read={readManga.includes(title)}
+              markAsRead={markAsRead}
+            />
           ))
         : "No manga found."}
 
