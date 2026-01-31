@@ -322,6 +322,7 @@ def proxy_fetch(hash_id, filename):
     """
     try:
         image_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
+        print(f"Fetching image: {image_url}")
         
         # Fetch the image from MangaDex with appropriate headers
         response = requests.get(
@@ -333,16 +334,21 @@ def proxy_fetch(hash_id, filename):
         )
         response.raise_for_status()
         
+        content_type = response.headers.get('content-type', 'image/jpeg')
+        print(f"Response status: {response.status_code}, Content-Type: {content_type}, Size: {len(response.content)} bytes")
+        
         # Return the image with proper headers
         return send_file(
             BytesIO(response.content),
-            mimetype=response.headers.get('content-type', 'image/jpeg'),
+            mimetype=content_type,
             as_attachment=False
         )
     
     except requests.RequestException as e:
+        print(f"Request error: {str(e)}")
         return jsonify({"error": f"Failed to fetch image: {str(e)}"}), 500
     except Exception as e:
+        print(f"Error: {str(e)}")
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
