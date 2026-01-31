@@ -1,14 +1,9 @@
 import React from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 
-export default function ChapterNavigation({ chapters, markChapterAsRead }) {
-  const { slug, chapter, hash } = useParams();
-
-  // Normalize chapter from URL
-  const chapterNumberStr = chapter.replace("chapter-", "").replace(/-/g, ".");
-
+export default function ChapterNavigation({ slug, hash, chapters, currentChapterNumberStr, markChapterAsRead }) {
   // Find current chapter index
-  const currentIndex = chapters.findIndex((ch) => ch.numberStr === chapterNumberStr);
+  const currentIndex = chapters.findIndex((ch) => ch.numberStr === currentChapterNumberStr);
 
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =

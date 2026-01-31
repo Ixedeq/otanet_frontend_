@@ -177,6 +177,7 @@ export default function ChapterPage() {
 
       <ChapterNavigation
         slug={slug}
+        hash={hash}
         chapters={chapters}
         currentChapterNumberStr={chapterNumberStr}
         prevChapter={prevChapter}
