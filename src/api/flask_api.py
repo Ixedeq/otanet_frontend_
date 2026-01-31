@@ -104,19 +104,20 @@ def from_slug(slug):
 
 def generate_proxied_image_url(image_url):
     """
-    Convert an image URL to a proxied URL format.
-    Extracts hash and filename from MangaDex URLs like https://...mangadex.network/data/{hash}/{filename}
-    Returns /api/image/{hash}/{filename} or falls back to URL encoding if extraction fails.
+    Convert an image URL to a proxied URL format by URL-encoding it.
+    The proxy endpoint will decode and fetch it.
     """
     try:
-        path_parts = urlparse(image_url).path.split('/')
-        if len(path_parts) >= 3:
-            hash_value = path_parts[-2]
-            page_filename = path_parts[-1]
-            return f"/api/image/{hash_value}/{page_filename}"
+        # Extract just the path part (hash/filename)
+        parsed = urlparse(image_url)
+        path_part = parsed.path.lstrip('/')
+        # Remove 'data/' prefix if present
+        if path_part.startswith('data/'):
+            path_part = path_part[5:]
+        return f"/api/image/{urlquote(path_part, safe='')}"
     except Exception:
         pass
-    # Fallback for non-standard URLs
+    # Fallback: encode the whole URL
     return f"/api/image/{urlquote(image_url, safe='')}"
 
 @app.route("/<slug>", methods=["GET"])
@@ -315,13 +316,19 @@ def get_pages():
     return jsonify(pages)
 
 
-@app.route('/api/image/<hash_id>/<page_filename>', methods=['GET'])
-def proxy_fetch(hash_value, page_filename):
+@app.route('/api/image/<path:encoded_url>', methods=['GET'])
+def proxy_fetch(encoded_url):
     """
     Proxy image requests from MangaDex to bypass CORS restrictions
     """
     try:
-        image_url = f"https://uploads.mangadex.org/data/{hash_value}/{page_filename}"
+        # Decode the URL-encoded path back to the original image URL
+        from urllib.parse import unquote
+        image_url = unquote(encoded_url)
+        
+        # Reconstruct full URL if needed
+        if not image_url.startswith('http'):
+            image_url = f"https://uploads.mangadex.org/data/{image_url}"
         
         # Fetch the image from MangaDex with appropriate headers
         response = requests.get(
