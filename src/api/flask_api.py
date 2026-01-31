@@ -337,12 +337,13 @@ def proxy_fetch(hash_id, filename):
         content_type = response.headers.get('content-type', 'image/jpeg')
         print(f"Response status: {response.status_code}, Content-Type: {content_type}, Size: {len(response.content)} bytes")
         
-        # Return the image with proper headers
-        return send_file(
-            BytesIO(response.content),
-            mimetype=content_type,
-            as_attachment=False
-        )
+        # Create response with image data and disable caching
+        from flask import Response
+        img_response = Response(response.content, mimetype=content_type)
+        img_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        img_response.headers['Pragma'] = 'no-cache'
+        img_response.headers['Expires'] = '0'
+        return img_response
     
     except requests.RequestException as e:
         print(f"Request error: {str(e)}")
