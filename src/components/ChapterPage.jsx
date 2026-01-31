@@ -181,6 +181,7 @@ export default function ChapterPage() {
         currentChapterNumberStr={chapterNumberStr}
         prevChapter={prevChapter}
         nextChapter={nextChapter}
+        markChapterAsRead={markChapterAsRead}
       />
 
       {!horizontalScroll && <div className="chapter-bottom-spacer" />}
