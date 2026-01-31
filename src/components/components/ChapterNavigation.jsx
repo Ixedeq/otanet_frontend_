@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 export default function ChapterNavigation({ slug, hash, chapters, currentChapterNumberStr, markChapterAsRead }) {
   // Find current chapter index
   const currentIndex = chapters.findIndex((ch) => ch.numberStr === currentChapterNumberStr);
-
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex >= 0 && currentIndex < chapters.length - 1

@@ -93,7 +93,7 @@ export default function Recent_Manga() {
               <MangaCard
                 title={title}
                 description={description}
-		hash={hash}
+		            hash={hash}
                 cover={cover_img}
                 read={readManga.includes(title)}
               />
