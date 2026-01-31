@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import "../css/Recent_Manga.css";
 import API_BASE from "./Config";
 

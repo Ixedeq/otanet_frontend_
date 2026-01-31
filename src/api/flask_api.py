@@ -184,7 +184,7 @@ def get_manga_by_slug(slug):
     search_title = slug.replace("-", " ")
 
     # Fetch all titles
-    cursor.execute("SELECT title, description, tags, latest_chapter, cover_img FROM manga_metadata")
+    cursor.execute("SELECT title, description, tags, latest_chapter, cover_img, hash FROM manga_metadata")
     rows = cursor.fetchall()
 
     result = None
@@ -201,7 +201,8 @@ def get_manga_by_slug(slug):
                 # Return proxied cover URL so clients load covers via the proxy
                 "cover": proxied_cover,
                 "tags": row[2],
-                "chapters": row[3]
+                "chapters": row[3],
+                "hash": row[5]
             }
             break
 
