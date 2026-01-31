@@ -152,15 +152,21 @@ def generate_proxied_image_url(image_url):
     Extracts hash and filename from MangaDex URLs like https://...mangadex.network/data/{hash}/{filename}
     Returns /api/image/{hash}/{filename} or falls back to URL encoding if extraction fails.
     """
+    print(f"Generating proxied URL for: {image_url}")
     try:
-        path_parts = urlparse(image_url).path.split('/')
+        parsed = urlparse(image_url)
+        path_parts = parsed.path.split('/')
+        print(f"Path parts: {path_parts}")
         if len(path_parts) >= 3:
             hash_id = path_parts[-2]
             filename = path_parts[-1]
-            return f"/api/image/{hash_id}/{filename}"
-    except Exception:
-        pass
+            proxied = f"/api/image/{hash_id}/{filename}"
+            print(f"Generated proxied URL: {proxied}")
+            return proxied
+    except Exception as e:
+        print(f"Error extracting hash/filename: {e}")
     # Fallback for non-standard URLs
+    print(f"Using fallback URL encoding")
     return f"/api/image/{urlquote(image_url, safe='')}"
 
 @app.route("/<slug>", methods=["GET"])
