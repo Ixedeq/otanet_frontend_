@@ -4,6 +4,8 @@ import sqlite3
 import os
 import re
 import json
+import boto3
+from botocore.config import Config
 
 app = Flask(__name__)
 CORS(app)
@@ -14,10 +16,13 @@ NOCOVER = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e
 PROXY_BASE_URL = os.environ.get('PROXY_BASE_URL', 'https://proxy.example.com')
 # Directory containing per-manga sqlite DBs. Default is the api folder where this file lives.
 MANGA_DB_DIR = os.environ.get('MANGA_DB_DIR', os.path.dirname(__file__))
+CONFIG = Config(signature_version='s3v4')
+S3CLIENT = boto3.client('s3', region_name='us-east-1', config=CONFIG)
 
 # GET recent manga (title + description)
 @app.route('/recent_manga', methods=['GET'])
 def recent_manga():
+    S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', 'otanet_devo.db')
     items_per_page = 10
     page = int(request.args.get('page', 1))
     offset = (page-1) * items_per_page
