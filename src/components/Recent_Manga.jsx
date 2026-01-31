@@ -78,7 +78,7 @@ export default function Recent_Manga() {
         : currentManga.length > 0
         ? currentManga.map(({ title, description, hash, cover_img }, idx) => (
             <MangaCard
-              key={startIndex + idx}
+              key={hash || idx}
               title={title}
               description={description}
               hash={hash}
