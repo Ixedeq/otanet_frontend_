@@ -131,10 +131,10 @@ def from_slug(slug):
 def generate_proxied_image_url(image_url):
     """
     Convert an image URL to a proxied URL format.
+    Handles both MangaDex CDN and cover URLs.
     """
     print(f"Generating proxied URL for: {image_url}")
     
-    # Get Flask server URL from environment or use default
     FLASK_BASE = os.environ.get('FLASK_BASE_URL', 'http://ota-network.com:8000')
     
     try:
@@ -142,10 +142,17 @@ def generate_proxied_image_url(image_url):
         path_parts = parsed.path.split('/')
         print(f"Path parts: {path_parts}")
         
+        # Check if it's a MangaDex cover URL
+        if '/covers/' in parsed.path:
+            # For covers, we need to pass the full URL since structure is different
+            proxied = f"{FLASK_BASE}/api/image/cover/{urlquote(image_url, safe='')}"
+            print(f"Generated cover proxied URL: {proxied}")
+            return proxied
+        
+        # Standard CDN URL handling
         if len(path_parts) >= 3:
             hash_id = path_parts[-2]
             filename = path_parts[-1]
-            # Return absolute URL pointing to Flask server
             proxied = f"{FLASK_BASE}/api/image/{hash_id}/{filename}"
             print(f"Generated proxied URL: {proxied}")
             return proxied
