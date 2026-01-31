@@ -72,7 +72,7 @@ def recent_manga():
         cleaned_title = to_slug(row[0])
         # Use the stored cover_img value and expose it via the fetch proxy endpoint
         orig_cover = row[3] or NOCOVER
-        proxied_cover = f"{PROXY_BASE_URL.rstrip('/')}/fetch?url={urlquote(orig_cover, safe='')}"
+        proxied_cover = f"/api/image/{row[3]}"
         data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": proxied_cover})
     return jsonify(data)
 
@@ -223,24 +223,6 @@ def get_chapters():
                         print(objs)
                         main_con.close()
                         return jsonify(objs)
-                # If no explicit chapter table/column, fall back to using latest_chapter
-                main_cur.execute("SELECT latest_chapter FROM manga_metadata WHERE title = ?", (title,))
-                lc = main_cur.fetchone()
-                if lc and lc[0]:
-                    try:
-                        latest = float(lc[0])
-                        chapters = []
-                        max_int = int(latest)
-                        for i in range(1, max_int + 1):
-                            chapters.append({'title': f'Chapter {i}', 'number': i})
-                        # include fractional final chapter (e.g., 11.5)
-                        if latest != max_int:
-                            chapters.append({'title': f'Chapter {latest}', 'number': latest})
-                        main_con.close()
-                        print(max_int)
-                        return jsonify(chapters)
-                    except Exception:
-                        pass
             main_con.close()
         except Exception:
             pass
@@ -311,7 +293,7 @@ def get_pages():
         src = page[1]
         try:
             # Expose each page URL through the fetch proxy endpoint so the client can request it as a file
-            proxied = f"{PROXY_BASE_URL.rstrip('/')}/fetch?url={urlquote(src, safe='')}"
+            proxied = f"/api/image/{src}"
             src = proxied
         except Exception:
             pass
@@ -321,74 +303,29 @@ def get_pages():
     return jsonify(pages)
 
 
-@app.route('/fetch', methods=['GET'])
+@app.route('/api/image/<image_url>', methods=['GET'])
 def proxy_fetch():
-    url = request.args.get('url')
-    if not url:
-        return jsonify({"error": "missing url"}), 400
-    parsed = urlparse(url)
-    if not parsed.scheme or not parsed.netloc:
-        return jsonify({"error": "invalid url"}), 400
-
-    # Optional host allowlist via PROXY_ALLOWED_HOSTS env var (comma-separated)
-    allowed_hosts = os.environ.get('PROXY_ALLOWED_HOSTS')
-    if allowed_hosts:
-        allowed = [h.strip() for h in allowed_hosts.split(',') if h.strip()]
-        if parsed.netloc not in allowed:
-            return jsonify({"error": "host_not_allowed"}), 403
-
     try:
-        # Use more robust headers and allow redirects — some Mangadex hosts require Referer/User-Agent
-        req_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'image/*,*/*;q=0.8',
-            'Referer': 'https://mangadex.org'
-        }
-        # Forward Range header if the browser sent one (supports partial requests / resumable downloads)
-        range_header = request.headers.get('Range')
-        if range_header:
-            req_headers['Range'] = range_header
+        image_url = f"{image_url}"
 
-        resp = requests.get(url, headers=req_headers, stream=True, timeout=15, allow_redirects=True)
-        # Debug logging to help diagnose why images may not load
-        print(f"[proxy_fetch] url={url} status={resp.status_code} content-type={resp.headers.get('content-type')} content-length={resp.headers.get('content-length')} range_sent={bool(range_header)}")
-        # Accept both 200 (full content) and 206 (partial content) as success
-        if resp.status_code not in (200, 206):
-            return jsonify({"error": "fetch_failed", "status": resp.status_code}), 502
+        response = requests.get(
+            image_url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            timeout=10
+        )
+        response.raise_for_status()
 
-        content = resp.content
-        content_type = resp.headers.get('content-type', 'application/octet-stream')
-        response = send_file(BytesIO(content), mimetype=content_type, as_attachment=False)
-        # Ensure the browser sees this as a cross-origin-allowed resource
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Expose-Headers'] = 'Content-Length,Content-Type,Content-Range'
-        response.headers['Cross-Origin-Resource-Policy'] = 'cross-origin'
-        # Include a short Cache-Control to reduce repeated fetches
-        response.headers['Cache-Control'] = 'public, max-age=300'
-        # Add debugging headers to reveal upstream info in browser network panel
-        response.headers['X-Upstream-URL'] = resp.url
-        response.headers['X-Upstream-Status'] = str(resp.status_code)
-        response.headers['X-Upstream-Content-Type'] = resp.headers.get('content-type', '')
-        # Forward Accept-Ranges and Content-Range from upstream if present
-        if resp.headers.get('accept-ranges'):
-            response.headers['Accept-Ranges'] = resp.headers.get('accept-ranges')
-        else:
-            response.headers['Accept-Ranges'] = 'bytes'
-        if resp.headers.get('content-range'):
-            response.headers['Content-Range'] = resp.headers.get('content-range')
-        # Set explicit Content-Length to the length of returned content
-        response.headers['Content-Length'] = str(len(content))
-        # Ensure inline content disposition
-        response.headers['Content-Disposition'] = 'inline'
-        # Ensure the response status mirrors upstream (200 or 206)
-        response.status_code = resp.status_code
-        return response
+        return send_file(
+            BytesIO(response.content),
+            mimetype=response.headers.get('Content-Type', 'image/jpeg'),
+            as_attachment=False)
     except requests.RequestException as e:
-        print(f"[proxy_fetch] request exception: {e}")
-        return jsonify({"error": "fetch_failed", "detail": str(e)}), 502
+        return jsonify({"error": f"Failed to fetch image: {str(e)}"}), 500
     except Exception as e:
-        print(f"[proxy_fetch] exception: {e}")
-        return jsonify({"error": "fetch_failed", "detail": str(e)}), 502
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 
 
 @app.route('/search_by_tags')
