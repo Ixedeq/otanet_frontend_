@@ -65,6 +65,9 @@ export default function Recent_Manga() {
   const startIndex = 0;
   const currentManga = manga.slice(startIndex, startIndex + itemsPerPage);
 
+  const goNext = () =>
+    navigate(`/recent/${Math.min(currentPage + 1, totalPages)}`);
+  const goPrev = () => navigate(`/recent/${Math.max(currentPage - 1, 1)}`);
 
   return (
     <div className="manga-list">
