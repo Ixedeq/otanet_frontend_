@@ -37,40 +37,15 @@ export default function Carousel() {
   }, []);
 
   useEffect(() => {
-  const scrollContainer = scrollRef.current;
-  if (!scrollContainer) return;
-
-  const scrollSpeed = 1; // pixels per frame
-  let direction = 1; // 1 = forward, -1 = backward
-  let animationFrameId;
-
-  const step = () => {
-    if (!isPausedRef.current) {
-      // Move in current direction
-      scrollContainer.scrollLeft += scrollSpeed * direction;
-
-      // Reverse direction at ends
-      if (scrollContainer.scrollLeft >= scrollContainer.scrollWidth - scrollContainer.clientWidth) {
-        direction = -1; // scroll backward
-      } else if (scrollContainer.scrollLeft <= 0) {
-        direction = 1; // scroll forward
-      }
-    }
-
-    animationFrameId = requestAnimationFrame(step);
-  };
-
-  animationFrameId = requestAnimationFrame(step);
-
-  return () => cancelAnimationFrame(animationFrameId);
-}, []);
+    // Carousel is now static — no auto-scrolling.
+    // Keep isPausedRef set so future code knows carousel is paused.
+    isPausedRef.current = true;
+  }, []);
 
   return (
     <main
       className="home"
       ref={scrollRef}
-      onMouseEnter={() => (isPausedRef.current = true)}
-      onMouseLeave={() => (isPausedRef.current = false)}
     >
       {manga.length > 0 ? (
         <>
