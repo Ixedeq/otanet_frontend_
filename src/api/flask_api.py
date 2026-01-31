@@ -79,41 +79,26 @@ def recent_manga():
 @app.route('/api/image/<hash_id>/<filename>', methods=['GET'])
 def fetch_proxied_image(hash_id, filename):
     try:
-        # Check if it's a cover image request
-        if 'cover' in filename.lower() or hash_id == 'cover':
-            # Extract manga_id and actual filename from the encoded URL
-            from urllib.parse import unquote
-            
-            # If hash_id is 'cover', the encoded URL is in filename
-            if hash_id == 'cover':
-                decoded = unquote(filename)
-            else:
-                # Otherwise reconstruct from both parts
-                decoded = unquote(f"{hash_id}/{filename}")
-            
-            # Parse the decoded URL to extract manga_id and filename
-            parsed = urlparse(decoded)
-            parts = parsed.path.split('/')
-            # URL structure: /covers/{manga_id}/{filename}
-            if len(parts) >= 3 and 'covers' in parts:
-                covers_idx = parts.index('covers')
-                manga_id = parts[covers_idx + 1]
-                cover_filename = parts[covers_idx + 2]
-                image_url = f"https://uploads.mangadex.org/covers/{manga_id}/{cover_filename}"
-                print(f"Fetching cover: {image_url}")
-            else:
-                image_url = decoded
-                print(f"Using decoded URL directly: {image_url}")
-        else:
-            # Standard CDN format
-            image_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
-            print(f"Fetching from CDN: {image_url}")
+        # Try cover URL first
+        cover_url = f"https://uploads.mangadex.org/covers/{hash_id}/{filename}"
+        print(f"Trying cover URL: {cover_url}")
         
         response = requests.get(
-            image_url,
+            cover_url,
             headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
             timeout=10
         )
+        
+        # If cover fetch fails, try CDN
+        if response.status_code != 200:
+            cdn_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
+            print(f"Cover failed, trying CDN: {cdn_url}")
+            response = requests.get(
+                cdn_url,
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
+                timeout=10
+            )
+        
         response.raise_for_status()
         
         content_type = response.headers.get('content-type', 'image/jpeg')
@@ -165,18 +150,21 @@ def generate_proxied_image_url(image_url):
     
     try:
         parsed = urlparse(image_url)
-        path_parts = parsed.path.split('/')
+        path_parts = [p for p in parsed.path.split('/') if p]  # Remove empty parts
         
         # Check if it's a MangaDex cover URL
-        if 'mangadex' in parsed.netloc and '/covers/' in parsed.path:
-            # Pass as cover with encoded URL
-            encoded = urlquote(image_url, safe='')
-            proxied = f"{FLASK_BASE}/api/image/cover/{encoded}"
-            print(f"Generated cover URL: {proxied}")
-            return proxied
+        if 'covers' in path_parts:
+            # Extract manga_id and filename from /covers/{manga_id}/{filename}
+            covers_idx = path_parts.index('covers')
+            if len(path_parts) > covers_idx + 2:
+                manga_id = path_parts[covers_idx + 1]
+                cover_filename = path_parts[covers_idx + 2]
+                proxied = f"{FLASK_BASE}/api/image/{manga_id}/{cover_filename}"
+                print(f"Generated cover URL: {proxied}")
+                return proxied
         
-        # Standard CDN URL handling
-        if len(path_parts) >= 3:
+        # Standard CDN URL handling (/data/{hash}/{filename})
+        if len(path_parts) >= 2:
             hash_id = path_parts[-2]
             filename = path_parts[-1]
             proxied = f"{FLASK_BASE}/api/image/{hash_id}/{filename}"
