@@ -64,7 +64,7 @@ export default function ChapterPage() {
     const fetchData = async () => {
       try {
         const [chaptersRes, mangaRes] = await Promise.all([
-          fetch(`${API_BASE}/get_chapters?title=${slug}`),
+          fetch(`${API_BASE}/get_chapters?hash=${hash}`),
           fetch(`${API_BASE}/${slug}`),
         ]);
 
