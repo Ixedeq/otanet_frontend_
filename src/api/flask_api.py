@@ -304,7 +304,7 @@ def get_pages():
 
 
 @app.route('/api/image/<image_url>', methods=['GET'])
-def proxy_fetch():
+def proxy_fetch(image_url):
     try:
         image_url = f"{image_url}"
 
