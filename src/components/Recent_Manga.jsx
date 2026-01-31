@@ -13,7 +13,7 @@ export default function Recent_Manga() {
   const [manga, setManga] = useState([]);
   const [mangaCount, setMangaCount] = useState(0);
   const [loading, setLoading] = useState(true);
-
+  const [covers, setCovers] = useState({});
   const itemsPerPage = 10;
   const currentPage = Number(page) || 1;
 
