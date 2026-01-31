@@ -77,10 +77,37 @@ def recent_manga():
     return jsonify(data)
 
 @app.route('/api/image/<hash_id>/<filename>', methods=['GET'])
-def proxy_fetch(hash_id, filename):
+def fetch_proxied_image(hash_id, filename):
     try:
-        image_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
-        print(f"Fetching image: {image_url}")
+        # Check if it's a cover image request
+        if 'cover' in filename.lower() or hash_id == 'cover':
+            # Extract manga_id and actual filename from the encoded URL
+            from urllib.parse import unquote
+            
+            # If hash_id is 'cover', the encoded URL is in filename
+            if hash_id == 'cover':
+                decoded = unquote(filename)
+            else:
+                # Otherwise reconstruct from both parts
+                decoded = unquote(f"{hash_id}/{filename}")
+            
+            # Parse the decoded URL to extract manga_id and filename
+            parsed = urlparse(decoded)
+            parts = parsed.path.split('/')
+            # URL structure: /covers/{manga_id}/{filename}
+            if len(parts) >= 3 and 'covers' in parts:
+                covers_idx = parts.index('covers')
+                manga_id = parts[covers_idx + 1]
+                cover_filename = parts[covers_idx + 2]
+                image_url = f"https://uploads.mangadex.org/covers/{manga_id}/{cover_filename}"
+                print(f"Fetching cover: {image_url}")
+            else:
+                image_url = decoded
+                print(f"Using decoded URL directly: {image_url}")
+        else:
+            # Standard CDN format
+            image_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
+            print(f"Fetching from CDN: {image_url}")
         
         response = requests.get(
             image_url,
@@ -91,16 +118,19 @@ def proxy_fetch(hash_id, filename):
         
         content_type = response.headers.get('content-type', 'image/jpeg')
         
-        # Return send_file instead - it's more reliable for binary content
-        return send_file(
+        img_response = send_file(
             BytesIO(response.content),
-            mimetype=content_type,
-            download_name=filename  # Optional but good practice
+            mimetype=content_type
         )
+        img_response.headers['Access-Control-Allow-Origin'] = '*'
         
-    except requests.RequestException as e:
-        print(f"Request error: {str(e)}")
-        return jsonify({"error": f"Failed to fetch image: {str(e)}"}), 500
+        return img_response
+        
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 # Return default cover URL
 @app.route('/get_cover', methods=['GET'])
@@ -129,10 +159,6 @@ def from_slug(slug):
     return title
 
 def generate_proxied_image_url(image_url):
-    """
-    Convert an image URL to a proxied URL format.
-    Handles both MangaDex CDN and cover URLs.
-    """
     print(f"Generating proxied URL for: {image_url}")
     
     FLASK_BASE = os.environ.get('FLASK_BASE_URL', 'http://ota-network.com:8000')
@@ -140,13 +166,13 @@ def generate_proxied_image_url(image_url):
     try:
         parsed = urlparse(image_url)
         path_parts = parsed.path.split('/')
-        print(f"Path parts: {path_parts}")
         
         # Check if it's a MangaDex cover URL
-        if '/covers/' in parsed.path:
-            # For covers, we need to pass the full URL since structure is different
-            proxied = f"{FLASK_BASE}/api/image/cover/{urlquote(image_url, safe='')}"
-            print(f"Generated cover proxied URL: {proxied}")
+        if 'mangadex' in parsed.netloc and '/covers/' in parsed.path:
+            # Pass as cover with encoded URL
+            encoded = urlquote(image_url, safe='')
+            proxied = f"{FLASK_BASE}/api/image/cover/{encoded}"
+            print(f"Generated cover URL: {proxied}")
             return proxied
         
         # Standard CDN URL handling
@@ -154,13 +180,11 @@ def generate_proxied_image_url(image_url):
             hash_id = path_parts[-2]
             filename = path_parts[-1]
             proxied = f"{FLASK_BASE}/api/image/{hash_id}/{filename}"
-            print(f"Generated proxied URL: {proxied}")
+            print(f"Generated CDN URL: {proxied}")
             return proxied
     except Exception as e:
-        print(f"Error extracting hash/filename: {e}")
+        print(f"Error: {e}")
     
-    # Fallback
-    print(f"Using fallback URL encoding")
     return f"{FLASK_BASE}/api/image/{urlquote(image_url, safe='')}"
 
 @app.route("/<slug>", methods=["GET"])
