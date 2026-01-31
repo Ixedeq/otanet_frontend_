@@ -157,6 +157,86 @@ def get_chapters():
 
     db_path = os.path.join(MANGA_DB_DIR, f"{title}.db")
     if not os.path.exists(db_path):
+        # Fallback: try to infer chapters from the main database (e.g. tables named by hash)
+        try:
+            main_con = sqlite3.connect(DATABASE)
+            main_cur = main_con.cursor()
+            # Find the hash for this title
+            main_cur.execute("SELECT hash FROM manga_metadata WHERE title = ?", (title,))
+            row = main_cur.fetchone()
+            if row and row[0]:
+                table = row[0]
+                # Try possible table name variants (hash uses dashes, tables use underscores)
+                table_candidates = [table, table.replace('-', '_')]
+                table_name = None
+                for tc in table_candidates:
+                    main_cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (tc,))
+                    if main_cur.fetchone():
+                        table_name = tc
+                        break
+
+                if table_name:
+                    # Get columns and look for a chapter/number column
+                    main_cur.execute(f"PRAGMA table_info('{table_name}')")
+                    cols = [c[1] for c in main_cur.fetchall()]
+                    chapter_col = next((c for c in cols if 'chapter' in c.lower() or 'num' in c.lower()), None)
+                    title_col = next((c for c in cols if 'title' in c.lower() or 'name' in c.lower()), None)
+                    if chapter_col:
+                        main_cur.execute(f"SELECT DISTINCT {chapter_col} FROM '{table_name}'")
+                        rows = [r[0] for r in main_cur.fetchall()]
+                        objs = []
+                        for r in rows:
+                            raw = str(r)
+                            normalized = raw.replace('_', '.')
+                            # try to coerce to numeric when possible
+                            try:
+                                num_val = float(normalized)
+                            except Exception:
+                                num_val = normalized
+
+                            chapter_word = normalized
+                            if title_col:
+                                try:
+                                    main_cur.execute(f"SELECT {title_col} FROM '{table_name}' WHERE {chapter_col} = ? LIMIT 1", (r,))
+                                    trow = main_cur.fetchone()
+                                    if trow and trow[0]:
+                                        chapter_word = str(trow[0])
+                                except Exception:
+                                    pass
+                            else:
+                                chapter_word = f"Chapter {normalized}"
+
+                            item = {'title': chapter_word, 'number': num_val}
+                            if item not in objs:
+                                objs.append(item)
+
+                        try:
+                            objs = sorted(objs, key=lambda obj: float(obj['number']))
+                        except Exception:
+                            pass
+
+                        main_con.close()
+                        return jsonify(objs)
+                # If no explicit chapter table/column, fall back to using latest_chapter
+                main_cur.execute("SELECT latest_chapter FROM manga_metadata WHERE title = ?", (title,))
+                lc = main_cur.fetchone()
+                if lc and lc[0]:
+                    try:
+                        latest = float(lc[0])
+                        chapters = []
+                        max_int = int(latest)
+                        for i in range(1, max_int + 1):
+                            chapters.append({'title': f'Chapter {i}', 'number': i})
+                        # include fractional final chapter (e.g., 11.5)
+                        if latest != max_int:
+                            chapters.append({'title': f'Chapter {latest}', 'number': latest})
+                        main_con.close()
+                        return jsonify(chapters)
+                    except Exception:
+                        pass
+            main_con.close()
+        except Exception:
+            pass
         return jsonify([])
 
     conn = sqlite3.connect(db_path)
