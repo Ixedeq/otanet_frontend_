@@ -5,9 +5,7 @@ import API_BASE from "./Config";
 export default function Carousel() {
   const [mangaList, setMangaList] = useState([]);
   const scrollRef = useRef(null);
-  const isPausedRef = useRef(false);
-  const userInteractingRef = useRef(false);
-  const animationRef = useRef(null);
+  const isPausedRef = useRef(true);
 
   // Fetch random manga
   const fetchRandomManga = async (count = 10) => {
@@ -35,25 +33,10 @@ export default function Carousel() {
     loadManga();
   }, []);
 
-  // Infinite horizontal scroll
+  // Auto-scrolling disabled — carousel remains static
   useEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
-
-    const scrollSpeed = 1; // pixels per frame
-
-    const step = () => {
-      if (!isPausedRef.current && !userInteractingRef.current) {
-        container.scrollLeft += scrollSpeed;
-        if (container.scrollLeft >= container.scrollWidth / 2) {
-          container.scrollLeft = 0;
-        }
-      }
-      animationRef.current = requestAnimationFrame(step);
-    };
-
-    animationRef.current = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(animationRef.current);
+    // Ensure paused flag is set.
+    isPausedRef.current = true;
   }, [mangaList]);
 
   if (!mangaList.length) return <div className="carousel-empty">No manga available.</div>;
@@ -62,16 +45,6 @@ export default function Carousel() {
     <div
       className="carousel-container"
       ref={scrollRef}
-      onMouseEnter={() => (isPausedRef.current = true)}
-      onMouseLeave={() => (isPausedRef.current = false)}
-      onMouseDown={() => (userInteractingRef.current = true)}
-      onMouseUp={() => (userInteractingRef.current = false)}
-      onTouchStart={() => (userInteractingRef.current = true)}
-      onTouchEnd={() => (userInteractingRef.current = false)}
-      onWheel={() => {
-        userInteractingRef.current = true;
-        setTimeout(() => (userInteractingRef.current = false), 300);
-      }}
     >
       {[...mangaList, ...mangaList].map(({ slug, title, cover }, index) => (
         <a key={index} href={`/${slug}`} className="carousel-item">
