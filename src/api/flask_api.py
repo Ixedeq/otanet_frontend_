@@ -344,10 +344,16 @@ def proxy_fetch():
             'Accept': 'image/*,*/*;q=0.8',
             'Referer': 'https://mangadex.org'
         }
+        # Forward Range header if the browser sent one (supports partial requests / resumable downloads)
+        range_header = request.headers.get('Range')
+        if range_header:
+            req_headers['Range'] = range_header
+
         resp = requests.get(url, headers=req_headers, stream=True, timeout=15, allow_redirects=True)
         # Debug logging to help diagnose why images may not load
-        print(f"[proxy_fetch] url={url} status={resp.status_code} content-type={resp.headers.get('content-type')} content-length={resp.headers.get('content-length')}")
-        if resp.status_code != 200:
+        print(f"[proxy_fetch] url={url} status={resp.status_code} content-type={resp.headers.get('content-type')} content-length={resp.headers.get('content-length')} range_sent={bool(range_header)}")
+        # Accept both 200 (full content) and 206 (partial content) as success
+        if resp.status_code not in (200, 206):
             return jsonify({"error": "fetch_failed", "status": resp.status_code}), 502
 
         content = resp.content
@@ -355,7 +361,7 @@ def proxy_fetch():
         response = send_file(BytesIO(content), mimetype=content_type, as_attachment=False)
         # Ensure the browser sees this as a cross-origin-allowed resource
         response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Expose-Headers'] = 'Content-Length,Content-Type'
+        response.headers['Access-Control-Expose-Headers'] = 'Content-Length,Content-Type,Content-Range'
         response.headers['Cross-Origin-Resource-Policy'] = 'cross-origin'
         # Include a short Cache-Control to reduce repeated fetches
         response.headers['Cache-Control'] = 'public, max-age=300'
@@ -363,8 +369,19 @@ def proxy_fetch():
         response.headers['X-Upstream-URL'] = resp.url
         response.headers['X-Upstream-Status'] = str(resp.status_code)
         response.headers['X-Upstream-Content-Type'] = resp.headers.get('content-type', '')
+        # Forward Accept-Ranges and Content-Range from upstream if present
+        if resp.headers.get('accept-ranges'):
+            response.headers['Accept-Ranges'] = resp.headers.get('accept-ranges')
+        else:
+            response.headers['Accept-Ranges'] = 'bytes'
+        if resp.headers.get('content-range'):
+            response.headers['Content-Range'] = resp.headers.get('content-range')
+        # Set explicit Content-Length to the length of returned content
+        response.headers['Content-Length'] = str(len(content))
         # Ensure inline content disposition
         response.headers['Content-Disposition'] = 'inline'
+        # Ensure the response status mirrors upstream (200 or 206)
+        response.status_code = resp.status_code
         return response
     except requests.RequestException as e:
         print(f"[proxy_fetch] request exception: {e}")
