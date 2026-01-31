@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import sqlite3
 import os
@@ -6,6 +6,9 @@ import re
 import json
 import boto3
 from botocore.config import Config
+import requests
+from urllib.parse import urlparse, quote as urlquote
+from io import BytesIO
 
 app = Flask(__name__)
 CORS(app)
@@ -14,7 +17,6 @@ DATABASE = 'otanet_devo.db'
 NOCOVER = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg'
 # Proxy base URL used to serve covers/pages. Can be set via env var e.g. PROXY_BASE_URL=https://proxy.example.com.
 # If the env var is missing, attempt to infer a real example from URLs stored in the DB.
-from urllib.parse import urlparse
 
 def _infer_proxy_base_from_db(db_path=None):
     db_path = db_path or os.path.join(os.path.dirname(__file__), 'otanet_devo.db')
@@ -68,8 +70,10 @@ def recent_manga():
     data = []
     for row in rows:
         cleaned_title = to_slug(row[0])
-        cover_url = f"{PROXY_BASE_URL}/{cleaned_title}/0_title/cover_img"
-        data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": row[3]})
+        # Use the stored cover_img value and expose it via the fetch proxy endpoint
+        orig_cover = row[3] or NOCOVER
+        proxied_cover = f"{PROXY_BASE_URL.rstrip('/')}/fetch?url={urlquote(orig_cover, safe='')}"
+        data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": proxied_cover})
     return jsonify(data)
 
 # Return default cover URL
@@ -113,14 +117,16 @@ def get_manga_by_slug(slug):
     result = None
     for row in rows:
         cleaned_title = to_slug(row[0])
-        cover_url = f"{PROXY_BASE_URL}/{cleaned_title}/0_title/cover_img"
+        orig_cover = row[4] or NOCOVER
+        proxied_cover = f"{PROXY_BASE_URL.rstrip('/')}/fetch?url={urlquote(orig_cover, safe='')}"
         db_title = row[0].lower().strip()
         db_title_normalized = "".join(c for c in db_title if c.isalnum() or c == " ").replace(" ", "-")
         if db_title_normalized == slug:
             result = {
                 "title": row[0],
                 "description": row[1],
-                "cover": row[4],  # always provide a cover
+                # Return proxied cover URL so clients load covers via the proxy
+                "cover": proxied_cover,
                 "tags": row[2],
                 "chapters": row[3]
             }
@@ -141,15 +147,16 @@ def search_by_title():
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
     cursor.execute(
-        "SELECT title, description FROM manga_metadata WHERE title LIKE ?",
+        "SELECT title, description, cover_img FROM manga_metadata WHERE title LIKE ?",
         ('%' + query + '%',)
     )
     rows = cursor.fetchall()
     data = []
     for row in rows:
         cleaned_title = to_slug(row[0])
-        cover_url = f"{PROXY_BASE_URL}/{cleaned_title}/0_title/cover_img"
-        data.append({"title": row[0], "description": row[1], "cover_img": cover_url})
+        orig_cover = row[2] or NOCOVER
+        proxied_cover = f"{PROXY_BASE_URL.rstrip('/')}/fetch?url={urlquote(orig_cover, safe='')}"
+        data.append({"title": row[0], "description": row[1], "cover_img": proxied_cover})
     con.close()
     return jsonify(data)
 
@@ -301,10 +308,48 @@ def get_pages():
 
     pages = []
     for page in rows:
-        pages.append({'key': page[0], 'src': page[1]})
+        src = page[1]
+        try:
+            # Expose each page URL through the fetch proxy endpoint so the client can request it as a file
+            proxied = f"{PROXY_BASE_URL.rstrip('/')}/fetch?url={urlquote(src, safe='')}"
+            src = proxied
+        except Exception:
+            pass
+        pages.append({'key': page[0], 'src': src})
 
     conn.close()
     return jsonify(pages)
+
+
+@app.route('/fetch', methods=['GET'])
+def proxy_fetch():
+    url = request.args.get('url')
+    if not url:
+        return jsonify({"error": "missing url"}), 400
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        return jsonify({"error": "invalid url"}), 400
+
+    # Optional host allowlist via PROXY_ALLOWED_HOSTS env var (comma-separated)
+    allowed_hosts = os.environ.get('PROXY_ALLOWED_HOSTS')
+    if allowed_hosts:
+        allowed = [h.strip() for h in allowed_hosts.split(',') if h.strip()]
+        if parsed.netloc not in allowed:
+            return jsonify({"error": "host_not_allowed"}), 403
+
+    try:
+        # Fetch the remote resource into memory and return as a sent file (avoids CORS / streaming edge cases)
+        resp = requests.get(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }, timeout=15)
+        resp.raise_for_status()
+        content = resp.content
+        content_type = resp.headers.get('content-type', 'application/octet-stream')
+        return send_file(BytesIO(content), mimetype=content_type, as_attachment=False)
+    except requests.RequestException as e:
+        return jsonify({"error": "fetch_failed", "detail": str(e)}), 502
+    except Exception as e:
+        return jsonify({"error": "fetch_failed", "detail": str(e)}), 502
 
 
 @app.route('/search_by_tags')
