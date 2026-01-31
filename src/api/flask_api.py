@@ -359,6 +359,12 @@ def proxy_fetch():
         response.headers['Cross-Origin-Resource-Policy'] = 'cross-origin'
         # Include a short Cache-Control to reduce repeated fetches
         response.headers['Cache-Control'] = 'public, max-age=300'
+        # Add debugging headers to reveal upstream info in browser network panel
+        response.headers['X-Upstream-URL'] = resp.url
+        response.headers['X-Upstream-Status'] = str(resp.status_code)
+        response.headers['X-Upstream-Content-Type'] = resp.headers.get('content-type', '')
+        # Ensure inline content disposition
+        response.headers['Content-Disposition'] = 'inline'
         return response
     except requests.RequestException as e:
         print(f"[proxy_fetch] request exception: {e}")
