@@ -76,6 +76,44 @@ def recent_manga():
         data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": proxied_cover})
     return jsonify(data)
 
+# Image proxy endpoint - must be before the catch-all /<slug> route
+@app.route('/api/image/<hash_id>/<filename>', methods=['GET'])
+def proxy_fetch(hash_id, filename):
+    """
+    Proxy image requests from MangaDex to bypass CORS restrictions
+    """
+    try:
+        image_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
+        print(f"Fetching image: {image_url}")
+        
+        # Fetch the image from MangaDex with appropriate headers
+        response = requests.get(
+            image_url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            timeout=10
+        )
+        response.raise_for_status()
+        
+        content_type = response.headers.get('content-type', 'image/jpeg')
+        print(f"Response status: {response.status_code}, Content-Type: {content_type}, Size: {len(response.content)} bytes")
+        
+        # Create response with image data and disable caching
+        from flask import Response
+        img_response = Response(response.content, mimetype=content_type)
+        img_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        img_response.headers['Pragma'] = 'no-cache'
+        img_response.headers['Expires'] = '0'
+        return img_response
+    
+    except requests.RequestException as e:
+        print(f"Request error: {str(e)}")
+        return jsonify({"error": f"Failed to fetch image: {str(e)}"}), 500
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 # Return default cover URL
 @app.route('/get_cover', methods=['GET'])
 def get_cover():
@@ -313,45 +351,6 @@ def get_pages():
 
     conn.close()
     return jsonify(pages)
-
-
-@app.route('/api/image/<hash_id>/<filename>', methods=['GET'])
-def proxy_fetch(hash_id, filename):
-    """
-    Proxy image requests from MangaDex to bypass CORS restrictions
-    """
-    try:
-        image_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
-        print(f"Fetching image: {image_url}")
-        
-        # Fetch the image from MangaDex with appropriate headers
-        response = requests.get(
-            image_url,
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            },
-            timeout=10
-        )
-        response.raise_for_status()
-        
-        content_type = response.headers.get('content-type', 'image/jpeg')
-        print(f"Response status: {response.status_code}, Content-Type: {content_type}, Size: {len(response.content)} bytes")
-        
-        # Create response with image data and disable caching
-        from flask import Response
-        img_response = Response(response.content, mimetype=content_type)
-        img_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        img_response.headers['Pragma'] = 'no-cache'
-        img_response.headers['Expires'] = '0'
-        return img_response
-    
-    except requests.RequestException as e:
-        print(f"Request error: {str(e)}")
-        return jsonify({"error": f"Failed to fetch image: {str(e)}"}), 500
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-
 
 
 @app.route('/search_by_tags')
