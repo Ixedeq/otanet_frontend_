@@ -72,7 +72,7 @@ def recent_manga():
         cleaned_title = to_slug(row[0])
         # Use the stored cover_img value and expose it via the fetch proxy endpoint
         orig_cover = row[3] or NOCOVER
-        proxied_cover = f"/api/image/{row[3]}"
+        proxied_cover = generate_proxied_image_url(orig_cover)
         data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": proxied_cover})
     return jsonify(data)
 
@@ -102,6 +102,23 @@ def from_slug(slug):
     title = slug.replace("-", " ")
     return title
 
+def generate_proxied_image_url(image_url):
+    """
+    Convert an image URL to a proxied URL format.
+    Extracts hash and filename from MangaDex URLs like https://...mangadex.network/data/{hash}/{filename}
+    Returns /api/image/{hash}/{filename} or falls back to URL encoding if extraction fails.
+    """
+    try:
+        path_parts = urlparse(image_url).path.split('/')
+        if len(path_parts) >= 3:
+            hash_id = path_parts[-2]
+            filename = path_parts[-1]
+            return f"/api/image/{hash_id}/{filename}"
+    except Exception:
+        pass
+    # Fallback for non-standard URLs
+    return f"/api/image/{urlquote(image_url, safe='')}"
+
 @app.route("/<slug>", methods=["GET"])
 def get_manga_by_slug(slug):
     con = sqlite3.connect(DATABASE)
@@ -118,7 +135,7 @@ def get_manga_by_slug(slug):
     for row in rows:
         cleaned_title = to_slug(row[0])
         orig_cover = row[4] or NOCOVER
-        proxied_cover = f"{PROXY_BASE_URL.rstrip('/')}/fetch?url={urlquote(orig_cover, safe='')}"
+        proxied_cover = generate_proxied_image_url(orig_cover)
         db_title = row[0].lower().strip()
         db_title_normalized = "".join(c for c in db_title if c.isalnum() or c == " ").replace(" ", "-")
         if db_title_normalized == slug:
@@ -155,7 +172,7 @@ def search_by_title():
     for row in rows:
         cleaned_title = to_slug(row[0])
         orig_cover = row[2] or NOCOVER
-        proxied_cover = f"{PROXY_BASE_URL.rstrip('/')}/fetch?url={urlquote(orig_cover, safe='')}"
+        proxied_cover = generate_proxied_image_url(orig_cover)
         data.append({"title": row[0], "description": row[1], "cover_img": proxied_cover})
     con.close()
     return jsonify(data)
@@ -291,23 +308,22 @@ def get_pages():
     pages = []
     for page in rows:
         src = page[1]
-        try:
-            # Expose each page URL through the fetch proxy endpoint so the client can request it as a file
-            proxied = f"/api/image/{src}"
-            src = proxied
-        except Exception:
-            pass
-        pages.append({'key': page[0], 'src': src})
+        proxied = generate_proxied_image_url(src)
+        pages.append({'key': page[0], 'src': proxied})
 
     conn.close()
     return jsonify(pages)
 
 
-@app.route('/api/image/<image_url>', methods=['GET'])
-def proxy_fetch(image_url):
+@app.route('/api/image/<hash_id>/<filename>', methods=['GET'])
+def proxy_fetch(hash_id, filename):
+    """
+    Proxy image requests from MangaDex to bypass CORS restrictions
+    """
     try:
-        image_url = f"{image_url}"
-
+        image_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
+        
+        # Fetch the image from MangaDex with appropriate headers
         response = requests.get(
             image_url,
             headers={
@@ -316,11 +332,14 @@ def proxy_fetch(image_url):
             timeout=10
         )
         response.raise_for_status()
-
+        
+        # Return the image with proper headers
         return send_file(
             BytesIO(response.content),
-            mimetype=response.headers.get('Content-Type', 'image/jpeg'),
-            as_attachment=False)
+            mimetype=response.headers.get('content-type', 'image/jpeg'),
+            as_attachment=False
+        )
+    
     except requests.RequestException as e:
         return jsonify({"error": f"Failed to fetch image: {str(e)}"}), 500
     except Exception as e:
