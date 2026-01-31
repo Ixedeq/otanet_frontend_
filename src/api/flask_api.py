@@ -12,8 +12,39 @@ CORS(app)
 
 DATABASE = 'otanet_devo.db'
 NOCOVER = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg'
-# Proxy base URL used to serve covers/pages. Set via env var e.g. PROXY_BASE_URL=https://proxy.example.com
-PROXY_BASE_URL = os.environ.get('PROXY_BASE_URL', 'https://proxy.example.com')
+# Proxy base URL used to serve covers/pages. Can be set via env var e.g. PROXY_BASE_URL=https://proxy.example.com.
+# If the env var is missing, attempt to infer a real example from URLs stored in the DB.
+from urllib.parse import urlparse
+
+def _infer_proxy_base_from_db(db_path=None):
+    db_path = db_path or os.path.join(os.path.dirname(__file__), 'otanet_devo.db')
+    try:
+        con = sqlite3.connect(db_path)
+        cur = con.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [r[0] for r in cur.fetchall()]
+        for t in tables:
+            cur.execute(f"PRAGMA table_info('{t}')")
+            cols = [c[1] for c in cur.fetchall()]
+            for col in cols:
+                if any(k in col.lower() for k in ('url', 'page', 'file', 'src', 'path')):
+                    try:
+                        cur.execute(f"SELECT {col} FROM '{t}' WHERE {col} LIKE 'http%' LIMIT 1")
+                        row = cur.fetchone()
+                        if row and row[0]:
+                            s = str(row[0])
+                            p = urlparse(s)
+                            if p.scheme and p.netloc:
+                                return f"{p.scheme}://{p.netloc}"
+                    except Exception:
+                        # ignore malformed tables/queries
+                        continue
+        con.close()
+    except Exception:
+        pass
+    return None
+
+PROXY_BASE_URL = os.environ.get('PROXY_BASE_URL') or _infer_proxy_base_from_db() or 'https://proxy.example.com'
 # Directory containing per-manga sqlite DBs. Default is the api folder where this file lives.
 MANGA_DB_DIR = os.environ.get('MANGA_DB_DIR', os.path.dirname(__file__))
 CONFIG = Config(signature_version='s3v4')
