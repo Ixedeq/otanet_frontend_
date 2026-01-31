@@ -58,7 +58,7 @@ export default function BookmarksPage() {
   return (
     <div className="manga-list">
       {mangaData.map((manga) => (
-        <a key={manga.slug} href={`/${manga.slug}`} className="manga-card">
+        <a key={manga.slug} href={`/${manga.slug}/${manga.hash}`} className="manga-card">
           <img
             src={manga.cover}
             alt={manga.title}
