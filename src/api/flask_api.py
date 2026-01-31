@@ -1,8 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sqlite3
-import boto3
-from botocore.config import Config
+import os
 import re
 import json
 
@@ -11,13 +10,14 @@ CORS(app)
 
 DATABASE = 'otanet_devo.db'
 NOCOVER = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg'
-config = Config(signature_version='s3v4')
-S3CLIENT = boto3.client('s3', region_name='us-east-1', config=config)
+# Proxy base URL used to serve covers/pages. Set via env var e.g. PROXY_BASE_URL=https://proxy.example.com
+PROXY_BASE_URL = os.environ.get('PROXY_BASE_URL', 'https://proxy.example.com')
+# Directory containing per-manga sqlite DBs. Default is the api folder where this file lives.
+MANGA_DB_DIR = os.environ.get('MANGA_DB_DIR', os.path.dirname(__file__))
 
 # GET recent manga (title + description)
 @app.route('/recent_manga', methods=['GET'])
 def recent_manga():
-    S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', 'otanet_devo.db')
     items_per_page = 10
     page = int(request.args.get('page', 1))
     offset = (page-1) * items_per_page
@@ -32,12 +32,8 @@ def recent_manga():
     data = []
     for row in rows:
         cleaned_title = to_slug(row[0])
-        presigned_url_get = S3CLIENT.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': 'otanet-manga-devo', 'Key': f"{cleaned_title}/0_title/cover_img"},
-            ExpiresIn=900
-        )
-        data.append({"title": row[0], "description": row[1], "cover_img": presigned_url_get})
+        cover_url = f"{PROXY_BASE_URL}/{cleaned_title}/0_title/cover_img"
+        data.append({"title": row[0], "description": row[1], "cover_img": cover_url})
     return jsonify(data)
 
 # Return default cover URL
@@ -77,18 +73,14 @@ def get_manga_by_slug(slug):
     result = None
     for row in rows:
         cleaned_title = to_slug(row[0])
-        presigned_url_get = S3CLIENT.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': 'otanet-manga-devo', 'Key': f"{cleaned_title}/0_title/cover_img"},
-            ExpiresIn=900
-        )
+        cover_url = f"{PROXY_BASE_URL}/{cleaned_title}/0_title/cover_img"
         db_title = row[0].lower().strip()
         db_title_normalized = "".join(c for c in db_title if c.isalnum() or c == " ").replace(" ", "-")
         if db_title_normalized == slug:
             result = {
                 "title": row[0],
                 "description": row[1],
-                "cover": presigned_url_get,  # always provide a cover
+                "cover": cover_url,  # always provide a cover
                 "tags": row[2],
                 "chapters": row[3]
             }
@@ -116,67 +108,111 @@ def search_by_title():
     data = []
     for row in rows:
         cleaned_title = to_slug(row[0])
-        presigned_url_get = S3CLIENT.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': 'otanet-manga-devo', 'Key': f"{cleaned_title}/0_title/cover_img"},
-            ExpiresIn=900
-        )
-        data.append({"title": row[0], "description": row[1], "cover_img": presigned_url_get})
+        cover_url = f"{PROXY_BASE_URL}/{cleaned_title}/0_title/cover_img"
+        data.append({"title": row[0], "description": row[1], "cover_img": cover_url})
     con.close()
     return jsonify(data)
 
 @app.route('/get_chapters', methods=['GET'])
 def get_chapters():
     title = request.args.get('title')
-    s3_resource = boto3.resource('s3')
-    bucket = s3_resource.Bucket('otanet-manga-devo')
+    if not title:
+        return jsonify([])
+
+    db_path = os.path.join(MANGA_DB_DIR, f"{title}.db")
+    if not os.path.exists(db_path):
+        return jsonify([])
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Try common chapter table names first
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = [r[0] for r in cursor.fetchall()]
+    chapter_tables = [t for t in tables if 'chapter' in t.lower() or t.lower() == 'chapters']
+    if not chapter_tables:
+        conn.close()
+        return jsonify([])
+
+    table = chapter_tables[0]
+    cursor.execute(f"PRAGMA table_info({table})")
+    cols = [c[1] for c in cursor.fetchall()]
+
+    # Heuristics for the title and number columns
+    title_col = next((c for c in cols if 'title' in c.lower() or 'name' in c.lower()), cols[0])
+    number_col = next((c for c in cols if 'num' in c.lower() or 'number' in c.lower() or 'chapter' in c.lower()), cols[1] if len(cols) > 1 else cols[0])
+
+    try:
+        cursor.execute(f"SELECT {title_col}, {number_col} FROM {table}")
+        rows = cursor.fetchall()
+    except Exception:
+        conn.close()
+        return jsonify([])
 
     objs = []
-    for obj in bucket.objects.filter(Prefix=f"{title}/"):
-        #pattern = r"chapter_\d+(?:\.\d+\_\d+)?"
-        pattern = r"chapter(?:_\d+)+"
-        key = re.search(pattern,obj.key)
-        if key:
-            key = key.group().replace('_', ' ', 1)
-            key = key.replace('_','.')
-            number = key.rsplit(' ')
-            chapter_word = key.capitalize()
-            dict = {'title': chapter_word, 'number': number[1]}
-            if not any(dict == item for item in objs):
-                objs.append(dict)
-    sorted_objs = sorted(objs, key=lambda obj: float(obj['number']))
+    for row in rows:
+        chapter_word = str(row[0]).capitalize() if row[0] else f"Chapter {row[1]}"
+        item = {'title': chapter_word, 'number': row[1]}
+        if item not in objs:
+            objs.append(item)
+
+    try:
+        sorted_objs = sorted(objs, key=lambda obj: float(obj['number']))
+    except Exception:
+        sorted_objs = objs
+
+    conn.close()
     return jsonify(sorted_objs)
 
 @app.route('/get_pages', methods=['GET'])
 def get_pages():
-    s3_resource = boto3.resource('s3')
-    bucket = s3_resource.Bucket('otanet-manga-devo')
-
-    def get_first_number(s):
-        match = re.search(r'\d+', s)
-        if match:
-            return int(match.group(0))
-        return 0
-    
     title = request.args.get('title')
-    chapter = request.args.get('chapter').replace('-', '_')
-    base_key = f"{title}/{chapter}" 
-    keys = []
+    chapter = request.args.get('chapter')
+    if not title or not chapter:
+        return jsonify([])
 
-    for obj in bucket.objects.filter(Prefix=f"{base_key}/"):
-        obj = obj.key.rsplit('/')
-        keys.append(obj[2])
-    sorted_keys = sorted(keys, key=get_first_number)
+    db_path = os.path.join(MANGA_DB_DIR, f"{title}.db")
+    if not os.path.exists(db_path):
+        return jsonify([])
 
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = [r[0] for r in cursor.fetchall()]
+    page_tables = [t for t in tables if 'page' in t.lower() or 'image' in t.lower() or 'file' in t.lower() or t.lower() == 'pages']
+    if not page_tables:
+        conn.close()
+        return jsonify([])
+
+    table = page_tables[0]
+    cursor.execute(f"PRAGMA table_info({table})")
+    cols = [c[1] for c in cursor.fetchall()]
+
+    # Heuristics for filename and chapter columns
+    filename_col = next((c for c in cols if any(k in c.lower() for k in ['file','name','src','path','filename'])), cols[0])
+    chapter_col = next((c for c in cols if 'chapter' in c.lower()), None)
+
+    if chapter_col:
+        cursor.execute(f"SELECT {filename_col} FROM {table} WHERE {chapter_col} = ?", (chapter,))
+    else:
+        cursor.execute(f"SELECT {filename_col} FROM {table}")
+
+    rows = cursor.fetchall()
     pages = []
-    for key in sorted_keys:
-        presigned_url_get = S3CLIENT.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': 'otanet-manga-devo', 'Key': f"{base_key}/{key}"},
-            ExpiresIn=900
-        )
-        pages.append({'src': presigned_url_get, 'key': key, 'base_key': base_key})
-    return(jsonify(pages))
+    base_key = f"{title}/{chapter}"
+    for row in rows:
+        filename = row[0]
+        if isinstance(filename, (bytes, bytearray)):
+            filename = filename.decode('utf-8')
+        if str(filename).startswith('http://') or str(filename).startswith('https://'):
+            src = filename
+        else:
+            src = f"{PROXY_BASE_URL}/{base_key}/{filename}"
+        pages.append({'src': src, 'key': filename, 'base_key': base_key})
+
+    conn.close()
+    return jsonify(pages)
 
 
 @app.route('/search_by_tags')
