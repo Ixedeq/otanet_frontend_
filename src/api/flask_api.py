@@ -102,9 +102,15 @@ def proxy_fetch(hash_id, filename):
         # Create response with image data and disable caching
         from flask import Response
         img_response = Response(response.content, mimetype=content_type)
-        img_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        # Remove caching headers from MangaDex response to prevent 304s
+        img_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
         img_response.headers['Pragma'] = 'no-cache'
         img_response.headers['Expires'] = '0'
+        # Remove ETag and Last-Modified to prevent conditional requests
+        if 'ETag' in img_response.headers:
+            del img_response.headers['ETag']
+        if 'Last-Modified' in img_response.headers:
+            del img_response.headers['Last-Modified']
         return img_response
     
     except requests.RequestException as e:
