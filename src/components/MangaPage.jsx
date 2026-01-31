@@ -7,7 +7,7 @@ const DEFAULT_COVER =
   "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
 
 export default function MangaPage() {
-  const { slug } = useParams();
+  const { slug, hash } = useParams();
   const [manga, setManga] = useState(null);
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ export default function MangaPage() {
   useEffect(() => {
     const fetchChapters = async () => {
       try {
-        const res = await fetch(`${API_BASE}/get_chapters?title=${slug}`);
+        const res = await fetch(`${API_BASE}/get_chapters?hash=${hash}`);
         if (!res.ok) throw new Error("Chapters not found!");
         const data = await res.json();
         setChapters(data);
@@ -153,7 +153,7 @@ export default function MangaPage() {
             {chapters.map((ch) => (
               <div key={ch.number} className="chapter-item-wrapper">
                 <a
-                  href={`/read/${slug}/chapter-${ch.number
+                  href={`/read/${slug}/${hash}/chapter-${ch.number
                     .toString()
                     .replace(/\./g, "-")}`}
                   className={`chapter-item ${

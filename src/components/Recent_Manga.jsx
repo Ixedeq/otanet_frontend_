@@ -88,11 +88,12 @@ export default function Recent_Manga() {
             <MangaSkeleton key={idx} />
           ))
         : currentManga.length > 0
-        ? currentManga.map(({ title, description, cover_img }, idx) => (
+        ? currentManga.map(({ title, description, hash, cover_img }, idx) => (
             <div key={startIndex + idx} onClick={() => markAsRead(title)}>
               <MangaCard
                 title={title}
                 description={description}
+		hash={hash}
                 cover={cover_img}
                 read={readManga.includes(title)}
               />

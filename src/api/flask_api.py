@@ -60,7 +60,7 @@ def recent_manga():
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
     cursor.execute(
-        "SELECT title, description FROM manga_metadata ORDER BY time DESC LIMIT ? OFFSET ?",
+        "SELECT title, description, hash FROM manga_metadata ORDER BY time DESC LIMIT ? OFFSET ?",
         (10, offset)
     )
     rows = cursor.fetchall()
@@ -69,7 +69,7 @@ def recent_manga():
     for row in rows:
         cleaned_title = to_slug(row[0])
         cover_url = f"{PROXY_BASE_URL}/{cleaned_title}/0_title/cover_img"
-        data.append({"title": row[0], "description": row[1], "cover_img": cover_url})
+        data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": cover_url})
     return jsonify(data)
 
 # Return default cover URL
@@ -93,6 +93,10 @@ def to_slug(title):
     slug = re.sub(r"[^a-z0-9 ]", "", slug)
     slug = re.sub(r"\s+", "-", slug)
     return slug
+
+def from_slug(slug):
+    title = slug.replace("-", " ")
+    return title
 
 @app.route("/<slug>", methods=["GET"])
 def get_manga_by_slug(slug):
@@ -151,19 +155,21 @@ def search_by_title():
 
 @app.route('/get_chapters', methods=['GET'])
 def get_chapters():
-    title = request.args.get('title')
-    if not title:
+    hash = request.args.get('hash')
+    if not hash:
         return jsonify([])
 
-    db_path = os.path.join(MANGA_DB_DIR, f"{title}.db")
+    db_path = os.path.join(MANGA_DB_DIR, f"{hash}.db")
     if not os.path.exists(db_path):
         # Fallback: try to infer chapters from the main database (e.g. tables named by hash)
         try:
             main_con = sqlite3.connect(DATABASE)
             main_cur = main_con.cursor()
             # Find the hash for this title
-            main_cur.execute("SELECT hash FROM manga_metadata WHERE title = ?", (title,))
+            print(hash)
+            main_cur.execute("SELECT hash FROM manga_metadata WHERE hash = ?",(hash,))
             row = main_cur.fetchone()
+            print(row)
             if row and row[0]:
                 table = row[0]
                 # Try possible table name variants (hash uses dashes, tables use underscores)
@@ -195,19 +201,11 @@ def get_chapters():
                                 num_val = normalized
 
                             chapter_word = normalized
-                            if title_col:
-                                try:
-                                    main_cur.execute(f"SELECT {title_col} FROM '{table_name}' WHERE {chapter_col} = ? LIMIT 1", (r,))
-                                    trow = main_cur.fetchone()
-                                    if trow and trow[0]:
-                                        chapter_word = str(trow[0])
-                                except Exception:
-                                    pass
-                            else:
-                                chapter_word = f"Chapter {normalized}"
+                            chapter_word = f"Chapter {normalized}"
 
                             item = {'title': chapter_word, 'number': num_val}
                             if item not in objs:
+                                print(item)
                                 objs.append(item)
 
                         try:
@@ -215,6 +213,7 @@ def get_chapters():
                         except Exception:
                             pass
 
+                        print(objs)
                         main_con.close()
                         return jsonify(objs)
                 # If no explicit chapter table/column, fall back to using latest_chapter
@@ -231,6 +230,7 @@ def get_chapters():
                         if latest != max_int:
                             chapters.append({'title': f'Chapter {latest}', 'number': latest})
                         main_con.close()
+                        print(max_int)
                         return jsonify(chapters)
                     except Exception:
                         pass
@@ -282,50 +282,26 @@ def get_chapters():
 
 @app.route('/get_pages', methods=['GET'])
 def get_pages():
-    title = request.args.get('title')
+    hash = request.args.get('hash')
+    hash_copy = hash
+    hash_copy = hash_copy.replace('-', '_')
     chapter = request.args.get('chapter')
-    if not title or not chapter:
-        return jsonify([])
+    chapter = chapter.replace("chapter_", '')
+    chapter = chapter.replace("-", '_')
+    title = request.args.get('title')
 
-    db_path = os.path.join(MANGA_DB_DIR, f"{title}.db")
-    if not os.path.exists(db_path):
-        return jsonify([])
-
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-    tables = [r[0] for r in cursor.fetchall()]
-    page_tables = [t for t in tables if 'page' in t.lower() or 'image' in t.lower() or 'file' in t.lower() or t.lower() == 'pages']
-    if not page_tables:
-        conn.close()
-        return jsonify([])
-
-    table = page_tables[0]
-    cursor.execute(f"PRAGMA table_info({table})")
-    cols = [c[1] for c in cursor.fetchall()]
-
-    # Heuristics for filename and chapter columns
-    filename_col = next((c for c in cols if any(k in c.lower() for k in ['file','name','src','path','filename'])), cols[0])
-    chapter_col = next((c for c in cols if 'chapter' in c.lower()), None)
-
-    if chapter_col:
-        cursor.execute(f"SELECT {filename_col} FROM {table} WHERE {chapter_col} = ?", (chapter,))
-    else:
-        cursor.execute(f"SELECT {filename_col} FROM {table}")
-
+    sql = f"SELECT page_number, page_url FROM [{hash_copy}] WHERE chapter_num = '{chapter}'"
+    print(sql)
+    cursor.execute(sql)
     rows = cursor.fetchall()
+    print(rows)
+
     pages = []
-    base_key = f"{title}/{chapter}"
-    for row in rows:
-        filename = row[0]
-        if isinstance(filename, (bytes, bytearray)):
-            filename = filename.decode('utf-8')
-        if str(filename).startswith('http://') or str(filename).startswith('https://'):
-            src = filename
-        else:
-            src = f"{PROXY_BASE_URL}/{base_key}/{filename}"
-        pages.append({'src': src, 'key': filename, 'base_key': base_key})
+    for page in rows:
+        pages.append({'key': page[0], 'src': page[1]})
 
     conn.close()
     return jsonify(pages)

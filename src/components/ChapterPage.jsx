@@ -7,7 +7,7 @@ import parseChapterNumber from "./components/ParseChapterNumber";
 import "../css/ChapterPage.css";
 
 export default function ChapterPage() {
-  const { slug, chapter } = useParams();
+  const { slug, hash, chapter } = useParams();
   const chapterKey = chapter.replace("-", "_");
   const chapterNumberStr = parseChapterNumber(chapter); 
   const chapterNumber = parseFloat(chapterNumberStr); // numeric
@@ -45,7 +45,7 @@ export default function ChapterPage() {
       setLoadingPages(true);
       try {
         const res = await fetch(
-          `${API_BASE}/get_pages?title=${slug}&chapter=${chapterKey}`
+          `${API_BASE}/get_pages?title=${slug}&hash=${hash}&chapter=${chapterKey}`
         );
         const data = await res.json();
         setPages(data);

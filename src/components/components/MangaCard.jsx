@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-export default function MangaCard({ title, description, cover }) {
+export default function MangaCard({ title, description, hash, cover }) {
   const toSlug = (text) =>
     text.toLowerCase().trim().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, "-");
 
@@ -13,7 +13,7 @@ export default function MangaCard({ title, description, cover }) {
     "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
 
   return (
-    <Link to={`/${toSlug(title)}`} className="manga-card">
+    <Link to={`${toSlug(title)}/${hash}`} className="manga-card">
       <img src={cover} alt={title} className="manga-thumb" />
       <div className="manga-info">
         <div className="manga-title-text">{prettifyTitle(title)}</div>

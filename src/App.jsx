@@ -36,10 +36,10 @@ export default function App() {
           <Route path="/recent/:page" element={<Recent_Manga />} />
 
           {/* Individual manga page */}
-          <Route path="/:slug" element={<MangaPage />} />
+          <Route path="/:slug/:hash" element={<MangaPage />} />
 
           {/*future chapter page */}
-          <Route path="/read/:slug/:chapter" element={<ChapterPage />} />
+          <Route path="/read/:slug/:hash/:chapter" element={<ChapterPage />} />
           <Route path="/search/:search" element={<SearchResult/>} />
 
           {/* Bookmarks page */}
