@@ -76,49 +76,31 @@ def recent_manga():
         data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": proxied_cover})
     return jsonify(data)
 
-# Image proxy endpoint - must be before the catch-all /<slug> route
 @app.route('/api/image/<hash_id>/<filename>', methods=['GET'])
 def proxy_fetch(hash_id, filename):
-    """
-    Proxy image requests from MangaDex to bypass CORS restrictions
-    """
     try:
         image_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
         print(f"Fetching image: {image_url}")
         
-        # Fetch the image from MangaDex with appropriate headers
         response = requests.get(
             image_url,
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            },
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
             timeout=10
         )
         response.raise_for_status()
         
         content_type = response.headers.get('content-type', 'image/jpeg')
-        print(f"Response status: {response.status_code}, Content-Type: {content_type}, Size: {len(response.content)} bytes")
         
-        # Create response with image data and disable caching
-        from flask import Response
-        img_response = Response(response.content, mimetype=content_type)
-        # Remove caching headers from MangaDex response to prevent 304s
-        img_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-        img_response.headers['Pragma'] = 'no-cache'
-        img_response.headers['Expires'] = '0'
-        # Remove ETag and Last-Modified to prevent conditional requests
-        if 'ETag' in img_response.headers:
-            del img_response.headers['ETag']
-        if 'Last-Modified' in img_response.headers:
-            del img_response.headers['Last-Modified']
-        return img_response
-    
+        # Return send_file instead - it's more reliable for binary content
+        return send_file(
+            BytesIO(response.content),
+            mimetype=content_type,
+            download_name=filename  # Optional but good practice
+        )
+        
     except requests.RequestException as e:
         print(f"Request error: {str(e)}")
         return jsonify({"error": f"Failed to fetch image: {str(e)}"}), 500
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 # Return default cover URL
 @app.route('/get_cover', methods=['GET'])
@@ -146,31 +128,30 @@ def from_slug(slug):
     title = slug.replace("-", " ")
     return title
 
-@app.route('/api/image/<hash_id>/<filename>', methods=['GET'])
-def proxy_fetch(hash_id, filename):
+def generate_proxied_image_url(image_url):
+    """
+    Convert an image URL to a proxied URL format.
+    Extracts hash and filename from MangaDex URLs like https://...mangadex.network/data/{hash}/{filename}
+    Returns /api/image/{hash}/{filename}?t={timestamp} to bust browser cache.
+    """
+    import time
+    print(f"Generating proxied URL for: {image_url}")
     try:
-        image_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
-        print(f"Fetching image: {image_url}")
-        
-        response = requests.get(
-            image_url,
-            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
-            timeout=10
-        )
-        response.raise_for_status()
-        
-        content_type = response.headers.get('content-type', 'image/jpeg')
-        
-        # Return send_file instead - it's more reliable for binary content
-        return send_file(
-            BytesIO(response.content),
-            mimetype=content_type,
-            download_name=filename  # Optional but good practice
-        )
-        
-    except requests.RequestException as e:
-        print(f"Request error: {str(e)}")
-        return jsonify({"error": f"Failed to fetch image: {str(e)}"}), 500
+        parsed = urlparse(image_url)
+        path_parts = parsed.path.split('/')
+        print(f"Path parts: {path_parts}")
+        if len(path_parts) >= 3:
+            hash_id = path_parts[-2]
+            filename = path_parts[-1]
+            # Add cache-busting timestamp query parameter
+            proxied = f"/api/image/{hash_id}/{filename}?t={int(time.time())}"
+            print(f"Generated proxied URL: {proxied}")
+            return proxied
+    except Exception as e:
+        print(f"Error extracting hash/filename: {e}")
+    # Fallback for non-standard URLs
+    print(f"Using fallback URL encoding")
+    return f"/api/image/{urlquote(image_url, safe='')}"
 
 @app.route("/<slug>", methods=["GET"])
 def get_manga_by_slug(slug):
