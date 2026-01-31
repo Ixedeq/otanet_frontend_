@@ -13,7 +13,6 @@ export default function Recent_Manga() {
   const [manga, setManga] = useState([]);
   const [mangaCount, setMangaCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [covers, setCovers] = useState({});
   const itemsPerPage = 10;
   const currentPage = Number(page) || 1;
 
@@ -46,15 +45,6 @@ export default function Recent_Manga() {
       }
     };
 
-    const fetchCovers = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/get_cover`);
-        const data = await res.json();
-        setCovers(data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
 
     const fetchMangaCount = async () => {
       try {
@@ -67,7 +57,6 @@ export default function Recent_Manga() {
     };
 
     fetchManga();
-    fetchCovers();
     fetchMangaCount();
     window.scrollTo(0, 0);
   }, [currentPage]);

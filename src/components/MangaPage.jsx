@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import "../css/MangaPage.css";
 import API_BASE from "./Config";
 
@@ -152,8 +152,8 @@ export default function MangaPage() {
           <div className="chapter-grid">
             {chapters.map((ch) => (
               <div key={ch.number} className="chapter-item-wrapper">
-                <a
-                  href={`/read/${slug}/${hash}/chapter-${ch.number
+                <Link
+                  to={`/read/${slug}/${hash}/chapter-${ch.number
                     .toString()
                     .replace(/\./g, "-")}`}
                   className={`chapter-item ${
@@ -162,7 +162,7 @@ export default function MangaPage() {
                   onClick={() => markChapterAsRead(ch.number)}
                 >
                   {ch.title || `Chapter ${ch.number}`}
-                </a>
+                </Link>
               </div>
             ))}
           </div>
