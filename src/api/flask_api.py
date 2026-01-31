@@ -146,28 +146,31 @@ def from_slug(slug):
     title = slug.replace("-", " ")
     return title
 
-def generate_proxied_image_url(image_url):
-    """
-    Convert an image URL to a proxied URL format.
-    Extracts hash and filename from MangaDex URLs like https://...mangadex.network/data/{hash}/{filename}
-    Returns /api/image/{hash}/{filename} or falls back to URL encoding if extraction fails.
-    """
-    print(f"Generating proxied URL for: {image_url}")
+@app.route('/api/image/<hash_id>/<filename>', methods=['GET'])
+def proxy_fetch(hash_id, filename):
     try:
-        parsed = urlparse(image_url)
-        path_parts = parsed.path.split('/')
-        print(f"Path parts: {path_parts}")
-        if len(path_parts) >= 3:
-            hash_id = path_parts[-2]
-            filename = path_parts[-1]
-            proxied = f"/api/image/{hash_id}/{filename}"
-            print(f"Generated proxied URL: {proxied}")
-            return proxied
-    except Exception as e:
-        print(f"Error extracting hash/filename: {e}")
-    # Fallback for non-standard URLs
-    print(f"Using fallback URL encoding")
-    return f"/api/image/{urlquote(image_url, safe='')}"
+        image_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
+        print(f"Fetching image: {image_url}")
+        
+        response = requests.get(
+            image_url,
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
+            timeout=10
+        )
+        response.raise_for_status()
+        
+        content_type = response.headers.get('content-type', 'image/jpeg')
+        
+        # Return send_file instead - it's more reliable for binary content
+        return send_file(
+            BytesIO(response.content),
+            mimetype=content_type,
+            download_name=filename  # Optional but good practice
+        )
+        
+    except requests.RequestException as e:
+        print(f"Request error: {str(e)}")
+        return jsonify({"error": f"Failed to fetch image: {str(e)}"}), 500
 
 @app.route("/<slug>", methods=["GET"])
 def get_manga_by_slug(slug):
