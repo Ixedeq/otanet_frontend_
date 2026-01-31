@@ -131,27 +131,30 @@ def from_slug(slug):
 def generate_proxied_image_url(image_url):
     """
     Convert an image URL to a proxied URL format.
-    Extracts hash and filename from MangaDex URLs like https://...mangadex.network/data/{hash}/{filename}
-    Returns /api/image/{hash}/{filename}?t={timestamp} to bust browser cache.
     """
-    import time
     print(f"Generating proxied URL for: {image_url}")
+    
+    # Get Flask server URL from environment or use default
+    FLASK_BASE = os.environ.get('FLASK_BASE_URL', 'http://ota-network.com:8000')
+    
     try:
         parsed = urlparse(image_url)
         path_parts = parsed.path.split('/')
         print(f"Path parts: {path_parts}")
+        
         if len(path_parts) >= 3:
             hash_id = path_parts[-2]
             filename = path_parts[-1]
-            # Add cache-busting timestamp query parameter
-            proxied = f"/api/image/{hash_id}/{filename}?t={int(time.time())}"
+            # Return absolute URL pointing to Flask server
+            proxied = f"{FLASK_BASE}/api/image/{hash_id}/{filename}"
             print(f"Generated proxied URL: {proxied}")
             return proxied
     except Exception as e:
         print(f"Error extracting hash/filename: {e}")
-    # Fallback for non-standard URLs
+    
+    # Fallback
     print(f"Using fallback URL encoding")
-    return f"/api/image/{urlquote(image_url, safe='')}"
+    return f"{FLASK_BASE}/api/image/{urlquote(image_url, safe='')}"
 
 @app.route("/<slug>", methods=["GET"])
 def get_manga_by_slug(slug):
