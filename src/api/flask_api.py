@@ -356,7 +356,7 @@ def get_pages():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
-    sql = f"SELECT page_number, page_url FROM [{hash_copy}] WHERE chapter_num = '{chapter}'"
+    sql = f"""SELECT DISTINCT page_number, page_url FROM [{hash_copy}]  WHERE chapter_num = '{chapter}'"""
     print(sql)
     cursor.execute(sql)
     rows = cursor.fetchall()
