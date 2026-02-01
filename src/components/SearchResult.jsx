@@ -43,8 +43,6 @@ export default function SearchResult() {
                           description={description}
                           hash={hash}
                           cover={cover_img}
-                          read={readManga.includes(title)}
-                          markAsRead={markAsRead}
                         />
                       ))
             : "Loading..."}
