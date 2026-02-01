@@ -367,6 +367,8 @@ def get_pages():
         src = page[1]
         proxied = generate_proxied_image_url(src)
         pages.append({'key': page[0], 'src': proxied})
+        
+    pages = sorted(pages, key=lambda x: float(x['key']))
 
     conn.close()
     return jsonify(pages)
