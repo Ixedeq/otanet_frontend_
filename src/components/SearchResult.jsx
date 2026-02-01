@@ -38,7 +38,7 @@ export default function SearchResult() {
           {currentManga.length > 0
             ? currentManga.map(({ title, description, hash, cover_img }, idx) => (
                         <MangaCard
-                          key={hash || idx}
+                          key={hash}
                           title={title}
                           description={description}
                           hash={hash}
