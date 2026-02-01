@@ -36,14 +36,17 @@ export default function SearchResult() {
  return (
     <div className="manga-list">
           {currentManga.length > 0
-            ? currentManga.map(({ title, description, cover_img}, idx) => (
-                <MangaCard
-                  key={startIndex + idx}
-                  title={title}
-                  description={description}
-                  cover={cover_img}
-                />
-              ))
+            ? currentManga.map(({ title, description, hash, cover_img }, idx) => (
+                        <MangaCard
+                          key={hash || idx}
+                          title={title}
+                          description={description}
+                          hash={hash}
+                          cover={cover_img}
+                          read={readManga.includes(title)}
+                          markAsRead={markAsRead}
+                        />
+                      ))
             : "Loading..."}
          {totalPages > 1 && (
                  <PaginationControls
