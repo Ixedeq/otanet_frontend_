@@ -1,29 +1,34 @@
-import { useLocation } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import PaginationControls from "./components/PaginationControls";
 import MangaCard from "./components/MangaCard";
 import API_BASE from "./Config";
 
 export default function SearchResult() {
-   const location = useLocation();
+   const { search } = useParams();
    const [manga, setManga] = useState([]);
    const [currentPage, setCurrentPage] = useState(1);
-   const { searchValue } = location.state;
+   const [loading, setLoading] = useState(true);
 
    useEffect(() => {
-   // Fetch cover
+      if (!search) return;
+      
       const fetchSearchResults = async () => {
-      try {
-         const response = await fetch(`${API_BASE}/search_by_title?title=${searchValue}`);
-         if (!response.ok) throw new Error("Network response was not ok!");
-         const data = await response.json();
-         setManga(data)
-      } catch (error) {
-         console.error("Error fetching cover!", error);
+         setLoading(true);
+         try {
+            const response = await fetch(`${API_BASE}/search_by_title?title=${encodeURIComponent(search)}`);
+            if (!response.ok) throw new Error("Network response was not ok!");
+            const data = await response.json();
+            setManga(data);
+         } catch (error) {
+            console.error("Error fetching search results!", error);
+            setManga([]);
+         } finally {
+            setLoading(false);
          }
       };
-      fetchSearchResults()
-   }, [searchValue]);
+      fetchSearchResults();
+   }, [search]);
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(manga.length / itemsPerPage);
@@ -35,25 +40,29 @@ export default function SearchResult() {
 
  return (
     <div className="manga-list">
-          {currentManga.length > 0
-            ? currentManga.map(({ title, description, hash, cover_img }, idx) => (
-                        <MangaCard
-                          key={hash}
-                          title={title}
-                          description={description}
-                          hash={hash}
-                          cover={cover_img}
-                        />
-                      ))
-            : "Loading..."}
-         {totalPages > 1 && (
-                 <PaginationControls
-                   currentPage={currentPage}
-                   totalPages={totalPages}
-                   goNext={goNext}
-                   goPrev={goPrev}
-                 />
-               )} 
-   </div>
- )
+      {loading ? (
+        <div className="search-loading">Searching...</div>
+      ) : currentManga.length > 0 ? (
+        currentManga.map(({ title, description, hash, cover_img }) => (
+          <MangaCard
+            key={hash}
+            title={title}
+            description={description}
+            hash={hash}
+            cover={cover_img}
+          />
+        ))
+      ) : (
+        <div className="search-empty">No results found for "{search}"</div>
+      )}
+      {totalPages > 1 && (
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          goNext={goNext}
+          goPrev={goPrev}
+        />
+      )}
+    </div>
+  );
 }
