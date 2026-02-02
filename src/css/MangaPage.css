@@ -53,6 +53,7 @@
   max-width: calc(100% - 210px);
   overflow-y: auto;
   padding-right: 0.5rem;
+  padding-bottom: 3rem;
   position: relative;
 }
 
@@ -82,15 +83,15 @@
 /* Bookmark Star Button */
 .bookmark-star {
   position: absolute;
-  bottom: 0.5rem;
-  right: 0.5rem;
-  width: 42px;
-  height: 42px;
+  bottom: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.2);
   background: rgba(0, 0, 0, 0.4);
   color: rgba(255, 255, 255, 0.5);
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -290,6 +291,7 @@
   .detail-info {
     max-width: 100%;
     height: auto;
+    padding-bottom: 2.5rem;
   }
 
   .detail-title {
@@ -303,11 +305,9 @@
   }
 
   .bookmark-star {
-    bottom: -0.5rem;
-    right: 0;
-    width: 38px;
-    height: 38px;
-    font-size: 1.2rem;
+    width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
   }
 
   .tags-wrapper {
