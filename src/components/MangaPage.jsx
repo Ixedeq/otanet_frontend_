@@ -127,9 +127,11 @@ export default function MangaPage() {
           {/* Manga-level bookmark button */}
           <button
             onClick={toggleBookmark}
-            className={bookmarks.includes(slug) ? "bookmarked" : ""}
+            className={`bookmark-star ${bookmarks.includes(slug) ? "bookmarked" : ""}`}
+            aria-label={bookmarks.includes(slug) ? "Remove bookmark" : "Add bookmark"}
+            title={bookmarks.includes(slug) ? "Remove from bookmarks" : "Add to bookmarks"}
           >
-            {bookmarks.includes(slug) ? "★ Bookmarked" : "☆ Bookmark"}
+            ★
           </button>
         </div>
       </div>
