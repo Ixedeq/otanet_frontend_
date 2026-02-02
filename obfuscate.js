@@ -54,6 +54,7 @@ function walkDir(dir) {
     const stat = fs.statSync(filePath);
 
     if (stat.isDirectory()) {
+      // Recursively walk subdirectories
       walkDir(filePath);
     } else if (file.endsWith(".js") && !file.endsWith(".map")) {
       obfuscateFile(filePath);
@@ -61,7 +62,7 @@ function walkDir(dir) {
   });
 }
 
-const buildDir = path.join(__dirname, "build");
+const buildDir = path.join(__dirname, "build", "static", "js");
 
 if (!fs.existsSync(buildDir)) {
   console.error('Build directory not found. Run "npm run build" first.');
@@ -69,5 +70,6 @@ if (!fs.existsSync(buildDir)) {
 }
 
 console.log("Starting obfuscation...");
-walkDir(path.join(buildDir, "static", "js"));
+console.log("Processing directory:", buildDir);
+walkDir(buildDir);
 console.log("Obfuscation complete!");
