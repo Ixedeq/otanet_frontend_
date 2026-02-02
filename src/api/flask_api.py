@@ -76,7 +76,7 @@ def recent_manga():
         data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": proxied_cover})
     return jsonify(data)
 
-@app.route('/api/image/<hash_id>/<filename>', methods=['GET'])
+@app.route('/image/<hash_id>/<filename>', methods=['GET'])
 def fetch_proxied_image(hash_id, filename):
     try:
         # Try cover URL first
@@ -146,7 +146,7 @@ def from_slug(slug):
 def generate_proxied_image_url(image_url):
     print(f"Generating proxied URL for: {image_url}")
     
-    FLASK_BASE = os.environ.get('FLASK_BASE_URL', 'http://ota-network.com:8000')
+    FLASK_BASE = os.environ.get('FLASK_BASE_URL', 'https://ota-network.com')
     
     try:
         parsed = urlparse(image_url)
