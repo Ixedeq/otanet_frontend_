@@ -221,16 +221,16 @@ def search_by_title():
     con = sqlite3.connect(DATABASE)
     cursor = con.cursor()
     cursor.execute(
-        "SELECT title, description, cover_img FROM manga_metadata WHERE title LIKE ?",
+        "SELECT title, description, hash, cover_img FROM manga_metadata WHERE title LIKE ?",
         ('%' + query + '%',)
     )
     rows = cursor.fetchall()
     data = []
     for row in rows:
         cleaned_title = to_slug(row[0])
-        orig_cover = row[2] or NOCOVER
+        orig_cover = row[3] or NOCOVER
         proxied_cover = generate_proxied_image_url(orig_cover)
-        data.append({"title": row[0], "description": row[1], "cover_img": proxied_cover})
+        data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": proxied_cover})
     con.close()
     return jsonify(data)
 
