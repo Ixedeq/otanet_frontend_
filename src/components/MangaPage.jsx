@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { FiStar } from "react-icons/fi";
+import { FaStar } from "react-icons/fa";
 import "../css/MangaPage.css";
 import API_BASE from "./Config";
 
@@ -131,7 +133,7 @@ export default function MangaPage() {
             aria-label={bookmarks.includes(slug) ? "Remove bookmark" : "Add bookmark"}
             title={bookmarks.includes(slug) ? "Remove from bookmarks" : "Add to bookmarks"}
           >
-            ★
+            {bookmarks.includes(slug) ? <FaStar size={18} /> : <FiStar size={18} />}
           </button>
         </div>
       </div>

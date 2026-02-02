@@ -51,9 +51,8 @@
   justify-content: flex-start;
   height: 100%;
   max-width: calc(100% - 210px);
-  overflow-y: auto;
+  overflow: visible;
   padding-right: 0.5rem;
-  padding-bottom: 3rem;
   position: relative;
 }
 
@@ -82,37 +81,38 @@
 
 /* Bookmark Star Button */
 .bookmark-star {
-  position: absolute;
-  bottom: 0;
-  right: 0;
+  align-self: flex-end;
+  margin-top: auto;
+  flex-shrink: 0;
   width: 36px;
   height: 36px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(40, 40, 40, 0.8);
   color: rgba(255, 255, 255, 0.5);
-  font-size: 1.2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.25s ease;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  padding: 0;
+}
+
+.bookmark-star svg {
+  display: block;
 }
 
 .bookmark-star:hover {
   transform: scale(1.1);
   border-color: rgba(255, 215, 0, 0.5);
-  background: rgba(0, 0, 0, 0.6);
-  color: rgba(255, 215, 0, 0.7);
+  background: rgba(40, 40, 40, 0.9);
+  color: rgba(255, 215, 0, 0.8);
 }
 
 .bookmark-star.bookmarked {
   color: #ffd700;
   border-color: rgba(255, 215, 0, 0.6);
   background: rgba(255, 215, 0, 0.15);
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
 .bookmark-star.bookmarked:hover {
@@ -291,7 +291,6 @@
   .detail-info {
     max-width: 100%;
     height: auto;
-    padding-bottom: 2.5rem;
   }
 
   .detail-title {
@@ -305,6 +304,8 @@
   }
 
   .bookmark-star {
+    align-self: center;
+    margin-top: 0.8rem;
     width: 34px;
     height: 34px;
     font-size: 1.1rem;
