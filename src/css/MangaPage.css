@@ -3,26 +3,45 @@
   display: flex;
   flex-direction: row;
   gap: 2rem;
-  max-width: 900px;       /* keeps everything contained */
-  height: 320px;          /* uniform height */
-  margin: 1rem auto;
+  max-width: 900px;
+  height: 320px;
+  margin: 1.5rem auto;
   padding: 1.5rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-  font-family: "Arial", sans-serif;
-  color: var(--main-text, #fff);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-radius: var(--border-radius-lg, 14px);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.4));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  color: var(--font-color, #f5f5f5);
   overflow: hidden;
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .detail-cover {
   width: 210px;
   height: 100%;
-  object-fit: contain;   /* keep full image */
-  border-radius: 8px;
+  object-fit: contain;
+  border-radius: var(--border-radius-md, 10px);
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  background-color: #222;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  background-color: #1a1a1a;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.detail-cover:hover {
+  transform: scale(1.03);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .detail-info {
@@ -31,26 +50,32 @@
   flex-direction: column;
   justify-content: flex-start;
   height: 100%;
-  max-width: calc(100% - 210px); /* stays proportional with cover */
-  overflow-y: auto;             /* scroll description if needed */
+  max-width: calc(100% - 210px);
+  overflow-y: auto;
   padding-right: 0.5rem;
 }
 
 .detail-title {
   font-size: 2rem;
+  font-weight: 700;
   margin-bottom: 1rem;
+  background: linear-gradient(90deg, #ffffff 0%, #e0e0e0 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
 }
 
 .detail-description {
   font-size: 1rem;
-  line-height: 1.5;
+  line-height: 1.6;
   text-align: justify;
   overflow-y: auto;
   overflow-x: hidden;
   word-break: break-word;
   white-space: normal;
-  max-height: 240px; /* prevents description from breaking layout */
+  max-height: 240px;
   padding-right: 0.5rem;
+  color: var(--text-secondary, #b0b0b0);
 }
 
 /* Scrollbar styling */
@@ -71,34 +96,38 @@
 .tags-wrapper {
   display: flex;
   flex-direction: row;
-  gap: 2rem;
-  max-width: 900px;       /* keeps everything contained */
-  margin: 1rem auto;
-  padding: 1.5rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-  font-family: "Arial", sans-serif;
-  color: var(--main-text, #fff);
-  overflow: scroll;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  max-width: 900px;
+  margin: 1.5rem auto;
+  padding: 1.2rem 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-radius: var(--border-radius-lg, 14px);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  color: var(--font-color, #f5f5f5);
+  overflow-x: auto;
   overflow-y: hidden;
 }
 
 .tag-item {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--main-text, #fff);
-  padding: 0.25rem 0.7rem;
-  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(208, 54, 138, 0.2) 0%, rgba(112, 138, 212, 0.2) 100%);
+  color: var(--font-color, #f5f5f5);
+  padding: 0.35rem 0.9rem;
+  border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 500;
   white-space: nowrap;
-  cursor: default;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.25s ease;
 }
 
 .tag-item:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(208, 54, 138, 0.4) 0%, rgba(112, 138, 212, 0.4) 100%);
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(208, 54, 138, 0.2);
 }
 
 /* Scrollbar for tags (horizontal) */
@@ -124,25 +153,31 @@
   max-width: 900px;
   margin: 2rem auto;
   padding: 1.5rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-radius: var(--border-radius-lg, 14px);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .chapter-title {
   font-size: 1.8rem;
-  margin-bottom: 1rem;
+  font-weight: 700;
+  margin-bottom: 1.2rem;
   text-align: center;
+  background: linear-gradient(90deg, #d0368a 0%, #708ad4 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
 }
 
 /* Grid for chapters: 3 columns */
 .chapter-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* exactly 3 columns */
-  gap: 0.5rem;
-  max-height: 300px; /* adjust as needed */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  max-height: 320px;
   overflow-y: auto;
-  padding-right: 0.5rem; /* space for scrollbar */
+  padding-right: 0.5rem;
 }
 
 /* Scrollbar styling */
@@ -161,22 +196,25 @@
 
 .chapter-item {
   text-decoration: none;
-  color: var(--main-text, #fff);
-  background-color: rgba(255, 255, 255, 0.08);
-  padding: 0.8rem;
-  border-radius: 6px;
+  color: var(--font-color, #f5f5f5);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+  padding: 0.9rem;
+  border-radius: var(--border-radius-sm, 6px);
   font-weight: 500;
   text-align: center;
-  height: 50px;           /* fixed height */
+  height: 50px;
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: background 0.2s ease, transform 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.25s ease;
 }
 
 .chapter-item:hover {
-  background-color: rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, rgba(208, 54, 138, 0.2) 0%, rgba(112, 138, 212, 0.2) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-color: rgba(112, 138, 212, 0.3);
 }
 
 /* Mobile: keep 2 columns */

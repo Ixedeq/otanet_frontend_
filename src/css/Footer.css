@@ -1,7 +1,25 @@
 .footer {
-    background: var(--header-color);
-    color: white;
-    text-align: center;
-    padding: 1rem;
-  }
+  background: linear-gradient(180deg, var(--header-color) 0%, #0a0a0a 100%);
+  color: var(--text-secondary, #b0b0b0);
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border-top: 1px solid rgba(85, 83, 181, 0.3);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
+.footer a {
+  color: var(--accent-pink, #d0368a);
+  text-decoration: none;
+  transition: color var(--transition-fast, 0.15s ease);
+}
+
+.footer a:hover {
+  color: var(--accent-purple, #708ad4);
+  text-decoration: underline;
+}
+
+.footer p {
+  margin: 0.3rem 0;
+}
   
