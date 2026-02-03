@@ -479,65 +479,102 @@ def search_by_tags():
 @app.route('/get_recommendations')
 def get_recommendations():
     """Get manga recommendations based on provided tags, excluding specified manga slugs"""
-    tags_param = request.args.get('tags', '')
-    exclude_slugs = request.args.get('exclude', '')
-    limit = int(request.args.get('limit', 10))
-    
-    if not tags_param:
-        return jsonify([])
-    
-    tags = [t.strip() for t in tags_param.split(',') if t.strip()]
-    exclude_list = [s.strip() for s in exclude_slugs.split(',') if s.strip()]
-    
-    if not tags:
-        return jsonify([])
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Build query to find manga matching ANY of the tags, scored by how many tags match
-    # Using CASE statements to count matching tags (case-insensitive)
-    tag_conditions = " + ".join([f"(CASE WHEN LOWER(tags) LIKE LOWER('%{tag}%') THEN 1 ELSE 0 END)" for tag in tags])
-    
-    sql = f"""
-        SELECT title, description, tags, hash, cover_img, 
-               ({tag_conditions}) as tag_score
-        FROM manga_metadata
-        WHERE ({" OR ".join([f"LOWER(tags) LIKE LOWER('%{tag}%')" for tag in tags])})
-        ORDER BY tag_score DESC, RANDOM()
-        LIMIT ?
-    """
-    
-    cursor.execute(sql, (limit + len(exclude_list),))  # Fetch extra to account for exclusions
-    rows = cursor.fetchall()
-    conn.close()
-    
-    data = []
-    for row in rows:
-        title = row[0]
-        slug = title.lower()
-        slug = ''.join(c if c.isalnum() or c == ' ' else '' for c in slug)
-        slug = '-'.join(slug.split())
+    try:
+        tags_param = request.args.get('tags', '')
+        exclude_slugs = request.args.get('exclude', '')
+        limit = int(request.args.get('limit', 10))
         
-        # Skip excluded slugs
-        if slug in exclude_list:
-            continue
+        if not tags_param:
+            return jsonify([])
+        
+        # Clean up tags - remove quotes, brackets, and other special characters
+        # Tags might come in various formats from the DB/frontend
+        cleaned_tags_param = tags_param.replace('[', '').replace(']', '').replace('"', '').replace("'", '')
+        tags = [t.strip() for t in cleaned_tags_param.split(',') if t.strip()]
+        exclude_list = [s.strip() for s in exclude_slugs.split(',') if s.strip()]
+        
+        if not tags:
+            return jsonify([])
+        
+        # Remove duplicate tags (case-insensitive)
+        seen = set()
+        unique_tags = []
+        for tag in tags:
+            lower_tag = tag.lower()
+            if lower_tag not in seen:
+                seen.add(lower_tag)
+                unique_tags.append(tag)
+        tags = unique_tags
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Build query using parameterized queries to prevent SQL injection
+        # Create placeholders for each tag pattern
+        tag_patterns = [f'%{tag}%' for tag in tags]
+        
+        # Build CASE statements with parameter placeholders
+        case_parts = []
+        where_parts = []
+        params = []
+        
+        for i, pattern in enumerate(tag_patterns):
+            case_parts.append(f"(CASE WHEN LOWER(tags) LIKE LOWER(?) THEN 1 ELSE 0 END)")
+            where_parts.append(f"LOWER(tags) LIKE LOWER(?)")
+            params.append(pattern)
+        
+        # Duplicate params for WHERE clause
+        params.extend(tag_patterns)
+        
+        tag_conditions = " + ".join(case_parts)
+        where_conditions = " OR ".join(where_parts)
+        
+        sql = f"""
+            SELECT title, description, tags, hash, cover_img, 
+                   ({tag_conditions}) as tag_score
+            FROM manga_metadata
+            WHERE ({where_conditions})
+            ORDER BY tag_score DESC, RANDOM()
+            LIMIT ?
+        """
+        
+        params.append(limit + len(exclude_list))  # Fetch extra to account for exclusions
+        cursor.execute(sql, params)
+        rows = cursor.fetchall()
+        conn.close()
+    
+        data = []
+        for row in rows:
+            title = row[0]
+            slug = title.lower()
+            slug = ''.join(c if c.isalnum() or c == ' ' else '' for c in slug)
+            slug = '-'.join(slug.split())
             
-        orig_cover = row[4] or NOCOVER
-        proxied_cover = generate_proxied_image_url(orig_cover)
-        data.append({
-            "title": title, 
-            "description": row[1], 
-            "tags": row[2],
-            "hash": row[3],
-            "cover_img": proxied_cover,
-            "score": row[5]  # How many tags matched
-        })
+            # Skip excluded slugs
+            if slug in exclude_list:
+                continue
+                
+            orig_cover = row[4] or NOCOVER
+            proxied_cover = generate_proxied_image_url(orig_cover)
+            data.append({
+                "title": title, 
+                "description": row[1], 
+                "tags": row[2],
+                "hash": row[3],
+                "cover_img": proxied_cover,
+                "score": row[5]  # How many tags matched
+            })
+            
+            if len(data) >= limit:
+                break
         
-        if len(data) >= limit:
-            break
+        return jsonify(data)
     
-    return jsonify(data)
+    except Exception as e:
+        print(f"Error in get_recommendations: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
