@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
+import { FaTag } from "react-icons/fa";
+import TagSelector from "./TagSelector";
 
 export default function SearchBox() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [showTagSelector, setShowTagSelector] = useState(false);
   const inputRef = useRef(null);
   const containerRef = useRef(null);
   const navigate = useNavigate();
@@ -34,6 +38,7 @@ export default function SearchBox() {
   // Close search when route changes
   useEffect(() => {
     setSearchOpen(false);
+    setShowTagSelector(false);
   }, [location.pathname]);
 
   const handleSearch = useCallback(() => {
@@ -61,54 +66,71 @@ export default function SearchBox() {
 
   const handleButtonClick = () => {
     if (!searchOpen) {
-      // First click opens the search
       setSearchOpen(true);
     } else if (searchValue.trim() !== "") {
-      // If open and has value, search
       handleSearch();
     } else {
-      // If open but empty, focus input
       inputRef.current?.focus();
     }
+  };
+
+  const openTagSelector = () => {
+    setShowTagSelector(true);
   };
 
   const handleMouseEnter = () => setSearchOpen(true);
 
   const handleMouseLeave = () => {
-    // Only close if not focused and no value
     if (document.activeElement !== inputRef.current && searchValue === "") {
       setSearchOpen(false);
     }
   };
 
   return (
-    <div
-      ref={containerRef}
-      className={`searchBox ${searchOpen ? "open" : ""}`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder="Search manga..."
-        className="searchInput"
-        onKeyDown={handleKeyDown}
-        onFocus={() => setSearchOpen(true)}
-        value={searchValue}
-        onChange={(e) => setSearchValue(e.target.value)}
-        aria-label="Search manga"
-        autoComplete="off"
-        spellCheck="false"
-      />
-      <button
-        className="searchButton"
-        onClick={handleButtonClick}
-        aria-label={searchOpen ? "Submit search" : "Open search"}
-        type="button"
+    <>
+      <div
+        ref={containerRef}
+        className={`searchBox ${searchOpen ? "open" : ""}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
-        <FiSearch size={20} color="white" />
-      </button>
-    </div>
+        {searchOpen && (
+          <button
+            className="search-mode-toggle"
+            onClick={openTagSelector}
+            title="Search by tags"
+            type="button"
+          >
+            <FaTag size={14} />
+          </button>
+        )}
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder="Search manga..."
+          className="searchInput"
+          onKeyDown={handleKeyDown}
+          onFocus={() => setSearchOpen(true)}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          aria-label="Search manga"
+          autoComplete="off"
+          spellCheck="false"
+        />
+        <button
+          className="searchButton"
+          onClick={handleButtonClick}
+          aria-label={searchOpen ? "Submit search" : "Open search"}
+          type="button"
+        >
+          <FiSearch size={20} color="white" />
+        </button>
+      </div>
+      
+      {showTagSelector && createPortal(
+        <TagSelector onClose={() => setShowTagSelector(false)} />,
+        document.body
+      )}
+    </>
   );
 }

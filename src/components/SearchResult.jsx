@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import PaginationControls from "./components/PaginationControls";
 import MangaCard from "./components/MangaCard";
 import API_BASE from "./Config";
+import ErrorPage from "./ErrorPage";
 
 export default function SearchResult() {
    const { search } = useParams();
@@ -53,7 +54,7 @@ export default function SearchResult() {
           />
         ))
       ) : (
-        <div className="search-empty">No results found for "{search}"</div>
+        <ErrorPage type="no-manga" message={`No results found for "${search}"`} />
       )}
       {totalPages > 1 && (
         <PaginationControls

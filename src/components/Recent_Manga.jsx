@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import MangaCard from "./components/MangaCard";
 import MangaSkeleton from "./components/MangaSkeleton";
 import PaginationControls from "./components/PaginationControls";
+import ErrorPage from "./ErrorPage";
 import "../css/Recent_Manga.css";
 import API_BASE from "./Config.js";
 
@@ -13,6 +14,7 @@ export default function Recent_Manga() {
   const [manga, setManga] = useState([]);
   const [mangaCount, setMangaCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState(false);
   const itemsPerPage = 10;
   const currentPage = Number(page) || 1;
 
@@ -31,32 +33,35 @@ export default function Recent_Manga() {
   };
   // ---------------------------------
 
+  const fetchData = async () => {
+    setLoading(true);
+    setConnectionError(false);
+    try {
+      const res = await fetch(`${API_BASE}/recent_manga?page=${currentPage}`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      setManga(data);
+    } catch (err) {
+      console.error(err);
+      setConnectionError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMangaCount = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/manga_count`);
+      if (!res.ok) throw new Error("Failed to fetch count");
+      const data = await res.json();
+      setMangaCount(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    const fetchManga = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_BASE}/recent_manga?page=${currentPage}`);
-        const data = await res.json();
-        setManga(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-
-    const fetchMangaCount = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/manga_count`);
-        const data = await res.json();
-        setMangaCount(data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchManga();
+    fetchData();
     fetchMangaCount();
     window.scrollTo(0, 0);
   }, [currentPage]);
@@ -68,6 +73,10 @@ export default function Recent_Manga() {
   const goNext = () =>
     navigate(`/recent/${Math.min(currentPage + 1, totalPages)}`);
   const goPrev = () => navigate(`/recent/${Math.max(currentPage - 1, 1)}`);
+
+  if (connectionError) {
+    return <ErrorPage type="no-connection" message="Unable to connect to the database. The server may be down." onRetry={fetchData} />;
+  }
 
   return (
     <div className="manga-list">

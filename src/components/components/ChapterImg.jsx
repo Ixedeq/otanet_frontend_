@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 
 export default function ChapterImg({ src, alt, onOpenFullscreen, index }) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleDoubleClick = (e) => {
     e.preventDefault();
@@ -9,10 +11,23 @@ export default function ChapterImg({ src, alt, onOpenFullscreen, index }) {
 
   return (
     <div
-      className="chapter-img-wrapper"
+      className={`chapter-img-wrapper ${imageLoaded ? 'loaded' : ''}`}
       onDoubleClick={handleDoubleClick}
     >
-      <img src={src} alt={alt} className="chapter-img" draggable={false} />
+      {!imageLoaded && !imageError && <div className="chapter-img-skeleton" />}
+      <img 
+        src={src} 
+        alt={alt} 
+        className={`chapter-img ${imageLoaded ? 'loaded' : ''}`}
+        draggable={false}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setImageLoaded(true)}
+        onError={() => {
+          setImageError(true);
+          setImageLoaded(true);
+        }}
+      />
     </div>
   );
 }

@@ -49,17 +49,33 @@ def _infer_proxy_base_from_db(db_path=None):
 PROXY_BASE_URL = os.environ.get('PROXY_BASE_URL') or _infer_proxy_base_from_db() or 'https://proxy.example.com'
 # Directory containing per-manga sqlite DBs. Default is the api folder where this file lives.
 MANGA_DB_DIR = os.environ.get('MANGA_DB_DIR', os.path.dirname(__file__))
+
+# Dev mode detection - skip S3 downloads and use local DB
+DEV_MODE = os.environ.get('FLASK_ENV') == 'development' or os.environ.get('DEV_MODE') == '1'
+
+# Local DB path (in the api folder)
+LOCAL_DB_PATH = os.path.join(os.path.dirname(__file__), 'otanet_devo.db')
+
 CONFIG = Config(signature_version='s3v4')
 S3CLIENT = boto3.client('s3', region_name='us-east-1', config=CONFIG)
+
+def get_db_connection():
+    """Get database connection - uses local DB in dev mode, downloads from S3 in production"""
+    if DEV_MODE:
+        # Use local DB directly
+        return sqlite3.connect(LOCAL_DB_PATH)
+    else:
+        # Download from S3 and use
+        S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', DATABASE)
+        return sqlite3.connect(DATABASE)
 
 # GET recent manga (title + description)
 @app.route('/recent_manga', methods=['GET'])
 def recent_manga():
-    S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', 'otanet_devo.db')
     items_per_page = 10
     page = int(request.args.get('page', 1))
     offset = (page-1) * items_per_page
-    con = sqlite3.connect(DATABASE)
+    con = get_db_connection()
     cursor = con.cursor()
     cursor.execute(
         "SELECT title, description, hash, cover_img FROM manga_metadata ORDER BY time DESC LIMIT ? OFFSET ?",
@@ -124,13 +140,36 @@ def get_cover():
 
 @app.route('/manga_count', methods=['GET'])
 def manga_count():
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     cursor = conn.cursor()
     sql = "SELECT COUNT(*) FROM manga_metadata;"
     cursor.execute(sql)
     total_rows = cursor.fetchone()[0]
     conn.close()
     return jsonify(total_rows)
+
+# GET all unique tags
+@app.route('/get_all_tags', methods=['GET'])
+def get_all_tags():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT tags FROM manga_metadata WHERE tags IS NOT NULL AND tags != ''")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    # Parse all tags from the database
+    all_tags = set()
+    for row in rows:
+        tags_str = row[0]
+        if tags_str:
+            # Handle different tag formats: ['tag1', 'tag2'] or tag1, tag2
+            cleaned = tags_str.replace("[", "").replace("]", "").replace("'", "").replace('"', '')
+            tags_list = [t.strip() for t in cleaned.split(",") if t.strip()]
+            all_tags.update(tags_list)
+    
+    # Sort alphabetically
+    sorted_tags = sorted(list(all_tags), key=str.lower)
+    return jsonify(sorted_tags)
 
 # GET single manga by slug (title -> slug)
 def to_slug(title):
@@ -177,7 +216,7 @@ def generate_proxied_image_url(image_url):
 
 @app.route("/<slug>", methods=["GET"])
 def get_manga_by_slug(slug):
-    con = sqlite3.connect(DATABASE)
+    con = get_db_connection()
     cursor = con.cursor()
 
     # Normalize slug back to search pattern
@@ -218,7 +257,7 @@ def get_manga_by_slug(slug):
 @app.route('/search_by_title', methods=['GET'])
 def search_by_title():
     query = request.args.get('title', '')
-    con = sqlite3.connect(DATABASE)
+    con = get_db_connection()
     cursor = con.cursor()
     cursor.execute(
         "SELECT title, description, hash, cover_img FROM manga_metadata WHERE title LIKE ?",
@@ -244,7 +283,7 @@ def get_chapters():
     if not os.path.exists(db_path):
         # Fallback: try to infer chapters from the main database (e.g. tables named by hash)
         try:
-            main_con = sqlite3.connect(DATABASE)
+            main_con = get_db_connection()
             main_cur = main_con.cursor()
             # Find the hash for this title
             print(hash)
@@ -353,7 +392,7 @@ def get_pages():
     chapter = chapter.replace("-", '_')
     title = request.args.get('title')
 
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     sql = f"""SELECT DISTINCT page_number, page_url FROM [{hash_copy}]  WHERE chapter_num = '{chapter}'"""
@@ -389,7 +428,7 @@ def search_by_tags():
         exclude_tags = []
 
     sql = f"""
-            SELECT title, description, tags FROM manga_metadata
+            SELECT title, description, tags, hash, cover_img FROM manga_metadata
             WHERE tags like '%{include_tags[0]}%'
           """
     include_tags.pop(0)
@@ -400,17 +439,94 @@ def search_by_tags():
     for tag in exclude_tags:
         sql = sql + f"AND tags not like '%{tag}%'"
 
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(sql)
     rows = cursor.fetchall()
-    data = [{"title": row[0], "description": row[1], "tags": row[2]} for row in rows]
-    conn.close
+    data = []
+    for row in rows:
+        orig_cover = row[4] or NOCOVER
+        proxied_cover = generate_proxied_image_url(orig_cover)
+        data.append({
+            "title": row[0], 
+            "description": row[1], 
+            "tags": row[2],
+            "hash": row[3],
+            "cover_img": proxied_cover
+        })
+    conn.close()
+    return jsonify(data)
+
+
+@app.route('/get_recommendations')
+def get_recommendations():
+    """Get manga recommendations based on provided tags, excluding specified manga slugs"""
+    tags_param = request.args.get('tags', '')
+    exclude_slugs = request.args.get('exclude', '')
+    limit = int(request.args.get('limit', 10))
+    
+    if not tags_param:
+        return jsonify([])
+    
+    tags = [t.strip() for t in tags_param.split(',') if t.strip()]
+    exclude_list = [s.strip() for s in exclude_slugs.split(',') if s.strip()]
+    
+    if not tags:
+        return jsonify([])
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Build query to find manga matching ANY of the tags, scored by how many tags match
+    # Using CASE statements to count matching tags (case-insensitive)
+    tag_conditions = " + ".join([f"(CASE WHEN LOWER(tags) LIKE LOWER('%{tag}%') THEN 1 ELSE 0 END)" for tag in tags])
+    
+    sql = f"""
+        SELECT title, description, tags, hash, cover_img, 
+               ({tag_conditions}) as tag_score
+        FROM manga_metadata
+        WHERE ({" OR ".join([f"LOWER(tags) LIKE LOWER('%{tag}%')" for tag in tags])})
+        ORDER BY tag_score DESC, RANDOM()
+        LIMIT ?
+    """
+    
+    cursor.execute(sql, (limit + len(exclude_list),))  # Fetch extra to account for exclusions
+    rows = cursor.fetchall()
+    conn.close()
+    
+    data = []
+    for row in rows:
+        title = row[0]
+        slug = title.lower()
+        slug = ''.join(c if c.isalnum() or c == ' ' else '' for c in slug)
+        slug = '-'.join(slug.split())
+        
+        # Skip excluded slugs
+        if slug in exclude_list:
+            continue
+            
+        orig_cover = row[4] or NOCOVER
+        proxied_cover = generate_proxied_image_url(orig_cover)
+        data.append({
+            "title": title, 
+            "description": row[1], 
+            "tags": row[2],
+            "hash": row[3],
+            "cover_img": proxied_cover,
+            "score": row[5]  # How many tags matched
+        })
+        
+        if len(data) >= limit:
+            break
+    
     return jsonify(data)
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', threaded=True, debug=True, port=8000)
+    # Run in dev mode by default when running directly
+    os.environ['DEV_MODE'] = '1'
+    print("🚀 Running Flask in DEVELOPMENT mode - using local database")
+    app.run(host='0.0.0.0', threaded=True, debug=True, port=5001)
 
 
 

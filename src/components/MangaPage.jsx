@@ -4,6 +4,8 @@ import { FiStar } from "react-icons/fi";
 import { FaStar } from "react-icons/fa";
 import "../css/MangaPage.css";
 import API_BASE from "./Config";
+import ErrorPage from "./ErrorPage";
+import { getTagStyle } from "./utils/tagColors";
 
 const DEFAULT_COVER =
   "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
@@ -13,12 +15,25 @@ export default function MangaPage() {
   const [manga, setManga] = useState(null);
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState(false);
 
   // --- Read chapters tracking ---
   const [readChapters, setReadChapters] = useState(() => {
     const saved = localStorage.getItem(`${slug}-readChapters`);
     return saved ? JSON.parse(saved) : [];
   });
+
+  // --- Theme detection for tag colors ---
+  const [isLightMode, setIsLightMode] = useState(false);
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsLightMode(document.documentElement.getAttribute("data-theme") === "light");
+    };
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
 
   // Listen for updates from ChapterPage
   useEffect(() => {
@@ -61,26 +76,28 @@ export default function MangaPage() {
   };
 
   // --- Fetch chapters and manga ---
-  useEffect(() => {
-    const fetchChapters = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/get_chapters?hash=${hash}`);
-        if (!res.ok) throw new Error("Chapters not found!");
-        const data = await res.json();
-        setChapters(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    setLoading(true);
+    setConnectionError(false);
+    
+    try {
+      const [chaptersRes, mangaRes] = await Promise.all([
+        fetch(`${API_BASE}/get_chapters?hash=${hash}`),
+        fetch(`${API_BASE}/${slug}`)
+      ]);
+      
+      if (!chaptersRes.ok && !mangaRes.ok) {
+        throw new Error("Connection failed");
       }
-    };
-
-    const fetchManga = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/${slug}`);
-        if (!res.ok) throw new Error("Manga not found");
-        const data = await res.json();
-
+      
+      if (chaptersRes.ok) {
+        const chaptersData = await chaptersRes.json();
+        setChapters(chaptersData);
+      }
+      
+      if (mangaRes.ok) {
+        const data = await mangaRes.json();
+        
         if (!data.cover) data.cover = DEFAULT_COVER;
 
         // normalize tags
@@ -102,19 +119,22 @@ export default function MangaPage() {
         );
 
         setManga(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error(err);
+      setConnectionError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchChapters();
-    fetchManga();
-  }, [slug]);
+  useEffect(() => {
+    fetchData();
+  }, [slug, hash]);
 
-  if (loading) return <div>Loading...</div>;
-  if (!manga) return <div>Manga not found</div>;
+  if (loading) return <div className="loading-state">Loading...</div>;
+  if (connectionError) return <ErrorPage type="no-connection" message="Unable to connect to the database. The server may be down." onRetry={fetchData} />;
+  if (!manga) return <ErrorPage type="no-manga" message="This manga could not be found or doesn't exist." />;
 
   return (
     <>
@@ -141,7 +161,11 @@ export default function MangaPage() {
       <div className="tags-wrapper">
         {manga.tags.length > 0 ? (
           manga.tags.map((tag, idx) => (
-            <span key={idx} className="tag-item">
+            <span 
+              key={idx} 
+              className="tag-item"
+              style={getTagStyle(tag, isLightMode)}
+            >
               {tag}
             </span>
           ))
