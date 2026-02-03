@@ -96,10 +96,19 @@ export default function ChapterPage() {
       ? chapters[currentIndex + 1]
       : null;
 
+  // Store scroll position before entering fullscreen
+  const scrollPositionRef = useRef(0);
+
   // --- Fullscreen toggle ---
   const toggleFullscreen = (index = null) => {
-    if (!fullscreen && index !== null) setFullscreenIndex(index);
-    else setFullscreenIndex(null);
+    if (!fullscreen) {
+      // Entering fullscreen - save current scroll position
+      scrollPositionRef.current = window.scrollY;
+      if (index !== null) setFullscreenIndex(index);
+    } else {
+      // Exiting fullscreen
+      setFullscreenIndex(null);
+    }
     setFullscreen((prev) => !prev);
   };
 
@@ -107,13 +116,13 @@ export default function ChapterPage() {
   useEffect(() => {
     if (fullscreen) {
       document.body.style.overflow = "hidden";
-      window.scrollTo(0, 0);
     } else {
       document.body.style.overflow = "";
-      if (pageContainerRef.current) {
-        const container = pageContainerRef.current;
-        container.scrollTop = container.scrollHeight;
-        window.scrollTo(0, container.scrollHeight);
+      // Restore scroll position after exiting fullscreen
+      if (scrollPositionRef.current > 0) {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, scrollPositionRef.current);
+        });
       }
     }
     return () => (document.body.style.overflow = "");
@@ -129,29 +138,56 @@ export default function ChapterPage() {
 
   return (
     <div
-      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""}`}
+      className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""} ${horizontalScroll && !fullscreen ? "horizontal-mode" : ""}`}
       ref={pageContainerRef}
     >
-      <Link to="/" className="back-link">
-        ← Back to Home
-      </Link>
-
-      <Link to={`/${slug}`}>
-        <h1 className="chapter-title">
-          {mangaTitle} – Chapter {chapterNumberStr}
-        </h1>
-      </Link>
-
       {!fullscreen && (
-        <button
-          className="toggle-scroll-btn"
-          onClick={() => setHorizontalScroll((prev) => !prev)}
-        >
-          {horizontalScroll ? "Vertical Scroll" : "Horizontal Scroll"}
-        </button>
+        <div className="chapter-header">
+          <Link to={`/${slug}`} className="back-link">
+            ← {mangaTitle}
+          </Link>
+          <h1 className="chapter-title">Chapter {chapterNumberStr}</h1>
+          <div className="header-right">
+            <button
+              className="toggle-scroll-btn"
+              onClick={() => setHorizontalScroll((prev) => !prev)}
+              title={horizontalScroll ? "Switch to vertical scroll" : "Switch to horizontal scroll"}
+            >
+              {horizontalScroll ? "↕" : "↔"}
+            </button>
+          </div>
+        </div>
       )}
 
-      {loadingPages && <p>Loading pages...</p>}
+      {!fullscreen && (
+        <div className="chapter-navigation top-nav">
+          {prevChapter ? (
+            <Link
+              to={`/read/${slug}/${hash}/chapter-${prevChapter.numberStr.replace(/\./g, "-")}`}
+              className="nav-btn prev"
+              onClick={() => markChapterAsRead(parseFloat(prevChapter.numberStr))}
+            >
+              ‹ Prev
+            </Link>
+          ) : (
+            <span className="nav-btn prev disabled">‹ Prev</span>
+          )}
+          <span className="nav-chapter-indicator">Ch. {chapterNumberStr}</span>
+          {nextChapter ? (
+            <Link
+              to={`/read/${slug}/${hash}/chapter-${nextChapter.numberStr.replace(/\./g, "-")}`}
+              className="nav-btn next"
+              onClick={() => markChapterAsRead(parseFloat(nextChapter.numberStr))}
+            >
+              Next ›
+            </Link>
+          ) : (
+            <span className="nav-btn next disabled">Next ›</span>
+          )}
+        </div>
+      )}
+
+      {loadingPages && <p className="loading-text">Loading pages...</p>}
 
       <div
         className={`chapter-images ${
@@ -175,15 +211,32 @@ export default function ChapterPage() {
         ))}
       </div>
 
-      <ChapterNavigation
-        slug={slug}
-        hash={hash}
-        chapters={chapters}
-        currentChapterNumberStr={chapterNumberStr}
-        prevChapter={prevChapter}
-        nextChapter={nextChapter}
-        markChapterAsRead={markChapterAsRead}
-      />
+      {!fullscreen && (
+        <div className="chapter-navigation bottom-nav">
+          {prevChapter ? (
+            <Link
+              to={`/read/${slug}/${hash}/chapter-${prevChapter.numberStr.replace(/\./g, "-")}`}
+              className="nav-btn prev"
+              onClick={() => markChapterAsRead(parseFloat(prevChapter.numberStr))}
+            >
+              ← Previous Chapter
+            </Link>
+          ) : (
+            <span className="nav-btn prev disabled">← Previous Chapter</span>
+          )}
+          {nextChapter ? (
+            <Link
+              to={`/read/${slug}/${hash}/chapter-${nextChapter.numberStr.replace(/\./g, "-")}`}
+              className="nav-btn next"
+              onClick={() => markChapterAsRead(parseFloat(nextChapter.numberStr))}
+            >
+              Next Chapter →
+            </Link>
+          ) : (
+            <span className="nav-btn next disabled">Next Chapter →</span>
+          )}
+        </div>
+      )}
 
       {!horizontalScroll && <div className="chapter-bottom-spacer" />}
     </div>

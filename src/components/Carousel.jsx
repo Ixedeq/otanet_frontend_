@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import "../css/Carousel.css";
 import API_BASE from "./Config";
 import ErrorPage from "./ErrorPage";
@@ -48,6 +49,7 @@ export default function Carousel() {
       setConnectionError(false);
       return data.map((m) => ({
         slug: m.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        hash: m.hash,
         title: m.title,
         cover: m.cover_img,
       }));
@@ -111,6 +113,7 @@ export default function Carousel() {
 
       return data.map((m) => ({
         slug: m.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        hash: m.hash,
         title: m.title,
         cover: m.cover_img,
         score: m.score || 0,
@@ -163,14 +166,14 @@ export default function Carousel() {
   return (
     <div className="carousel-wrapper">
       <div className="carousel-label">
-        <span>{isPersonalized ? "✨ Recommended for you" : "📚 Discover manga"}</span>
+        <span>{isPersonalized ? "Recommended for you" : "Discover manga"}</span>
       </div>
       <div className="carousel-container" ref={scrollRef}>
-        {[...mangaList, ...mangaList].map(({ slug, title, cover }, index) => (
-          <a key={index} href={`/${slug}`} className="carousel-item">
+        {[...mangaList, ...mangaList].map(({ slug, hash, title, cover }, index) => (
+          <Link key={index} to={`/${slug}/${hash}`} className="carousel-item">
             <img src={cover} alt={title} className="carousel-cover" />
             <div className="carousel-title">{title}</div>
-          </a>
+          </Link>
         ))}
       </div>
     </div>

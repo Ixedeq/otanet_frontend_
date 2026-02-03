@@ -95,15 +95,32 @@ def recent_manga():
 @app.route('/image/<hash_id>/<filename>', methods=['GET'])
 def fetch_proxied_image(hash_id, filename):
     try:
-        # Try cover URL first
-        cover_url = f"https://uploads.mangadex.org/covers/{hash_id}/{filename}"
-        print(f"Trying cover URL: {cover_url}")
+        # Remove size suffix to get full quality image (e.g., file.jpg.512.jpg -> file.jpg)
+        full_quality_filename = filename
+        for suffix in ['.512.jpg', '.256.jpg', '.512.png', '.256.png']:
+            if filename.endswith(suffix):
+                full_quality_filename = filename.replace(suffix, '')
+                break
+        
+        # Try full quality cover URL first
+        cover_url = f"https://uploads.mangadex.org/covers/{hash_id}/{full_quality_filename}"
+        print(f"Trying full quality cover URL: {cover_url}")
         
         response = requests.get(
             cover_url,
             headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
             timeout=10
         )
+        
+        # If full quality fails, try original filename
+        if response.status_code != 200 and full_quality_filename != filename:
+            cover_url = f"https://uploads.mangadex.org/covers/{hash_id}/{filename}"
+            print(f"Full quality failed, trying original: {cover_url}")
+            response = requests.get(
+                cover_url,
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
+                timeout=10
+            )
         
         # If cover fetch fails, try CDN
         if response.status_code != 200:
@@ -124,6 +141,7 @@ def fetch_proxied_image(hash_id, filename):
             mimetype=content_type
         )
         img_response.headers['Access-Control-Allow-Origin'] = '*'
+        img_response.headers['Cache-Control'] = 'public, max-age=86400'  # Cache for 24 hours
         
         return img_response
         

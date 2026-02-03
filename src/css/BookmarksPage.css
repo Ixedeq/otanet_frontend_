@@ -160,3 +160,56 @@
 [data-theme="light"] .bookmarks-description-text {
   color: #6b7280;
 }
+
+/* Bookmark remove button */
+.bookmark-card {
+  position: relative;
+}
+
+.bookmark-remove-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  background: rgba(30, 30, 30, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #ffd700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+  z-index: 5;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+}
+
+.bookmark-remove-btn svg {
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.bookmark-remove-btn:hover {
+  transform: scale(1.15);
+  border-color: rgba(255, 215, 0, 0.4);
+  background: rgba(40, 40, 40, 0.95);
+  box-shadow: 0 4px 24px rgba(255, 215, 0, 0.3);
+}
+
+.bookmark-remove-btn:hover svg {
+  transform: rotate(15deg);
+}
+
+[data-theme="light"] .bookmark-remove-btn {
+  background: #f3f4f6;
+  border-color: rgba(208, 54, 138, 0.3);
+  color: #d0368a;
+}
+
+[data-theme="light"] .bookmark-remove-btn:hover {
+  background: #e5e7eb;
+}

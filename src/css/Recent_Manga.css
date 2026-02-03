@@ -60,8 +60,8 @@
 /* Image loading wrapper */
 .manga-thumb-wrapper {
   position: relative;
-  flex: 0 0 120px;
-  width: 120px;
+  flex: 0 0 140px;
+  width: 140px;
   aspect-ratio: 2 / 3;
   border-radius: var(--border-radius-sm, 8px);
   overflow: hidden;
@@ -92,8 +92,8 @@
 }
 
 .manga-thumb {
-  flex: 0 0 120px;
-  width: 120px;
+  flex: 0 0 140px;
+  width: 140px;
   height: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
@@ -102,6 +102,9 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0;
+  /* Better image quality */
+  image-rendering: auto;
+  -webkit-font-smoothing: antialiased;
 }
 
 .manga-thumb.loaded {
@@ -379,14 +382,45 @@
   color: #6b7280;
 }
 
+/* Larger screens - bigger thumbnails */
+@media (min-width: 1200px) {
+  .manga-thumb-wrapper {
+    flex: 0 0 160px;
+    width: 160px;
+  }
+
+  .manga-thumb {
+    flex: 0 0 160px;
+    width: 160px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .manga-thumb-wrapper {
+    flex: 0 0 180px;
+    width: 180px;
+  }
+
+  .manga-thumb {
+    flex: 0 0 180px;
+    width: 180px;
+  }
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .manga-list {
     padding-left: 0.5rem;
   }
 
+  .manga-thumb-wrapper {
+    flex: 0 0 100px;
+    width: 100px;
+  }
+
   .manga-thumb {
-    flex: 0 0 30%;
+    flex: 0 0 100px;
+    width: 100px;
   }
 
   .manga-info {

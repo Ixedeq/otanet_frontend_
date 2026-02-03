@@ -3,6 +3,14 @@
   box-sizing: border-box;
 }
 
+/* Fix Chrome pixelated image rendering */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
 /* Normalize form elements across browsers */
 button, input, optgroup, select, textarea {
   font-family: inherit;
@@ -47,10 +55,59 @@ a {
   color: inherit;
 }
 
-/* Firefox scrollbar styling */
+/* ============================= */
+/* Custom Scrollbar - All Browsers */
+/* ============================= */
+
+/* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  scrollbar-color: #d0368a #1a1a1a;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #d0368a;
+  border-radius: 5px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #e04898;
+}
+
+*::-webkit-scrollbar-corner {
+  background: #1a1a1a;
+}
+
+/* Light mode scrollbar */
+[data-theme="light"] *,
+[data-theme="light"] {
+  scrollbar-color: #d0368a #f3f4f6;
+}
+
+[data-theme="light"] *::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+[data-theme="light"] *::-webkit-scrollbar-thumb {
+  background: #d0368a;
+}
+
+[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
+  background: #e04898;
+}
+
+[data-theme="light"] *::-webkit-scrollbar-corner {
+  background: #f3f4f6;
 }
 
 :root,
@@ -104,6 +161,7 @@ a {
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -116,6 +174,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
 }
 
 main {
