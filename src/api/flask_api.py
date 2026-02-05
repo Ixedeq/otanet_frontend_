@@ -184,15 +184,84 @@ LOCAL_DB_PATH = os.path.join(os.path.dirname(__file__), 'otanet_devo.db')
 CONFIG = Config(signature_version='s3v4')
 S3CLIENT = boto3.client('s3', region_name='us-east-1', config=CONFIG)
 
-def get_db_connection():
-    """Get database connection - uses local DB in dev mode, downloads from S3 in production"""
+# Database connection pool - CRITICAL for production performance
+_db_connection_pool = None
+_db_pool_lock = threading.Lock()
+_db_last_download = None
+DB_REFRESH_INTERVAL = 300  # 5 minutes between S3 downloads
+
+def initialize_db_pool():
+    """Initialize connection pool by downloading DB once from S3"""
+    global _db_connection_pool, _db_last_download
+    
     if DEV_MODE:
-        # Use local DB directly
-        return sqlite3.connect(LOCAL_DB_PATH)
+        _db_connection_pool = sqlite3.connect(LOCAL_DB_PATH, check_same_thread=False)
+        return
+    
+    # Only download if file doesn't exist or refresh interval passed
+    should_download = False
+    if not os.path.exists(DATABASE):
+        should_download = True
+    elif _db_last_download and time.time() - _db_last_download < DB_REFRESH_INTERVAL:
+        should_download = False
+    elif _db_last_download and time.time() - _db_last_download >= DB_REFRESH_INTERVAL:
+        should_download = True
     else:
-        # Download from S3 and use
-        S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', DATABASE)
-        return sqlite3.connect(DATABASE)
+        should_download = True
+    
+    if should_download:
+        try:
+            print(f"[DB] Downloading database from S3...")
+            S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', DATABASE)
+            _db_last_download = time.time()
+            print(f"[DB] Database download complete")
+        except Exception as e:
+            print(f"[DB] Error downloading from S3: {e}")
+            # If download fails and local file exists, use it
+            if not os.path.exists(DATABASE):
+                raise
+    
+    # Create connection pool with WAL mode for better concurrency
+    conn = sqlite3.connect(DATABASE, check_same_thread=False, timeout=10)
+    conn.execute('PRAGMA journal_mode=WAL')  # Write-Ahead Logging for better concurrency
+    conn.execute('PRAGMA synchronous=NORMAL')  # Better performance
+    _db_connection_pool = conn
+
+def get_db_connection():
+    """Get database connection from pool - NEVER downloads on every call"""
+    global _db_connection_pool
+    
+    # Lazy initialization with thread-safe check
+    if _db_connection_pool is None:
+        with _db_pool_lock:
+            # Double-check inside lock
+            if _db_connection_pool is None:
+                initialize_db_pool()
+    
+    return _db_connection_pool
+
+# Background thread to refresh database every 5 minutes in production
+def _refresh_database_thread():
+    """Background thread to refresh database from S3 periodically"""
+    if DEV_MODE:
+        return
+    
+    def refresh_loop():
+        while True:
+            try:
+                time.sleep(DB_REFRESH_INTERVAL)
+                with _db_pool_lock:
+                    print(f"[DB] Background refresh triggered")
+                    initialize_db_pool()
+            except Exception as e:
+                print(f"[DB] Error in background refresh: {e}")
+    
+    thread = threading.Thread(target=refresh_loop, daemon=True)
+    thread.start()
+    print("[DB] Background refresh thread started (5 min interval)")
+
+# Start background refresh thread on app startup
+_refresh_database_thread()
 
 # GET recent manga (title + description)
 @app.route('/recent_manga', methods=['GET'])

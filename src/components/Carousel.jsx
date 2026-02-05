@@ -6,7 +6,11 @@ import ErrorPage from "./ErrorPage";
 
 // Consistent slug generation - same as MangaCard
 const toSlug = (text) =>
-  text.toLowerCase().trim().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, "-");
+  text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, "-");
 
 export default function Carousel() {
   const [mangaList, setMangaList] = useState([]);
@@ -27,18 +31,23 @@ export default function Carousel() {
   // Parse tags from various formats
   const parseTags = (tags) => {
     if (!tags) return [];
-    if (Array.isArray(tags)) return tags.map(t => t.trim()).filter(Boolean);
+    if (Array.isArray(tags)) return tags.map((t) => t.trim()).filter(Boolean);
     if (typeof tags === "string") {
       // Handle stringified array format like "['Romance', 'Comedy']"
       if (tags.startsWith("[")) {
         try {
           const parsed = JSON.parse(tags.replace(/'/g, '"'));
-          return Array.isArray(parsed) ? parsed.map(t => t.trim()).filter(Boolean) : [];
+          return Array.isArray(parsed)
+            ? parsed.map((t) => t.trim()).filter(Boolean)
+            : [];
         } catch {
           // Fall through to comma split
         }
       }
-      return tags.split(",").map(t => t.trim()).filter(Boolean);
+      return tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
     }
     return [];
   };
@@ -47,7 +56,9 @@ export default function Carousel() {
   const fetchRandomManga = async (count = 10) => {
     try {
       const page = Math.floor(Math.random() * 5) + 1;
-      const res = await fetch(`${API_BASE}/recent_manga?per_page=${count}&page=${page}`);
+      const res = await fetch(
+        `${API_BASE}/recent_manga?per_page=${count}&page=${page}`,
+      );
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setConnectionError(false);
@@ -81,7 +92,7 @@ export default function Carousel() {
           } catch {
             return [];
           }
-        })
+        }),
       );
 
       // Count tag frequency
@@ -109,7 +120,9 @@ export default function Carousel() {
       params.set("exclude", bookmarks.join(","));
       params.set("limit", "12");
 
-      const res = await fetch(`${API_BASE}/get_recommendations?${params.toString()}`);
+      const res = await fetch(
+        `${API_BASE}/get_recommendations?${params.toString()}`,
+      );
       if (!res.ok) return null;
 
       const data = await res.json();
@@ -134,7 +147,7 @@ export default function Carousel() {
 
     // Try personalized recommendations first
     const recommendations = await fetchRecommendations();
-    
+
     if (recommendations && recommendations.length > 0) {
       setMangaList(recommendations);
       setIsPersonalized(true);
@@ -153,7 +166,8 @@ export default function Carousel() {
     loadManga();
   }, []);
 
-  if (loading) return <div className="carousel-loading">Loading recommendations...</div>;
+  if (loading)
+    return <div className="carousel-loading">Loading recommendations...</div>;
 
   if (connectionError) {
     return (
@@ -165,7 +179,8 @@ export default function Carousel() {
     );
   }
 
-  if (!mangaList.length) return <div className="carousel-empty">No manga available.</div>;
+  if (!mangaList.length)
+    return <div className="carousel-empty">No manga available.</div>;
 
   return (
     <div className="carousel-wrapper">
@@ -173,8 +188,12 @@ export default function Carousel() {
         <span>{isPersonalized ? "Recommended for you" : "Discover manga"}</span>
       </div>
       <div className="carousel-container" ref={scrollRef}>
-        {[...mangaList, ...mangaList].map(({ slug, hash, title, cover }, index) => (
-          <Link key={index} to={`/${slug}/${hash}`} className="carousel-item">
+        {mangaList.map(({ slug, hash, title, cover }, index) => (
+          <Link
+            key={`${slug}-${hash}-${index}`}
+            to={`/${slug}/${hash}`}
+            className="carousel-item"
+          >
             <img src={cover} alt={title} className="carousel-cover" />
             <div className="carousel-title">{title}</div>
           </Link>

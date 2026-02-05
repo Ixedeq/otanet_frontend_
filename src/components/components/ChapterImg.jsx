@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, memo } from "react";
 import API_BASE from "../Config";
 
-export default function ChapterImg({ src, alt, onOpenFullscreen, index, priority = false }) {
+function ChapterImg({ src, alt, onOpenFullscreen, index, priority = false }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
@@ -14,13 +14,13 @@ export default function ChapterImg({ src, alt, onOpenFullscreen, index, priority
 
   // If direct CDN fails, fall back to proxy
   const handleError = () => {
-    if (!useFallback && src.includes('mangadex.network')) {
+    if (!useFallback && src.includes("mangadex.network")) {
       // Try proxy fallback
-      const parts = src.split('/data/');
+      const parts = src.split("/data/");
       if (parts.length > 1) {
         const path = parts[1];
-        const [hash, ...filenameParts] = path.split('/');
-        const filename = filenameParts.join('/');
+        const [hash, ...filenameParts] = path.split("/");
+        const filename = filenameParts.join("/");
         const proxyUrl = `${API_BASE}/image/${hash}/${filename}`;
         setUseFallback(true);
         if (imgRef.current) {
@@ -36,18 +36,18 @@ export default function ChapterImg({ src, alt, onOpenFullscreen, index, priority
   // Determine loading strategy based on position
   const isEager = priority || index < 3;
   const imageSrc = useFallback ? undefined : src; // Will be set by handleError if fallback
-  
+
   return (
     <div
-      className={`chapter-img-wrapper ${imageLoaded ? 'loaded' : ''}`}
+      className={`chapter-img-wrapper ${imageLoaded ? "loaded" : ""}`}
       onDoubleClick={handleDoubleClick}
     >
       {!imageLoaded && !imageError && <div className="chapter-img-skeleton" />}
-      <img 
+      <img
         ref={imgRef}
         src={imageSrc}
-        alt={alt} 
-        className={`chapter-img ${imageLoaded ? 'loaded' : ''}`}
+        alt={alt}
+        className={`chapter-img ${imageLoaded ? "loaded" : ""}`}
         draggable={false}
         loading={isEager ? "eager" : "lazy"}
         decoding="async"
@@ -59,3 +59,5 @@ export default function ChapterImg({ src, alt, onOpenFullscreen, index, priority
     </div>
   );
 }
+
+export default memo(ChapterImg);
