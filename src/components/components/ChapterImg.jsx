@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 
-export default function ChapterImg({ src, alt, onOpenFullscreen, index }) {
+const ChapterImg = memo(function ChapterImg({ src, alt, onOpenFullscreen, index }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -30,4 +30,6 @@ export default function ChapterImg({ src, alt, onOpenFullscreen, index }) {
       />
     </div>
   );
-}
+});
+
+export default ChapterImg;

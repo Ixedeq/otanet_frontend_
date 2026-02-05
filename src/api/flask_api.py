@@ -4,14 +4,36 @@ import sqlite3
 import os
 import re
 import json
+import time
 import boto3
 from botocore.config import Config
 import requests
 from urllib.parse import urlparse, quote as urlquote
 from io import BytesIO
+from functools import lru_cache
+import hashlib
+import threading
+from threading import Thread
 
 app = Flask(__name__)
 CORS(app)
+# Add cache for image proxy responses (max 256 cached images)
+image_cache = {}
+MAX_CACHE_SIZE = 256
+
+# Database connection pooling
+_db_connection = None
+
+def get_db_connection_cached():
+    """Get cached database connection for better performance"""
+    global _db_connection
+    if _db_connection is None:
+        if DEV_MODE:
+            _db_connection = sqlite3.connect(LOCAL_DB_PATH, check_same_thread=False)
+        else:
+            S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', DATABASE)
+            _db_connection = sqlite3.connect(DATABASE, check_same_thread=False)
+    return _db_connection
 
 DATABASE = 'otanet_devo.db'
 NOCOVER = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg'
@@ -59,15 +81,90 @@ LOCAL_DB_PATH = os.path.join(os.path.dirname(__file__), 'otanet_devo.db')
 CONFIG = Config(signature_version='s3v4')
 S3CLIENT = boto3.client('s3', region_name='us-east-1', config=CONFIG)
 
-def get_db_connection():
-    """Get database connection - uses local DB in dev mode, downloads from S3 in production"""
+# Global database connection (reused across all requests - CRITICAL for performance)
+_db_connection = None
+_db_initialized = False
+_db_lock = threading.Lock()  # Thread-safe database updates
+_background_thread = None
+
+def _download_database_background():
+    """Download database from S3 in background thread every 5 minutes"""
     if DEV_MODE:
-        # Use local DB directly
-        return sqlite3.connect(LOCAL_DB_PATH)
-    else:
-        # Download from S3 and use
-        S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', DATABASE)
-        return sqlite3.connect(DATABASE)
+        return
+    
+    print(f"🔄 Background database refresh thread started (refreshes every 5 minutes)")
+    
+    while True:
+        try:
+            time.sleep(300)  # Wait 5 minutes between downloads
+            
+            with _db_lock:
+                print(f"📥 Background refresh: Downloading database from S3...")
+                try:
+                    S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', DATABASE)
+                    print(f"✅ Background refresh: Database updated successfully")
+                except Exception as e:
+                    print(f"⚠️  Background refresh: Failed to update database: {e}")
+        except Exception as e:
+            print(f"❌ Background refresh thread error: {e}")
+            time.sleep(60)  # Wait a minute before retrying if error
+
+def _start_background_refresh():
+    """Start background thread for periodic database refresh"""
+    global _background_thread
+    if DEV_MODE:
+        return
+    
+    if _background_thread is None or not _background_thread.is_alive():
+        _background_thread = Thread(target=_download_database_background, daemon=True)
+        _background_thread.start()
+        print(f"🚀 Background database refresh thread started")
+
+def _ensure_db_downloaded():
+    """Download database from S3 if not already present - only on startup"""
+    global _db_initialized
+    if _db_initialized or DEV_MODE:
+        return
+    
+    with _db_lock:
+        # Check again inside lock in case another thread already downloaded it
+        if _db_initialized:
+            return
+        
+        print(f"📥 Initial database download from S3...")
+        try:
+            S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', DATABASE)
+            print(f"✅ Database downloaded successfully")
+            _db_initialized = True
+            
+            # Start background refresh thread after first successful download
+            _start_background_refresh()
+        except Exception as e:
+            print(f"❌ Failed to download database: {e}")
+            _db_initialized = True  # Mark as initialized anyway to avoid repeated attempts
+
+def get_db_connection():
+    """Get database connection - reuses same connection for ALL requests (CRITICAL for performance)
+    
+    Before: Downloaded database from S3 on EVERY request (huge bottleneck!)
+    After: Downloads once on startup, background thread refreshes every 5 minutes
+    
+    This single change can improve performance by 10-100x in production!
+    """
+    global _db_connection
+    
+    if _db_connection is None:
+        if DEV_MODE:
+            db_path = LOCAL_DB_PATH
+        else:
+            _ensure_db_downloaded()  # Download once on startup
+            db_path = DATABASE
+        
+        print(f"🔗 Creating database connection to {db_path}")
+        _db_connection = sqlite3.connect(db_path, check_same_thread=False, timeout=10.0)
+        _db_connection.row_factory = sqlite3.Row  # Enable dict-like row access
+    
+    return _db_connection
 
 # GET recent manga (title + description)
 @app.route('/recent_manga', methods=['GET'])
@@ -82,7 +179,7 @@ def recent_manga():
         (10, offset)
     )
     rows = cursor.fetchall()
-    con.close()
+    # NOTE: Do NOT close global connection - it's reused for all requests!
     data = []
     for row in rows:
         cleaned_title = to_slug(row[0])
@@ -95,6 +192,18 @@ def recent_manga():
 @app.route('/image/<hash_id>/<filename>', methods=['GET'])
 def fetch_proxied_image(hash_id, filename):
     try:
+        # Check cache first
+        cache_key = f"{hash_id}/{filename}"
+        if cache_key in image_cache:
+            cached_data = image_cache[cache_key]
+            response = send_file(
+                BytesIO(cached_data['content']),
+                mimetype=cached_data['mimetype']
+            )
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['X-Cache'] = 'HIT'
+            return response
+        
         # Try cover URL first
         cover_url = f"https://uploads.mangadex.org/covers/{hash_id}/{filename}"
         print(f"Trying cover URL: {cover_url}")
@@ -119,11 +228,16 @@ def fetch_proxied_image(hash_id, filename):
         
         content_type = response.headers.get('content-type', 'image/jpeg')
         
+        # Cache the image if cache not full
+        if len(image_cache) < MAX_CACHE_SIZE:
+            image_cache[cache_key] = {'content': response.content, 'mimetype': content_type}
+        
         img_response = send_file(
             BytesIO(response.content),
             mimetype=content_type
         )
         img_response.headers['Access-Control-Allow-Origin'] = '*'
+        img_response.headers['X-Cache'] = 'MISS'
         
         return img_response
         
@@ -145,7 +259,7 @@ def manga_count():
     sql = "SELECT COUNT(*) FROM manga_metadata;"
     cursor.execute(sql)
     total_rows = cursor.fetchone()[0]
-    conn.close()
+    # NOTE: Do NOT close global connection - it's reused for all requests!
     return jsonify(total_rows)
 
 # GET all unique tags
@@ -155,7 +269,7 @@ def get_all_tags():
     cursor = conn.cursor()
     cursor.execute("SELECT tags FROM manga_metadata WHERE tags IS NOT NULL AND tags != ''")
     rows = cursor.fetchall()
-    conn.close()
+    # NOTE: Do NOT close global connection - it's reused for all requests!
     
     # Parse all tags from the database
     all_tags = set()
@@ -170,6 +284,39 @@ def get_all_tags():
     # Sort alphabetically
     sorted_tags = sorted(list(all_tags), key=str.lower)
     return jsonify(sorted_tags)
+
+# BATCH: Get multiple manga details by slugs to avoid N+1 queries
+@app.route('/batch_manga_by_slugs', methods=['POST'])
+def batch_manga_by_slugs():
+    """Fetch multiple manga details in a single request - solves N+1 query problem"""
+    slugs = request.json.get('slugs', [])
+    if not slugs or not isinstance(slugs, list):
+        return jsonify([])
+    
+    con = get_db_connection()
+    cursor = con.cursor()
+    cursor.execute("SELECT title, description, tags, latest_chapter, cover_img, hash FROM manga_metadata")
+    all_rows = cursor.fetchall()
+    # NOTE: Do NOT close global connection - it's reused for all requests!
+    
+    # Build mapping of normalized slugs to metadata
+    result = {}
+    for row in all_rows:
+        db_title_normalized = "".join(c for c in row[0].lower() if c.isalnum() or c == " ").replace(" ", "-")
+        if db_title_normalized in slugs:
+            orig_cover = row[4] or NOCOVER
+            proxied_cover = generate_proxied_image_url(orig_cover)
+            result[db_title_normalized] = {
+                "title": row[0],
+                "description": row[1],
+                "tags": row[2],
+                "chapters": row[3],
+                "cover": proxied_cover,
+                "hash": row[5]
+            }
+    
+    # Return in same order as requested
+    return jsonify([result.get(slug) for slug in slugs if slug in result])
 
 # GET single manga by slug (title -> slug)
 def to_slug(title):
@@ -264,13 +411,14 @@ def search_by_title():
         ('%' + query + '%',)
     )
     rows = cursor.fetchall()
+    # NOTE: Do NOT close global connection - it's reused for all requests!
     data = []
     for row in rows:
         cleaned_title = to_slug(row[0])
         orig_cover = row[3] or NOCOVER
         proxied_cover = generate_proxied_image_url(orig_cover)
         data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": proxied_cover})
-    con.close()
+    # NOTE: Do NOT close global connection - it's reused for all requests!
     return jsonify(data)
 
 @app.route('/get_chapters', methods=['GET'])
@@ -409,7 +557,7 @@ def get_pages():
         
     pages = sorted(pages, key=lambda x: float(x['key']))
 
-    conn.close()
+    # NOTE: Do NOT close global connection - it's reused for all requests!
     return jsonify(pages)
 
 
@@ -427,22 +575,31 @@ def search_by_tags():
     except:
         exclude_tags = []
 
-    sql = f"""
-            SELECT title, description, tags, hash, cover_img FROM manga_metadata
-            WHERE tags like '%{include_tags[0]}%'
-          """
-    include_tags.pop(0)
-
-    for tag in include_tags:
-        sql = sql + f"AND tags like '%{tag}%' "
+    # Use parameterized queries to prevent SQL injection
+    where_conditions = []
+    params = []
     
+    # Add include tags with parameterized queries
+    for tag in include_tags:
+        if tag.strip():
+            where_conditions.append("tags LIKE ?")
+            params.append('%' + tag.strip() + '%')
+    
+    # Add exclude tags with parameterized queries
     for tag in exclude_tags:
-        sql = sql + f"AND tags not like '%{tag}%'"
-
+        if tag.strip():
+            where_conditions.append("tags NOT LIKE ?")
+            params.append('%' + tag.strip() + '%')
+    
+    if not where_conditions:
+        return jsonify([])
+    
+    sql = "SELECT title, description, tags, hash, cover_img FROM manga_metadata WHERE " + " AND ".join(where_conditions)
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(sql)
+    cursor.execute(sql, params)
     rows = cursor.fetchall()
+    # NOTE: Do NOT close global connection - it's reused for all requests!
     data = []
     for row in rows:
         orig_cover = row[4] or NOCOVER
@@ -454,7 +611,7 @@ def search_by_tags():
             "hash": row[3],
             "cover_img": proxied_cover
         })
-    conn.close()
+    # NOTE: Do NOT close global connection - it's reused for all requests!
     return jsonify(data)
 
 
@@ -492,7 +649,7 @@ def get_recommendations():
     
     cursor.execute(sql, (limit + len(exclude_list),))  # Fetch extra to account for exclusions
     rows = cursor.fetchall()
-    conn.close()
+    # NOTE: Do NOT close global connection - it's reused for all requests!
     
     data = []
     for row in rows:

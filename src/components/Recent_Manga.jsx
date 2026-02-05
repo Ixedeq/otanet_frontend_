@@ -37,10 +37,23 @@ export default function Recent_Manga() {
     setLoading(true);
     setConnectionError(false);
     try {
-      const res = await fetch(`${API_BASE}/recent_manga?page=${currentPage}`);
-      if (!res.ok) throw new Error("Failed to fetch");
-      const data = await res.json();
-      setManga(data);
+      // Parallel load: fetch both manga data and count at the same time
+      const [mangaRes, countRes] = await Promise.all([
+        fetch(`${API_BASE}/recent_manga?page=${currentPage}`),
+        fetch(`${API_BASE}/manga_count`)
+      ]);
+      
+      if (!mangaRes.ok && !countRes.ok) throw new Error("Failed to fetch");
+      
+      if (mangaRes.ok) {
+        const mangaData = await mangaRes.json();
+        setManga(mangaData);
+      }
+      
+      if (countRes.ok) {
+        const countData = await countRes.json();
+        setMangaCount(countData);
+      }
     } catch (err) {
       console.error(err);
       setConnectionError(true);
@@ -49,20 +62,8 @@ export default function Recent_Manga() {
     }
   };
 
-  const fetchMangaCount = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/manga_count`);
-      if (!res.ok) throw new Error("Failed to fetch count");
-      const data = await res.json();
-      setMangaCount(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   useEffect(() => {
     fetchData();
-    fetchMangaCount();
     window.scrollTo(0, 0);
   }, [currentPage]);
 

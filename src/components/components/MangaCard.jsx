@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { Link } from "react-router-dom";
 
-export default function MangaCard({ title, description, hash, cover, markAsRead }) {
+const MangaCard = memo(function MangaCard({ title, description, hash, cover, markAsRead }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -42,4 +42,6 @@ export default function MangaCard({ title, description, hash, cover, markAsRead 
       </div>
     </Link>
   );
-}
+});
+
+export default MangaCard;

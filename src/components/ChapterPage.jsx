@@ -57,25 +57,36 @@ export default function ChapterPage() {
       }
     };
     fetchPages();
-  }, [slug, chapterKey]);
+  }, [slug, chapterKey, hash]);
 
   // --- Fetch chapters + manga info ---
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [chaptersRes, mangaRes] = await Promise.all([
+        // Parallel fetch: all 3 requests at once
+        const [chaptersRes, mangaRes, pagesRes] = await Promise.all([
           fetch(`${API_BASE}/get_chapters?hash=${hash}`),
           fetch(`${API_BASE}/${slug}`),
+          fetch(`${API_BASE}/get_pages?title=${slug}&hash=${hash}&chapter=${chapterKey}`)
         ]);
 
-        const chaptersData = await chaptersRes.json();
-        const sortedChapters = chaptersData
-          .map((ch) => ({ ...ch, numberStr: ch.number.toString() }))
-          .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
-        setChapters(sortedChapters);
+        if (chaptersRes.ok) {
+          const chaptersData = await chaptersRes.json();
+          const sortedChapters = chaptersData
+            .map((ch) => ({ ...ch, numberStr: ch.number.toString() }))
+            .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
+          setChapters(sortedChapters);
+        }
 
-        const mangaData = await mangaRes.json();
-        setMangaTitle(mangaData.title || slug);
+        if (mangaRes.ok) {
+          const mangaData = await mangaRes.json();
+          setMangaTitle(mangaData.title || slug);
+        }
+
+        if (pagesRes.ok) {
+          const pagesData = await pagesRes.json();
+          setPages(pagesData);
+        }
       } catch (err) {
         console.error("Failed to fetch chapters/manga info:", err);
         setMangaTitle(slug);

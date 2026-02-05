@@ -64,27 +64,26 @@ export default function Carousel() {
     if (bookmarks.length === 0) return null;
 
     try {
-      // Fetch tags from bookmarked manga (limit to first 5)
-      const tagResults = await Promise.all(
-        bookmarks.slice(0, 5).map(async (slug) => {
-          try {
-            const res = await fetch(`${API_BASE}/${slug}`);
-            if (!res.ok) return [];
-            const data = await res.json();
-            return parseTags(data.tags);
-          } catch {
-            return [];
-          }
-        })
-      );
+      // Batch fetch: Get all manga details in one request instead of N+1 calls
+      const batchRes = await fetch(`${API_BASE}/batch_manga_by_slugs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slugs: bookmarks.slice(0, 5) })
+      });
+      
+      if (!batchRes.ok) return null;
+      const mangaDetails = await batchRes.json();
 
-      // Count tag frequency
+      // Extract and count tags from all bookmarked manga
       const tagCounts = {};
-      tagResults.flat().forEach((tag) => {
-        const normalizedTag = tag.toLowerCase().trim();
-        if (normalizedTag) {
-          tagCounts[normalizedTag] = (tagCounts[normalizedTag] || 0) + 1;
-        }
+      mangaDetails.forEach((manga) => {
+        const tags = parseTags(manga.tags);
+        tags.forEach((tag) => {
+          const normalizedTag = tag.toLowerCase().trim();
+          if (normalizedTag) {
+            tagCounts[normalizedTag] = (tagCounts[normalizedTag] || 0) + 1;
+          }
+        });
       });
 
       // Get top 6 most common tags
@@ -166,7 +165,7 @@ export default function Carousel() {
         <span>{isPersonalized ? "✨ Recommended for you" : "📚 Discover manga"}</span>
       </div>
       <div className="carousel-container" ref={scrollRef}>
-        {[...mangaList, ...mangaList].map(({ slug, title, cover }, index) => (
+        {mangaList.map(({ slug, title, cover }, index) => (
           <a key={index} href={`/${slug}`} className="carousel-item">
             <img src={cover} alt={title} className="carousel-cover" />
             <div className="carousel-title">{title}</div>
