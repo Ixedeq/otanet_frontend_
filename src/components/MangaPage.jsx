@@ -137,7 +137,7 @@ export default function MangaPage() {
   if (!manga) return <ErrorPage type="no-manga" message="This manga could not be found or doesn't exist." />;
 
   return (
-    <>
+    <div className="manga-page">
       <div className="detail-wrapper">
         <img src={manga.cover} alt={manga.title} className="detail-cover" />
         <div className="detail-info">
@@ -198,6 +198,6 @@ export default function MangaPage() {
           <p>No chapters available.</p>
         )}
       </div>
-    </>
+    </div>
   );
 }

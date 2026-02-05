@@ -4,6 +4,10 @@ import "../css/Carousel.css";
 import API_BASE from "./Config";
 import ErrorPage from "./ErrorPage";
 
+// Consistent slug generation - same as MangaCard
+const toSlug = (text) =>
+  text.toLowerCase().trim().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, "-");
+
 export default function Carousel() {
   const [mangaList, setMangaList] = useState([]);
   const [connectionError, setConnectionError] = useState(false);
@@ -48,7 +52,7 @@ export default function Carousel() {
       const data = await res.json();
       setConnectionError(false);
       return data.map((m) => ({
-        slug: m.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        slug: toSlug(m.title),
         hash: m.hash,
         title: m.title,
         cover: m.cover_img,
@@ -112,7 +116,7 @@ export default function Carousel() {
       if (!Array.isArray(data) || data.length === 0) return null;
 
       return data.map((m) => ({
-        slug: m.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        slug: toSlug(m.title),
         hash: m.hash,
         title: m.title,
         cover: m.cover_img,

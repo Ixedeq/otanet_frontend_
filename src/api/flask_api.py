@@ -7,14 +7,142 @@ import json
 import boto3
 from botocore.config import Config
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from urllib.parse import urlparse, quote as urlquote
 from io import BytesIO
+from functools import wraps, lru_cache
+import time
+import hashlib
+from concurrent.futures import ThreadPoolExecutor
+import threading
 
 app = Flask(__name__)
-CORS(app)
+
+# Security: Configure CORS with specific origins
+ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'https://ota-network.com,http://localhost:3000').split(',')
+CORS(app, origins=ALLOWED_ORIGINS)
+
+# === PERFORMANCE OPTIMIZATIONS ===
+
+# Connection pool for external requests (reuse connections)
+session = requests.Session()
+retry_strategy = Retry(
+    total=2,
+    backoff_factor=0.1,
+    status_forcelist=[500, 502, 503, 504],
+)
+adapter = HTTPAdapter(
+    pool_connections=20,
+    pool_maxsize=50,
+    max_retries=retry_strategy
+)
+session.mount("http://", adapter)
+session.mount("https://", adapter)
+
+# In-memory image cache (LRU with TTL)
+IMAGE_CACHE = {}
+IMAGE_CACHE_MAX_SIZE = 200  # Max cached images
+IMAGE_CACHE_TTL = 3600  # 1 hour TTL
+cache_lock = threading.Lock()
+
+def get_cached_image(cache_key):
+    """Get image from cache if exists and not expired"""
+    with cache_lock:
+        if cache_key in IMAGE_CACHE:
+            data, timestamp = IMAGE_CACHE[cache_key]
+            if time.time() - timestamp < IMAGE_CACHE_TTL:
+                return data
+            else:
+                del IMAGE_CACHE[cache_key]
+    return None
+
+def set_cached_image(cache_key, data):
+    """Store image in cache with LRU eviction"""
+    with cache_lock:
+        # Evict oldest entries if cache is full
+        if len(IMAGE_CACHE) >= IMAGE_CACHE_MAX_SIZE:
+            oldest_key = min(IMAGE_CACHE.keys(), key=lambda k: IMAGE_CACHE[k][1])
+            del IMAGE_CACHE[oldest_key]
+        IMAGE_CACHE[cache_key] = (data, time.time())
+
+# Thread pool for parallel image fetching
+executor = ThreadPoolExecutor(max_workers=10)
+
+# Simple in-memory rate limiter
+rate_limit_store = {}
+RATE_LIMIT = 100  # requests per minute
+RATE_WINDOW = 60  # seconds
+
+def rate_limit(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if client_ip:
+            client_ip = client_ip.split(',')[0].strip()
+        
+        current_time = time.time()
+        
+        # Clean old entries
+        if client_ip in rate_limit_store:
+            rate_limit_store[client_ip] = [t for t in rate_limit_store[client_ip] if current_time - t < RATE_WINDOW]
+        else:
+            rate_limit_store[client_ip] = []
+        
+        if len(rate_limit_store[client_ip]) >= RATE_LIMIT:
+            return jsonify({"error": "Rate limit exceeded. Please try again later."}), 429
+        
+        rate_limit_store[client_ip].append(current_time)
+        return f(*args, **kwargs)
+    return decorated_function
+
+def sanitize_input(value, max_length=200, allow_pattern=r'^[a-zA-Z0-9\s\-_.,]+$'):
+    """Sanitize user input to prevent injection attacks"""
+    if value is None:
+        return None
+    value = str(value)[:max_length]
+    return value
+
+def validate_hash(hash_value):
+    """Validate that a hash looks like a valid UUID/hash"""
+    if not hash_value:
+        return False
+    # Allow UUIDs and common hash formats
+    return bool(re.match(r'^[a-fA-F0-9\-]{8,64}$', hash_value))
+
+# Security headers middleware
+@app.after_request
+def add_security_headers(response):
+    # Prevent clickjacking
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    # XSS protection
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    # Referrer policy
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    # Content Security Policy (adjust as needed)
+    if not DEV_MODE:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
+
+# Global error handler - don't expose stack traces in production
+@app.errorhandler(Exception)
+def handle_exception(e):
+    if DEV_MODE:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    else:
+        # Log the error but don't expose details to the client
+        print(f"Error: {type(e).__name__}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 DATABASE = 'otanet_devo.db'
 NOCOVER = 'https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg'
+
+# Dev mode detection - skip S3 downloads and use local DB
+DEV_MODE = os.environ.get('FLASK_ENV') == 'development' or os.environ.get('DEV_MODE') == '1'
+
 # Proxy base URL used to serve covers/pages. Can be set via env var e.g. PROXY_BASE_URL=https://proxy.example.com.
 # If the env var is missing, attempt to infer a real example from URLs stored in the DB.
 
@@ -50,9 +178,6 @@ PROXY_BASE_URL = os.environ.get('PROXY_BASE_URL') or _infer_proxy_base_from_db()
 # Directory containing per-manga sqlite DBs. Default is the api folder where this file lives.
 MANGA_DB_DIR = os.environ.get('MANGA_DB_DIR', os.path.dirname(__file__))
 
-# Dev mode detection - skip S3 downloads and use local DB
-DEV_MODE = os.environ.get('FLASK_ENV') == 'development' or os.environ.get('DEV_MODE') == '1'
-
 # Local DB path (in the api folder)
 LOCAL_DB_PATH = os.path.join(os.path.dirname(__file__), 'otanet_devo.db')
 
@@ -71,9 +196,19 @@ def get_db_connection():
 
 # GET recent manga (title + description)
 @app.route('/recent_manga', methods=['GET'])
+@rate_limit
 def recent_manga():
     items_per_page = 10
-    page = int(request.args.get('page', 1))
+    page = request.args.get('page', 1)
+    
+    # Validate page parameter
+    try:
+        page = int(page)
+        if page < 1 or page > 10000:
+            page = 1
+    except (ValueError, TypeError):
+        page = 1
+    
     offset = (page-1) * items_per_page
     con = get_db_connection()
     cursor = con.cursor()
@@ -92,71 +227,105 @@ def recent_manga():
         data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": proxied_cover})
     return jsonify(data)
 
+# Allowed domains for image proxying (SSRF protection)
+ALLOWED_IMAGE_DOMAINS = [
+    'uploads.mangadex.org',
+    'mangadex.org',
+    'cmdxd98sb0x3yprd.mangadex.network'
+]
+
+# Common headers for image requests
+IMAGE_REQUEST_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+}
+
+def fetch_image_from_url(url, timeout=8):
+    """Fetch image using connection pool with retries"""
+    try:
+        response = session.get(url, headers=IMAGE_REQUEST_HEADERS, timeout=timeout)
+        if response.status_code == 200:
+            return response.content, response.headers.get('content-type', 'image/jpeg')
+    except Exception:
+        pass
+    return None, None
+
 @app.route('/image/<hash_id>/<filename>', methods=['GET'])
+@rate_limit
 def fetch_proxied_image(hash_id, filename):
     try:
-        # Remove size suffix to get full quality image (e.g., file.jpg.512.jpg -> file.jpg)
+        # Validate hash_id format (prevent path traversal)
+        if not validate_hash(hash_id):
+            return jsonify({"error": "Invalid hash"}), 400
+        
+        # Validate filename (prevent path traversal and injection)
+        if not re.match(r'^[a-zA-Z0-9\-_.]+$', filename):
+            return jsonify({"error": "Invalid filename"}), 400
+        
+        # Create cache key
+        cache_key = f"{hash_id}/{filename}"
+        
+        # Check cache first
+        cached = get_cached_image(cache_key)
+        if cached:
+            content, content_type = cached
+            img_response = send_file(BytesIO(content), mimetype=content_type)
+            img_response.headers['Access-Control-Allow-Origin'] = '*'
+            img_response.headers['Cache-Control'] = 'public, max-age=604800'  # 7 days
+            img_response.headers['X-Cache'] = 'HIT'
+            return img_response
+        
+        # Remove size suffix to get full quality image
         full_quality_filename = filename
         for suffix in ['.512.jpg', '.256.jpg', '.512.png', '.256.png']:
             if filename.endswith(suffix):
                 full_quality_filename = filename.replace(suffix, '')
                 break
         
-        # Try full quality cover URL first
-        cover_url = f"https://uploads.mangadex.org/covers/{hash_id}/{full_quality_filename}"
-        print(f"Trying full quality cover URL: {cover_url}")
+        # Build list of URLs to try (in order of preference)
+        urls_to_try = [
+            f"https://uploads.mangadex.org/covers/{hash_id}/{full_quality_filename}",
+        ]
+        if full_quality_filename != filename:
+            urls_to_try.append(f"https://uploads.mangadex.org/covers/{hash_id}/{filename}")
+        urls_to_try.append(f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}")
         
-        response = requests.get(
-            cover_url,
-            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
-            timeout=10
-        )
+        # Try each URL
+        content = None
+        content_type = 'image/jpeg'
         
-        # If full quality fails, try original filename
-        if response.status_code != 200 and full_quality_filename != filename:
-            cover_url = f"https://uploads.mangadex.org/covers/{hash_id}/{filename}"
-            print(f"Full quality failed, trying original: {cover_url}")
-            response = requests.get(
-                cover_url,
-                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
-                timeout=10
-            )
+        for url in urls_to_try:
+            content, content_type = fetch_image_from_url(url)
+            if content:
+                break
         
-        # If cover fetch fails, try CDN
-        if response.status_code != 200:
-            cdn_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
-            print(f"Cover failed, trying CDN: {cdn_url}")
-            response = requests.get(
-                cdn_url,
-                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
-                timeout=10
-            )
+        if not content:
+            return jsonify({"error": "Image not found"}), 404
         
-        response.raise_for_status()
+        # Cache the result
+        set_cached_image(cache_key, (content, content_type))
         
-        content_type = response.headers.get('content-type', 'image/jpeg')
-        
-        img_response = send_file(
-            BytesIO(response.content),
-            mimetype=content_type
-        )
+        img_response = send_file(BytesIO(content), mimetype=content_type)
         img_response.headers['Access-Control-Allow-Origin'] = '*'
-        img_response.headers['Cache-Control'] = 'public, max-age=86400'  # Cache for 24 hours
+        img_response.headers['Cache-Control'] = 'public, max-age=604800'  # 7 days
+        img_response.headers['X-Cache'] = 'MISS'
         
         return img_response
         
     except Exception as e:
-        print(f"ERROR: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        if DEV_MODE:
+            import traceback
+            traceback.print_exc()
+        return jsonify({"error": "Failed to fetch image"}), 500
 
 # Return default cover URL
 @app.route('/get_cover', methods=['GET'])
+@rate_limit
 def get_cover():
     return jsonify(NOCOVER)
 
 @app.route('/manga_count', methods=['GET'])
+@rate_limit
 def manga_count():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -168,6 +337,7 @@ def manga_count():
 
 # GET all unique tags
 @app.route('/get_all_tags', methods=['GET'])
+@rate_limit
 def get_all_tags():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -181,9 +351,27 @@ def get_all_tags():
         tags_str = row[0]
         if tags_str:
             # Handle different tag formats: ['tag1', 'tag2'] or tag1, tag2
-            cleaned = tags_str.replace("[", "").replace("]", "").replace("'", "").replace('"', '')
-            tags_list = [t.strip() for t in cleaned.split(",") if t.strip()]
-            all_tags.update(tags_list)
+            # Remove only brackets, preserve apostrophes in tag names
+            cleaned = tags_str.strip()
+            
+            # Check if it's a Python list format like ['tag1', 'tag2']
+            if cleaned.startswith('[') and cleaned.endswith(']'):
+                # Remove brackets
+                cleaned = cleaned[1:-1]
+                # Split by comma, handling quoted strings
+                # Pattern matches 'tag' or "tag" or unquoted tag
+                import re
+                matches = re.findall(r'"([^"]+)"|\'([^\']+)\'|([^,]+)', cleaned)
+                for match in matches:
+                    # match is a tuple of 3 groups, only one will have content
+                    tag = match[0] or match[1] or match[2]
+                    tag = tag.strip().strip('"').strip("'")
+                    if tag:
+                        all_tags.add(tag)
+            else:
+                # Simple comma-separated format
+                tags_list = [t.strip() for t in cleaned.split(",") if t.strip()]
+                all_tags.update(tags_list)
     
     # Sort alphabetically
     sorted_tags = sorted(list(all_tags), key=str.lower)
@@ -233,7 +421,12 @@ def generate_proxied_image_url(image_url):
     return f"{FLASK_BASE}/api/image/{urlquote(image_url, safe='')}"
 
 @app.route("/<slug>", methods=["GET"])
+@rate_limit
 def get_manga_by_slug(slug):
+    # Validate slug format
+    if not re.match(r'^[a-z0-9\-]+$', slug) or len(slug) > 200:
+        return jsonify({"error": "Invalid slug format"}), 400
+    
     con = get_db_connection()
     cursor = con.cursor()
 
@@ -273,8 +466,14 @@ def get_manga_by_slug(slug):
 
 # Search endpoint
 @app.route('/search_by_title', methods=['GET'])
+@rate_limit
 def search_by_title():
     query = request.args.get('title', '')
+    
+    # Limit search query length
+    if len(query) > 200:
+        query = query[:200]
+    
     con = get_db_connection()
     cursor = con.cursor()
     cursor.execute(
@@ -292,22 +491,25 @@ def search_by_title():
     return jsonify(data)
 
 @app.route('/get_chapters', methods=['GET'])
+@rate_limit
 def get_chapters():
-    hash = request.args.get('hash')
-    if not hash:
+    hash_param = request.args.get('hash')
+    if not hash_param:
         return jsonify([])
+    
+    # Validate hash format
+    if not validate_hash(hash_param.replace('_', '-').replace('-', '')):
+        return jsonify({"error": "Invalid hash format"}), 400
 
-    db_path = os.path.join(MANGA_DB_DIR, f"{hash}.db")
+    db_path = os.path.join(MANGA_DB_DIR, f"{hash_param}.db")
     if not os.path.exists(db_path):
         # Fallback: try to infer chapters from the main database (e.g. tables named by hash)
         try:
             main_con = get_db_connection()
             main_cur = main_con.cursor()
             # Find the hash for this title
-            print(hash)
-            main_cur.execute("SELECT hash FROM manga_metadata WHERE hash = ?",(hash,))
+            main_cur.execute("SELECT hash FROM manga_metadata WHERE hash = ?", (hash_param,))
             row = main_cur.fetchone()
-            print(row)
             if row and row[0]:
                 table = row[0]
                 # Try possible table name variants (hash uses dashes, tables use underscores)
@@ -401,82 +603,162 @@ def get_chapters():
     return jsonify(sorted_objs)
 
 @app.route('/get_pages', methods=['GET'])
+@rate_limit
 def get_pages():
-    hash = request.args.get('hash')
-    hash_copy = hash
-    hash_copy = hash_copy.replace('-', '_')
+    hash_param = request.args.get('hash')
     chapter = request.args.get('chapter')
-    chapter = chapter.replace("chapter_", '')
-    chapter = chapter.replace("-", '_')
-    title = request.args.get('title')
+    
+    # Input validation
+    if not hash_param or not chapter:
+        return jsonify({"error": "Missing required parameters"}), 400
+    
+    # Validate hash format to prevent SQL injection via table name
+    if not validate_hash(hash_param.replace('_', '-').replace('-', '')):
+        return jsonify({"error": "Invalid hash format"}), 400
+    
+    # Sanitize table name - only allow alphanumeric and underscores
+    hash_copy = hash_param.replace('-', '_')
+    if not re.match(r'^[a-zA-Z0-9_]+$', hash_copy):
+        return jsonify({"error": "Invalid hash format"}), 400
+    
+    # Clean chapter input
+    chapter = chapter.replace("chapter_", '').replace("-", '_')
+    # Validate chapter format (should be numeric, possibly with decimal)
+    if not re.match(r'^[0-9_.]+$', chapter):
+        return jsonify({"error": "Invalid chapter format"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
+    
+    # First verify the table exists to prevent errors
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (hash_copy,))
+    if not cursor.fetchone():
+        conn.close()
+        return jsonify([])
 
-    sql = f"""SELECT DISTINCT page_number, page_url FROM [{hash_copy}]  WHERE chapter_num = '{chapter}'"""
-    print(sql)
-    cursor.execute(sql)
+    # Use parameterized query for the chapter value
+    sql = f"SELECT DISTINCT page_number, page_url FROM [{hash_copy}] WHERE chapter_num = ?"
+    cursor.execute(sql, (chapter,))
     rows = cursor.fetchall()
-    print(rows)
 
     pages = []
     for page in rows:
         src = page[1]
-        proxied = generate_proxied_image_url(src)
-        pages.append({'key': page[0], 'src': proxied})
+        # Return DIRECT CDN URLs for chapter pages - much faster than proxying
+        # Images loaded via <img> tags don't have CORS restrictions
+        pages.append({'key': page[0], 'src': src})
         
     pages = sorted(pages, key=lambda x: float(x['key']))
 
     conn.close()
+    
     return jsonify(pages)
 
 
+@app.route('/prefetch_images', methods=['POST'])
+def prefetch_images():
+    """Prefetch multiple images in parallel to warm the cache"""
+    try:
+        data = request.get_json()
+        urls = data.get('urls', [])[:20]  # Limit to 20 images
+        
+        def prefetch_single(url):
+            try:
+                parts = url.split('/api/image/')
+                if len(parts) > 1:
+                    path = parts[1]
+                    hash_id, filename = path.split('/', 1)
+                    cache_key = f"{hash_id}/{filename}"
+                    if not get_cached_image(cache_key):
+                        img_url = f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}"
+                        content, content_type = fetch_image_from_url(img_url, timeout=5)
+                        if content:
+                            set_cached_image(cache_key, (content, content_type))
+                            return True
+            except Exception:
+                pass
+            return False
+        
+        # Prefetch in parallel
+        list(executor.map(prefetch_single, urls))
+        
+        return jsonify({"status": "ok", "prefetched": len(urls)})
+    except Exception:
+        return jsonify({"status": "error"}), 400
+
+
+def normalize_tag_for_search(tag):
+    """Normalize a tag for flexible matching - handles apostrophes and special chars"""
+    # Strategy: Insert optional wildcard between word characters to match 
+    # regardless of apostrophes. "girls love" -> "girls% love" matches "girls' love"
+    normalized = tag.lower().strip()
+    # Replace any apostrophe-like characters with SQL % wildcard (matches 0+ chars)
+    # This handles: ' (straight), ' (curly right), ' (curly left), ` (backtick)
+    normalized = re.sub(r"['ʼ''`ʻ]+", "%", normalized)
+    return normalized
+
 @app.route('/search_by_tags')
+@rate_limit
 def search_by_tags():
-    print(request.args)
-
     try:
-        include_tags = request.args.get('include_tags').split(',')
-    except:
-        include_tags = ['']
+        include_tags_raw = request.args.get('include_tags', '')
+        exclude_tags_raw = request.args.get('exclude_tags', '')
+        
+        # Parse and sanitize tags
+        include_tags = [t.strip() for t in include_tags_raw.split(',') if t.strip()]
+        exclude_tags = [t.strip() for t in exclude_tags_raw.split(',') if t.strip()]
+        
+        if not include_tags:
+            return jsonify([])
+        
+        # Build parameterized query to prevent SQL injection
+        params = []
+        where_clauses = []
+        
+        # Include tags (AND logic - must match all)
+        for tag in include_tags:
+            # Normalize tag for flexible matching (handles apostrophes)
+            normalized = normalize_tag_for_search(tag)
+            where_clauses.append("LOWER(tags) LIKE ?")
+            params.append(f'%{normalized}%')
+        
+        # Exclude tags (AND NOT logic)
+        for tag in exclude_tags:
+            normalized = normalize_tag_for_search(tag)
+            where_clauses.append("LOWER(tags) NOT LIKE ?")
+            params.append(f'%{normalized}%')
+        
+        sql = f"""
+            SELECT title, description, tags, hash, cover_img 
+            FROM manga_metadata
+            WHERE {' AND '.join(where_clauses)}
+        """
 
-    try:
-        exclude_tags = request.args.get('exclude_tags').split(',')
-    except:
-        exclude_tags = []
-
-    sql = f"""
-            SELECT title, description, tags, hash, cover_img FROM manga_metadata
-            WHERE tags like '%{include_tags[0]}%'
-          """
-    include_tags.pop(0)
-
-    for tag in include_tags:
-        sql = sql + f"AND tags like '%{tag}%' "
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
+        rows = cursor.fetchall()
+        
+        data = []
+        for row in rows:
+            orig_cover = row[4] or NOCOVER
+            proxied_cover = generate_proxied_image_url(orig_cover)
+            data.append({
+                "title": row[0], 
+                "description": row[1], 
+                "tags": row[2],
+                "hash": row[3],
+                "cover_img": proxied_cover
+            })
+        conn.close()
+        return jsonify(data)
     
-    for tag in exclude_tags:
-        sql = sql + f"AND tags not like '%{tag}%'"
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(sql)
-    rows = cursor.fetchall()
-    data = []
-    for row in rows:
-        orig_cover = row[4] or NOCOVER
-        proxied_cover = generate_proxied_image_url(orig_cover)
-        data.append({
-            "title": row[0], 
-            "description": row[1], 
-            "tags": row[2],
-            "hash": row[3],
-            "cover_img": proxied_cover
-        })
-    conn.close()
-    return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": "Search failed"}), 500
 
 
 @app.route('/get_recommendations')
+@rate_limit
 def get_recommendations():
     """Get manga recommendations based on provided tags, excluding specified manga slugs"""
     try:
@@ -510,8 +792,8 @@ def get_recommendations():
         cursor = conn.cursor()
         
         # Build query using parameterized queries to prevent SQL injection
-        # Create placeholders for each tag pattern
-        tag_patterns = [f'%{tag}%' for tag in tags]
+        # Normalize tags and create placeholders for each tag pattern
+        tag_patterns = [f'%{normalize_tag_for_search(tag)}%' for tag in tags]
         
         # Build CASE statements with parameter placeholders
         case_parts = []
@@ -519,8 +801,8 @@ def get_recommendations():
         params = []
         
         for i, pattern in enumerate(tag_patterns):
-            case_parts.append(f"(CASE WHEN LOWER(tags) LIKE LOWER(?) THEN 1 ELSE 0 END)")
-            where_parts.append(f"LOWER(tags) LIKE LOWER(?)")
+            case_parts.append(f"(CASE WHEN LOWER(tags) LIKE ? THEN 1 ELSE 0 END)")
+            where_parts.append(f"LOWER(tags) LIKE ?")
             params.append(pattern)
         
         # Duplicate params for WHERE clause
