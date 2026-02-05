@@ -1,6 +1,7 @@
 // App.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Home from "./components/Carousel";
@@ -17,6 +18,12 @@ import ScrollToTop from "./components/components/ScrollToTop";
 export default function App() {
   return (
     <div className="app">
+      <Helmet>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#000000" />
+        <link rel="canonical" href="https://ota-network.com" />
+      </Helmet>
       <Header />
       <main>
         <ScrollToTop />
@@ -26,6 +33,14 @@ export default function App() {
             path="/"
             element={
               <>
+                <Helmet>
+                  <title>Manga Reader - Read Manga Online Free | OtaNet</title>
+                  <meta name="description" content="Read thousands of manga online for free. Browse latest releases, search by tags, and bookmark your favorites on OtaNet." />
+                  <meta name="keywords" content="manga, read manga, manga online, free manga" />
+                  <meta property="og:title" content="Manga Reader - Read Online Free" />
+                  <meta property="og:description" content="Browse and read manga online with OtaNet" />
+                  <meta property="og:type" content="website" />
+                </Helmet>
                 <Home />
                 <Recent_Manga />
               </>

@@ -404,6 +404,42 @@ def manga_count():
     conn.close()
     return jsonify(total_rows)
 
+@app.route('/api/all-manga', methods=['GET'])
+@rate_limit
+def all_manga():
+    """
+    Returns all manga for sitemap generation.
+    Used by generate-sitemap.js for SEO sitemap creation.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get all manga with their basic info (optimized for sitemap)
+        cursor.execute(
+            "SELECT title, hash, cover_img FROM manga_metadata ORDER BY time DESC"
+        )
+        rows = cursor.fetchall()
+        
+        data = []
+        for row in rows:
+            cleaned_title = to_slug(row[0])
+            cover_img = row[2] or NOCOVER
+            proxied_cover = generate_proxied_image_url(cover_img)
+            
+            manga_item = {
+                "title": row[0],
+                "slug": cleaned_title,
+                "hash": row[1],
+                "coverImage": proxied_cover
+            }
+            data.append(manga_item)
+        
+        conn.close()
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # GET all unique tags
 @app.route('/get_all_tags', methods=['GET'])
 @rate_limit

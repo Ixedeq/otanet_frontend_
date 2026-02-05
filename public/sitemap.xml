@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Homepage -->
+  <url>
+    <loc>https://ota-network.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <lastmod>2026-02-04</lastmod>
+  </url>
+
+  <!-- Recent manga pages -->
+  <url>
+    <loc>https://ota-network.com/recent/1</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <lastmod>2026-02-04</lastmod>
+  </url>
+
+  <!-- Bookmarks -->
+  <url>
+    <loc>https://ota-network.com/bookmarks</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-02-04</lastmod>
+  </url>
+
+  <!-- Note: Individual manga and chapter pages should be generated dynamically -->
+  <!-- See sitemap-manga.xml for dynamic content -->
+</urlset>
