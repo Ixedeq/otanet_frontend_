@@ -238,6 +238,15 @@ def get_db_connection():
             if _db_connection_pool is None:
                 initialize_db_pool()
     
+    # Verify connection is still alive; if not, reinitialize
+    try:
+        _db_connection_pool.execute('SELECT 1')
+    except (sqlite3.ProgrammingError, sqlite3.OperationalError) as e:
+        print(f"[DB] Connection is closed, reinitializing: {e}")
+        with _db_pool_lock:
+            _db_connection_pool = None
+            initialize_db_pool()
+    
     return _db_connection_pool
 
 # Background thread to refresh database every 5 minutes in production
@@ -252,7 +261,21 @@ def _refresh_database_thread():
                 time.sleep(DB_REFRESH_INTERVAL)
                 with _db_pool_lock:
                     print(f"[DB] Background refresh triggered")
-                    initialize_db_pool()
+                    # Download new database file, then close and recreate connection
+                    try:
+                        print(f"[DB] Downloading database from S3...")
+                        S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', DATABASE)
+                        print(f"[DB] Database download complete")
+                        # Force connection to reinitialize on next get_db_connection call
+                        global _db_connection_pool
+                        if _db_connection_pool is not None:
+                            try:
+                                _db_connection_pool.close()
+                            except:
+                                pass
+                            _db_connection_pool = None
+                    except Exception as e:
+                        print(f"[DB] Error downloading from S3: {e}")
             except Exception as e:
                 print(f"[DB] Error in background refresh: {e}")
     
@@ -401,7 +424,6 @@ def manga_count():
     sql = "SELECT COUNT(*) FROM manga_metadata;"
     cursor.execute(sql)
     total_rows = cursor.fetchone()[0]
-    conn.close()
     return jsonify(total_rows)
 
 @app.route('/api/all-manga', methods=['GET'])
@@ -435,7 +457,6 @@ def all_manga():
             }
             data.append(manga_item)
         
-        conn.close()
         return jsonify(data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -448,7 +469,6 @@ def get_all_tags():
     cursor = conn.cursor()
     cursor.execute("SELECT tags FROM manga_metadata WHERE tags IS NOT NULL AND tags != ''")
     rows = cursor.fetchall()
-    conn.close()
     
     # Parse all tags from the database
     all_tags = set()
@@ -674,7 +694,6 @@ def get_chapters():
     tables = [r[0] for r in cursor.fetchall()]
     chapter_tables = [t for t in tables if 'chapter' in t.lower() or t.lower() == 'chapters']
     if not chapter_tables:
-        conn.close()
         return jsonify([])
 
     table = chapter_tables[0]
@@ -689,7 +708,6 @@ def get_chapters():
         cursor.execute(f"SELECT {title_col}, {number_col} FROM {table}")
         rows = cursor.fetchall()
     except Exception:
-        conn.close()
         return jsonify([])
 
     objs = []
@@ -704,7 +722,6 @@ def get_chapters():
     except Exception:
         sorted_objs = objs
 
-    conn.close()
     return jsonify(sorted_objs)
 
 @app.route('/get_pages', methods=['GET'])
@@ -738,7 +755,6 @@ def get_pages():
     # First verify the table exists to prevent errors
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (hash_copy,))
     if not cursor.fetchone():
-        conn.close()
         return jsonify([])
 
     # Use parameterized query for the chapter value
@@ -754,8 +770,6 @@ def get_pages():
         pages.append({'key': page[0], 'src': src})
         
     pages = sorted(pages, key=lambda x: float(x['key']))
-
-    conn.close()
     
     return jsonify(pages)
 
@@ -855,7 +869,6 @@ def search_by_tags():
                 "hash": row[3],
                 "cover_img": proxied_cover
             })
-        conn.close()
         return jsonify(data)
     
     except Exception as e:
@@ -928,7 +941,6 @@ def get_recommendations():
         params.append(limit + len(exclude_list))  # Fetch extra to account for exclusions
         cursor.execute(sql, params)
         rows = cursor.fetchall()
-        conn.close()
     
         data = []
         for row in rows:
