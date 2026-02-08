@@ -4,6 +4,8 @@ import MangaCard from "./components/MangaCard";
 import MangaSkeleton from "./components/MangaSkeleton";
 import PaginationControls from "./components/PaginationControls";
 import ErrorPage from "./ErrorPage";
+import SEOMeta from "./SEOMeta";
+import { generateRecentMangaMeta } from "../utils/SEOHelpers";
 import "../css/Recent_Manga.css";
 import API_BASE from "./Config.js";
 
@@ -83,8 +85,19 @@ export default function Recent_Manga() {
     );
   }
 
+  const seoMeta = generateRecentMangaMeta(currentPage);
+
   return (
     <div className="manga-list">
+      <SEOMeta
+        title={seoMeta.title}
+        description={seoMeta.description}
+        keywords={seoMeta.keywords}
+        ogTitle={seoMeta.ogTitle}
+        ogDescription={seoMeta.ogDescription}
+        ogImage={seoMeta.ogImage}
+        canonical={seoMeta.canonical}
+      />
       {loading
         ? Array.from({ length: itemsPerPage }).map((_, idx) => (
             <MangaSkeleton key={idx} />

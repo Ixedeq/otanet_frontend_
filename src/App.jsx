@@ -34,12 +34,44 @@ export default function App() {
             element={
               <>
                 <Helmet>
-                  <title>Manga Reader - Read Manga Online Free | OtaNet</title>
-                  <meta name="description" content="Read thousands of manga online for free. Browse latest releases, search by tags, and bookmark your favorites on OtaNet." />
-                  <meta name="keywords" content="manga, read manga, manga online, free manga" />
-                  <meta property="og:title" content="Manga Reader - Read Online Free" />
-                  <meta property="og:description" content="Browse and read manga online with OtaNet" />
+                  <title>
+                    OtaNet - Free Online Manga Reader | Thousands of Manga
+                  </title>
+                  <meta
+                    name="description"
+                    content="OtaNet: Read thousands of manga online for free. Browse latest releases, search by tags, and bookmark your favorites."
+                  />
+                  <meta
+                    name="keywords"
+                    content="manga, read manga online, free manga, manga reader, manga series, online manga"
+                  />
+                  <meta
+                    property="og:title"
+                    content="OtaNet - Free Online Manga Reader"
+                  />
+                  <meta
+                    property="og:description"
+                    content="Browse and read thousands of manga online for free"
+                  />
                   <meta property="og:type" content="website" />
+                  <meta
+                    property="og:image"
+                    content="https://ota-network.com/otanet-logo.png"
+                  />
+                  <meta property="og:url" content="https://ota-network.com" />
+                  <meta name="twitter:card" content="summary_large_image" />
+                  <meta
+                    name="twitter:title"
+                    content="OtaNet - Free Online Manga Reader"
+                  />
+                  <meta
+                    name="twitter:description"
+                    content="Read thousands of manga online for free"
+                  />
+                  <meta
+                    name="twitter:image"
+                    content="https://ota-network.com/otanet-logo.png"
+                  />
                 </Helmet>
                 <Home />
                 <Recent_Manga />
@@ -57,8 +89,8 @@ export default function App() {
 
           {/*future chapter page */}
           <Route path="/read/:slug/:hash/:chapter" element={<ChapterPage />} />
-          <Route path="/search/:search" element={<SearchResult/>} />
-          <Route path="/search/tags" element={<TagSearchResult/>} />
+          <Route path="/search/:search" element={<SearchResult />} />
+          <Route path="/search/tags" element={<TagSearchResult />} />
 
           {/* Bookmarks page */}
           <Route path="/bookmarks" element={<BookmarksPage />} />
@@ -71,4 +103,3 @@ export default function App() {
     </div>
   );
 }
-

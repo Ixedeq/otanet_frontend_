@@ -1,16 +1,24 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import ChapterImg from "./components/ChapterImg";
 import ChapterNavigation from "./components/ChapterNavigation";
 import API_BASE from "./Config";
-import parseChapterNumber from "./components/ParseChapterNumber"; 
+import parseChapterNumber from "./components/ParseChapterNumber";
+import SEOMeta from "./SEOMeta";
+import { generateChapterPageMeta } from "../utils/SEOHelpers";
 import "../css/ChapterPage.css";
 
 export default function ChapterPage() {
   const { slug, hash, chapter } = useParams();
   const navigate = useNavigate();
   const chapterKey = chapter.replace("-", "_");
-  const chapterNumberStr = parseChapterNumber(chapter); 
+  const chapterNumberStr = parseChapterNumber(chapter);
   const chapterNumber = parseFloat(chapterNumberStr); // numeric
 
   const [mangaTitle, setMangaTitle] = useState("");
@@ -26,7 +34,8 @@ export default function ChapterPage() {
 
   // Mark chapter as read
   const markChapterAsRead = (number) => {
-    const saved = JSON.parse(localStorage.getItem(`${slug}-readChapters`)) || [];
+    const saved =
+      JSON.parse(localStorage.getItem(`${slug}-readChapters`)) || [];
     if (!saved.includes(number)) {
       const updated = [...saved, number];
       localStorage.setItem(`${slug}-readChapters`, JSON.stringify(updated));
@@ -35,7 +44,7 @@ export default function ChapterPage() {
       window.dispatchEvent(
         new CustomEvent("readChaptersUpdated", {
           detail: { slug, updatedChapters: updated },
-        })
+        }),
       );
     }
   };
@@ -51,28 +60,30 @@ export default function ChapterPage() {
   }, []);
 
   // Navigate to chapter with proper scroll reset
-  const goToChapter = useCallback((chapterData, exitFullscreen = false) => {
-    if (!chapterData) return;
-    
-    markChapterAsRead(parseFloat(chapterData.numberStr));
-    
-    if (exitFullscreen && fullscreen) {
-      setFullscreen(false);
-      setFullscreenIndex(null);
-    }
-    
-    // Scroll to top before navigation
-    scrollToTop();
-    
-    const chapterPath = `/read/${slug}/${hash}/chapter-${chapterData.numberStr.replace(/\./g, "-")}`;
-    navigate(chapterPath);
-  }, [slug, hash, fullscreen, navigate, scrollToTop]);
+  const goToChapter = useCallback(
+    (chapterData, exitFullscreen = false) => {
+      if (!chapterData) return;
+
+      markChapterAsRead(parseFloat(chapterData.numberStr));
+
+      if (exitFullscreen && fullscreen) {
+        setFullscreen(false);
+        setFullscreenIndex(null);
+      }
+
+      // Scroll to top before navigation
+      scrollToTop();
+
+      const chapterPath = `/read/${slug}/${hash}/chapter-${chapterData.numberStr.replace(/\./g, "-")}`;
+      navigate(chapterPath);
+    },
+    [slug, hash, fullscreen, navigate, scrollToTop],
+  );
 
   // --- Scroll to top when chapter changes ---
   useEffect(() => {
     scrollToTop();
   }, [chapterKey, scrollToTop]);
-
 
   // --- Fetch pages ---
   useEffect(() => {
@@ -80,7 +91,7 @@ export default function ChapterPage() {
       setLoadingPages(true);
       try {
         const res = await fetch(
-          `${API_BASE}/get_pages?title=${slug}&hash=${hash}&chapter=${chapterKey}`
+          `${API_BASE}/get_pages?title=${slug}&hash=${hash}&chapter=${chapterKey}`,
         );
         const data = await res.json();
         setPages(data);
@@ -123,7 +134,7 @@ export default function ChapterPage() {
   // --- Current chapter index & navigation ---
   const currentIndex = useMemo(
     () => chapters.findIndex((ch) => ch.numberStr === chapterNumberStr),
-    [chapters, chapterNumberStr]
+    [chapters, chapterNumberStr],
   );
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
@@ -136,35 +147,35 @@ export default function ChapterPage() {
     if (!hash || chapters.length === 0) return;
 
     const preloadedUrls = new Set();
-    
-    const preloadChapterImages = async (chapter, priority = 'low') => {
+
+    const preloadChapterImages = async (chapter, priority = "low") => {
       if (!chapter) return;
-      
+
       try {
         const chapterKey = `chapter_${chapter.numberStr.replace(/\./g, "_")}`;
         const res = await fetch(
-          `${API_BASE}/get_pages?title=${slug}&hash=${hash}&chapter=${chapterKey}`
+          `${API_BASE}/get_pages?title=${slug}&hash=${hash}&chapter=${chapterKey}`,
         );
-        
+
         if (!res.ok) return;
-        
+
         const chapterPages = await res.json();
-        
+
         // Preload images using link prefetch or Image objects
         chapterPages.forEach((pageUrl, index) => {
           // Preload first 8 images of next chapter, first 3 of previous
-          const limit = priority === 'high' ? 8 : 3;
+          const limit = priority === "high" ? 8 : 3;
           if (index < limit && !preloadedUrls.has(pageUrl)) {
             preloadedUrls.add(pageUrl);
-            
+
             // Use link prefetch for low priority, Image for high priority
-            if (priority === 'high') {
+            if (priority === "high") {
               const img = new Image();
               img.src = pageUrl;
             } else {
-              const link = document.createElement('link');
-              link.rel = 'prefetch';
-              link.as = 'image';
+              const link = document.createElement("link");
+              link.rel = "prefetch";
+              link.as = "image";
               link.href = pageUrl;
               document.head.appendChild(link);
             }
@@ -178,14 +189,14 @@ export default function ChapterPage() {
     // Delay preloading to prioritize current chapter loading
     const timeoutId = setTimeout(() => {
       // Preload next chapter with higher priority
-      preloadChapterImages(nextChapter, 'high');
-      
+      preloadChapterImages(nextChapter, "high");
+
       // Preload previous chapter with lower priority (for back navigation)
       setTimeout(() => {
-        preloadChapterImages(prevChapter, 'low');
+        preloadChapterImages(prevChapter, "low");
       }, 2000);
     }, 1500);
-    
+
     return () => clearTimeout(timeoutId);
   }, [nextChapter, prevChapter, hash, slug, chapters.length]);
 
@@ -227,6 +238,37 @@ export default function ChapterPage() {
       className={`chapter-page ${fullscreen ? "fullscreen-mode" : ""} ${horizontalScroll && !fullscreen ? "horizontal-mode" : ""}`}
       ref={pageContainerRef}
     >
+      <SEOMeta
+        title={
+          generateChapterPageMeta(mangaTitle, chapterNumber, slug, hash).title
+        }
+        description={
+          generateChapterPageMeta(mangaTitle, chapterNumber, slug, hash)
+            .description
+        }
+        keywords={
+          generateChapterPageMeta(mangaTitle, chapterNumber, slug, hash)
+            .keywords
+        }
+        ogTitle={
+          generateChapterPageMeta(mangaTitle, chapterNumber, slug, hash).ogTitle
+        }
+        ogDescription={
+          generateChapterPageMeta(mangaTitle, chapterNumber, slug, hash)
+            .ogDescription
+        }
+        ogImage={
+          generateChapterPageMeta(mangaTitle, chapterNumber, slug, hash).ogImage
+        }
+        canonical={
+          generateChapterPageMeta(mangaTitle, chapterNumber, slug, hash)
+            .canonical
+        }
+        structuredData={
+          generateChapterPageMeta(mangaTitle, chapterNumber, slug, hash)
+            .structuredData
+        }
+      />
       {!fullscreen && (
         <div className="chapter-header">
           <Link to={`/${slug}`} className="back-link">
@@ -237,7 +279,11 @@ export default function ChapterPage() {
             <button
               className="toggle-scroll-btn"
               onClick={() => setHorizontalScroll((prev) => !prev)}
-              title={horizontalScroll ? "Switch to vertical scroll" : "Switch to horizontal scroll"}
+              title={
+                horizontalScroll
+                  ? "Switch to vertical scroll"
+                  : "Switch to horizontal scroll"
+              }
             >
               {horizontalScroll ? "↕" : "↔"}
             </button>
@@ -251,7 +297,9 @@ export default function ChapterPage() {
             <Link
               to={`/read/${slug}/${hash}/chapter-${prevChapter.numberStr.replace(/\./g, "-")}`}
               className="nav-btn prev"
-              onClick={() => markChapterAsRead(parseFloat(prevChapter.numberStr))}
+              onClick={() =>
+                markChapterAsRead(parseFloat(prevChapter.numberStr))
+              }
             >
               ‹ Prev
             </Link>
@@ -263,7 +311,9 @@ export default function ChapterPage() {
             <Link
               to={`/read/${slug}/${hash}/chapter-${nextChapter.numberStr.replace(/\./g, "-")}`}
               className="nav-btn next"
-              onClick={() => markChapterAsRead(parseFloat(nextChapter.numberStr))}
+              onClick={() =>
+                markChapterAsRead(parseFloat(nextChapter.numberStr))
+              }
             >
               Next ›
             </Link>
@@ -282,8 +332,8 @@ export default function ChapterPage() {
               ? "fullscreen horizontal-scroll"
               : "fullscreen vertical-scroll"
             : horizontalScroll
-            ? "horizontal-scroll"
-            : "vertical-scroll"
+              ? "horizontal-scroll"
+              : "vertical-scroll"
         }`}
       >
         {pages.map((page, idx) => (
@@ -300,15 +350,18 @@ export default function ChapterPage() {
 
       {/* Fullscreen navigation overlay */}
       {fullscreen && (
-        <div className="fullscreen-nav-overlay" onClick={() => setShowChapterMenu(false)}>
-          <button 
-            className="fullscreen-exit-btn" 
+        <div
+          className="fullscreen-nav-overlay"
+          onClick={() => setShowChapterMenu(false)}
+        >
+          <button
+            className="fullscreen-exit-btn"
             onClick={() => toggleFullscreen()}
             title="Exit fullscreen (ESC)"
           >
             ✕
           </button>
-          
+
           <div className="fullscreen-chapter-nav">
             {prevChapter ? (
               <button
@@ -321,11 +374,13 @@ export default function ChapterPage() {
                 ← Prev Chapter
               </button>
             ) : (
-              <span className="fullscreen-nav-btn prev disabled">← Prev Chapter</span>
+              <span className="fullscreen-nav-btn prev disabled">
+                ← Prev Chapter
+              </span>
             )}
-            
+
             <div className="chapter-selector-container">
-              <button 
+              <button
                 className="fullscreen-chapter-indicator"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -334,15 +389,18 @@ export default function ChapterPage() {
               >
                 Ch. {chapterNumberStr} ▾
               </button>
-              
+
               {showChapterMenu && (
-                <div className="chapter-menu" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="chapter-menu"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div className="chapter-menu-header">Select Chapter</div>
                   <div className="chapter-menu-list">
                     {chapters.map((ch) => (
                       <button
                         key={ch.numberStr}
-                        className={`chapter-menu-item ${ch.numberStr === chapterNumberStr ? 'active' : ''}`}
+                        className={`chapter-menu-item ${ch.numberStr === chapterNumberStr ? "active" : ""}`}
                         onClick={() => {
                           setShowChapterMenu(false);
                           if (ch.numberStr !== chapterNumberStr) {
@@ -357,7 +415,7 @@ export default function ChapterPage() {
                 </div>
               )}
             </div>
-            
+
             {nextChapter ? (
               <button
                 className="fullscreen-nav-btn next"
@@ -369,7 +427,9 @@ export default function ChapterPage() {
                 Next Chapter →
               </button>
             ) : (
-              <span className="fullscreen-nav-btn next disabled">Next Chapter →</span>
+              <span className="fullscreen-nav-btn next disabled">
+                Next Chapter →
+              </span>
             )}
           </div>
         </div>

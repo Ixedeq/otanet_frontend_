@@ -6,6 +6,8 @@ import "../css/MangaPage.css";
 import API_BASE from "./Config";
 import ErrorPage from "./ErrorPage";
 import { getTagStyle } from "./utils/tagColors";
+import SEOMeta from "./SEOMeta";
+import { generateMangaPageMeta } from "../utils/SEOHelpers";
 
 const DEFAULT_COVER =
   "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
@@ -27,11 +29,16 @@ export default function MangaPage() {
   const [isLightMode, setIsLightMode] = useState(false);
   useEffect(() => {
     const checkTheme = () => {
-      setIsLightMode(document.documentElement.getAttribute("data-theme") === "light");
+      setIsLightMode(
+        document.documentElement.getAttribute("data-theme") === "light",
+      );
     };
     checkTheme();
     const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
     return () => observer.disconnect();
   }, []);
 
@@ -43,7 +50,11 @@ export default function MangaPage() {
       }
     };
     window.addEventListener("readChaptersUpdated", handleReadChaptersUpdate);
-    return () => window.removeEventListener("readChaptersUpdated", handleReadChaptersUpdate);
+    return () =>
+      window.removeEventListener(
+        "readChaptersUpdated",
+        handleReadChaptersUpdate,
+      );
   }, [slug]);
 
   const markChapterAsRead = (number) => {
@@ -54,7 +65,7 @@ export default function MangaPage() {
       window.dispatchEvent(
         new CustomEvent("readChaptersUpdated", {
           detail: { slug, updatedChapters: updated },
-        })
+        }),
       );
     }
   };
@@ -79,25 +90,25 @@ export default function MangaPage() {
   const fetchData = async () => {
     setLoading(true);
     setConnectionError(false);
-    
+
     try {
       const [chaptersRes, mangaRes] = await Promise.all([
         fetch(`${API_BASE}/get_chapters?hash=${hash}`),
-        fetch(`${API_BASE}/${slug}`)
+        fetch(`${API_BASE}/${slug}`),
       ]);
-      
+
       if (!chaptersRes.ok && !mangaRes.ok) {
         throw new Error("Connection failed");
       }
-      
+
       if (chaptersRes.ok) {
         const chaptersData = await chaptersRes.json();
         setChapters(chaptersData);
       }
-      
+
       if (mangaRes.ok) {
         const data = await mangaRes.json();
-        
+
         if (!data.cover) data.cover = DEFAULT_COVER;
 
         // normalize tags
@@ -113,10 +124,10 @@ export default function MangaPage() {
 
         // generate chapters from single number
         const latestChapterNumber = Number(data.chapters) || 0;
-        data.chapters = Array.from(
-          { length: latestChapterNumber },
-          (_, i) => ({ number: i + 1, title: `Chapter ${i + 1}` })
-        );
+        data.chapters = Array.from({ length: latestChapterNumber }, (_, i) => ({
+          number: i + 1,
+          title: `Chapter ${i + 1}`,
+        }));
 
         setManga(data);
       }
@@ -133,13 +144,43 @@ export default function MangaPage() {
   }, [slug, hash]);
 
   if (loading) return <div className="loading-state">Loading...</div>;
-  if (connectionError) return <ErrorPage type="no-connection" message="Unable to connect to the database. The server may be down." onRetry={fetchData} />;
-  if (!manga) return <ErrorPage type="no-manga" message="This manga could not be found or doesn't exist." />;
+  if (connectionError)
+    return (
+      <ErrorPage
+        type="no-connection"
+        message="Unable to connect to the database. The server may be down."
+        onRetry={fetchData}
+      />
+    );
+  if (!manga)
+    return (
+      <ErrorPage
+        type="no-manga"
+        message="This manga could not be found or doesn't exist."
+      />
+    );
+
+  const seoMeta = generateMangaPageMeta(manga, hash, slug);
 
   return (
     <div className="manga-page">
+      <SEOMeta
+        title={seoMeta.title}
+        description={seoMeta.description}
+        keywords={seoMeta.keywords}
+        ogTitle={seoMeta.ogTitle}
+        ogDescription={seoMeta.ogDescription}
+        ogImage={seoMeta.ogImage}
+        canonical={seoMeta.canonical}
+        structuredData={seoMeta.structuredData}
+      />
       <div className="detail-wrapper">
-        <img src={manga.cover} alt={manga.title} className="detail-cover" />
+        <img
+          src={manga.cover}
+          alt={manga.title}
+          className="detail-cover"
+          loading="lazy"
+        />
         <div className="detail-info">
           <h1 className="detail-title">{manga.title}</h1>
           <p className="detail-description">
@@ -150,10 +191,20 @@ export default function MangaPage() {
           <button
             onClick={toggleBookmark}
             className={`bookmark-star ${bookmarks.includes(slug) ? "bookmarked" : ""}`}
-            aria-label={bookmarks.includes(slug) ? "Remove bookmark" : "Add bookmark"}
-            title={bookmarks.includes(slug) ? "Remove from bookmarks" : "Add to bookmarks"}
+            aria-label={
+              bookmarks.includes(slug) ? "Remove bookmark" : "Add bookmark"
+            }
+            title={
+              bookmarks.includes(slug)
+                ? "Remove from bookmarks"
+                : "Add to bookmarks"
+            }
           >
-            {bookmarks.includes(slug) ? <FaStar size={18} /> : <FiStar size={18} />}
+            {bookmarks.includes(slug) ? (
+              <FaStar size={18} />
+            ) : (
+              <FiStar size={18} />
+            )}
           </button>
         </div>
       </div>
@@ -161,8 +212,8 @@ export default function MangaPage() {
       <div className="tags-wrapper">
         {manga.tags.length > 0 ? (
           manga.tags.map((tag, idx) => (
-            <span 
-              key={idx} 
+            <span
+              key={idx}
               className="tag-item"
               style={getTagStyle(tag, isLightMode)}
             >

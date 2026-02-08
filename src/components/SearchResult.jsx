@@ -4,32 +4,36 @@ import PaginationControls from "./components/PaginationControls";
 import MangaCard from "./components/MangaCard";
 import API_BASE from "./Config";
 import ErrorPage from "./ErrorPage";
+import SEOMeta from "./SEOMeta";
+import { generateSearchPageMeta } from "../utils/SEOHelpers";
 
 export default function SearchResult() {
-   const { search } = useParams();
-   const [manga, setManga] = useState([]);
-   const [currentPage, setCurrentPage] = useState(1);
-   const [loading, setLoading] = useState(true);
+  const { search } = useParams();
+  const [manga, setManga] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-   useEffect(() => {
-      if (!search) return;
-      
-      const fetchSearchResults = async () => {
-         setLoading(true);
-         try {
-            const response = await fetch(`${API_BASE}/search_by_title?title=${encodeURIComponent(search)}`);
-            if (!response.ok) throw new Error("Network response was not ok!");
-            const data = await response.json();
-            setManga(data);
-         } catch (error) {
-            console.error("Error fetching search results!", error);
-            setManga([]);
-         } finally {
-            setLoading(false);
-         }
-      };
-      fetchSearchResults();
-   }, [search]);
+  useEffect(() => {
+    if (!search) return;
+
+    const fetchSearchResults = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `${API_BASE}/search_by_title?title=${encodeURIComponent(search)}`,
+        );
+        if (!response.ok) throw new Error("Network response was not ok!");
+        const data = await response.json();
+        setManga(data);
+      } catch (error) {
+        console.error("Error fetching search results!", error);
+        setManga([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSearchResults();
+  }, [search]);
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(manga.length / itemsPerPage);
@@ -39,8 +43,19 @@ export default function SearchResult() {
   const goNext = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
   const goPrev = () => setCurrentPage((p) => Math.max(p - 1, 1));
 
- return (
+  const seoMeta = generateSearchPageMeta(search);
+
+  return (
     <div className="manga-list">
+      <SEOMeta
+        title={seoMeta.title}
+        description={seoMeta.description}
+        keywords={seoMeta.keywords}
+        ogTitle={seoMeta.ogTitle}
+        ogDescription={seoMeta.ogDescription}
+        ogImage={seoMeta.ogImage}
+        canonical={seoMeta.canonical}
+      />
       {loading ? (
         <div className="search-loading">Searching...</div>
       ) : currentManga.length > 0 ? (
@@ -54,7 +69,10 @@ export default function SearchResult() {
           />
         ))
       ) : (
-        <ErrorPage type="no-manga" message={`No results found for "${search}"`} />
+        <ErrorPage
+          type="no-manga"
+          message={`No results found for "${search}"`}
+        />
       )}
       {totalPages > 1 && (
         <PaginationControls

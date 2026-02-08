@@ -4,6 +4,8 @@ import PaginationControls from "./components/PaginationControls";
 import MangaCard from "./components/MangaCard";
 import API_BASE from "./Config";
 import ErrorPage from "./ErrorPage";
+import SEOMeta from "./SEOMeta";
+import { generateTagPageMeta } from "../utils/SEOHelpers";
 import { FaTag, FaPlus, FaMinus } from "react-icons/fa";
 import { getTagStyle } from "./utils/tagColors";
 import "../css/TagSearch.css";
@@ -16,10 +18,18 @@ export default function TagSearchResult() {
 
   // Parse include/exclude tags from URL params
   const includeTags = searchParams.get("include")
-    ? searchParams.get("include").split(",").map((t) => t.trim()).filter(Boolean)
+    ? searchParams
+        .get("include")
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
     : [];
   const excludeTags = searchParams.get("exclude")
-    ? searchParams.get("exclude").split(",").map((t) => t.trim()).filter(Boolean)
+    ? searchParams
+        .get("exclude")
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
     : [];
 
   useEffect(() => {
@@ -38,8 +48,10 @@ export default function TagSearchResult() {
         if (excludeTags.length > 0) {
           params.set("exclude_tags", excludeTags.join(","));
         }
-        
-        const response = await fetch(`${API_BASE}/search_by_tags?${params.toString()}`);
+
+        const response = await fetch(
+          `${API_BASE}/search_by_tags?${params.toString()}`,
+        );
         if (!response.ok) throw new Error("Network response was not ok!");
         const data = await response.json();
         setManga(data);
@@ -58,11 +70,16 @@ export default function TagSearchResult() {
   const [isLightMode, setIsLightMode] = useState(false);
   useEffect(() => {
     const checkTheme = () => {
-      setIsLightMode(document.documentElement.getAttribute("data-theme") === "light");
+      setIsLightMode(
+        document.documentElement.getAttribute("data-theme") === "light",
+      );
     };
     checkTheme();
     const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
     return () => observer.disconnect();
   }, []);
 
@@ -74,15 +91,26 @@ export default function TagSearchResult() {
   const goNext = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
   const goPrev = () => setCurrentPage((p) => Math.max(p - 1, 1));
 
+  const seoMeta = generateTagPageMeta(includeTags);
+
   return (
     <div className="manga-list">
+      <SEOMeta
+        title={seoMeta.title}
+        description={seoMeta.description}
+        keywords={seoMeta.keywords}
+        ogTitle={seoMeta.ogTitle}
+        ogDescription={seoMeta.ogDescription}
+        ogImage={seoMeta.ogImage}
+        canonical={seoMeta.canonical}
+      />
       <div className="tag-search-header">
         <FaTag className="tag-search-icon" />
         <span>Filter by tags:</span>
         <div className="tag-search-tags">
           {includeTags.map((tag, idx) => (
-            <span 
-              key={`inc-${idx}`} 
+            <span
+              key={`inc-${idx}`}
               className="tag-search-chip include"
               style={getTagStyle(tag, isLightMode)}
             >
@@ -90,8 +118,8 @@ export default function TagSearchResult() {
             </span>
           ))}
           {excludeTags.map((tag, idx) => (
-            <span 
-              key={`exc-${idx}`} 
+            <span
+              key={`exc-${idx}`}
               className="tag-search-chip exclude"
               style={getTagStyle(tag, isLightMode)}
             >
@@ -100,7 +128,7 @@ export default function TagSearchResult() {
           ))}
         </div>
       </div>
-      
+
       {loading ? (
         <div className="search-loading">Searching by tags...</div>
       ) : currentManga.length > 0 ? (
@@ -114,9 +142,9 @@ export default function TagSearchResult() {
           />
         ))
       ) : (
-        <ErrorPage 
-          type="no-manga" 
-          message={`No manga found with the selected tag filters`} 
+        <ErrorPage
+          type="no-manga"
+          message={`No manga found with the selected tag filters`}
         />
       )}
       {!loading && totalPages > 1 && (
