@@ -271,7 +271,7 @@ export default function ChapterPage() {
       />
       {!fullscreen && (
         <div className="chapter-header">
-          <Link to={`/${slug}`} className="back-link">
+          <Link to={`/${slug}#${hash}`} className="back-link">
             ← {mangaTitle}
           </Link>
           <h1 className="chapter-title">Chapter {chapterNumberStr}</h1>
