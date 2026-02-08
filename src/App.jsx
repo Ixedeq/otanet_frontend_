@@ -12,13 +12,15 @@ import SearchResult from "./components/SearchResult";
 import TagSearchResult from "./components/TagSearchResult";
 import BookmarksPage from "./components/BookmarksPage";
 import ErrorPage from "./components/ErrorPage";
+import { CacheProvider } from "./context/CacheContext";
 import "./css/App.css";
 import ScrollToTop from "./components/components/ScrollToTop";
 
 export default function App() {
   return (
-    <div className="app">
-      <Helmet>
+    <CacheProvider>
+      <div className="app">
+        <Helmet>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#000000" />
@@ -98,8 +100,8 @@ export default function App() {
           {/* 404 - Page not found */}
           <Route path="*" element={<ErrorPage type="404" />} />
         </Routes>
-      </main>
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </CacheProvider>
   );
 }

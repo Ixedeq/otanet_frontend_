@@ -8,10 +8,12 @@ import SEOMeta from "./SEOMeta";
 import { generateTagPageMeta } from "../utils/SEOHelpers";
 import { FaTag, FaPlus, FaMinus } from "react-icons/fa";
 import { getTagStyle } from "./utils/tagColors";
+import { useCache } from "../context/CacheContext";
 import "../css/TagSearch.css";
 
 export default function TagSearchResult() {
   const [searchParams] = useSearchParams();
+  const { cachedFetch } = useCache();
   const [manga, setManga] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -49,11 +51,9 @@ export default function TagSearchResult() {
           params.set("exclude_tags", excludeTags.join(","));
         }
 
-        const response = await fetch(
+        const data = await cachedFetch(
           `${API_BASE}/search_by_tags?${params.toString()}`,
         );
-        if (!response.ok) throw new Error("Network response was not ok!");
-        const data = await response.json();
         setManga(data);
       } catch (error) {
         console.error("Error fetching tag search results!", error);
@@ -64,7 +64,7 @@ export default function TagSearchResult() {
     };
     fetchTagResults();
     setCurrentPage(1);
-  }, [searchParams]);
+  }, [searchParams, cachedFetch]);
 
   // Theme detection for tag colors
   const [isLightMode, setIsLightMode] = useState(false);

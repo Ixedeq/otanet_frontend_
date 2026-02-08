@@ -6,12 +6,14 @@ import PaginationControls from "./components/PaginationControls";
 import ErrorPage from "./ErrorPage";
 import SEOMeta from "./SEOMeta";
 import { generateRecentMangaMeta } from "../utils/SEOHelpers";
+import { useCache } from "../context/CacheContext";
 import "../css/Recent_Manga.css";
 import API_BASE from "./Config.js";
 
 export default function Recent_Manga() {
   const { page } = useParams();
   const navigate = useNavigate();
+  const { cachedFetch } = useCache();
 
   const [manga, setManga] = useState([]);
   const [mangaCount, setMangaCount] = useState(0);
@@ -39,17 +41,11 @@ export default function Recent_Manga() {
     setLoading(true);
     setConnectionError(false);
     try {
-      // Parallelize both requests using Promise.all for 50% faster load
-      const [mangaRes, countRes] = await Promise.all([
-        fetch(`${API_BASE}/recent_manga?page=${currentPage}`),
-        fetch(`${API_BASE}/manga_count`),
-      ]);
-
-      if (!mangaRes.ok || !countRes.ok) throw new Error("Failed to fetch");
-
+      // Use cached fetch to prevent redundant API calls
+      // If same page is visited within 5 minutes, uses cached response
       const [mangaData, countData] = await Promise.all([
-        mangaRes.json(),
-        countRes.json(),
+        cachedFetch(`${API_BASE}/recent_manga?page=${currentPage}`),
+        cachedFetch(`${API_BASE}/manga_count`),
       ]);
 
       setManga(mangaData);
@@ -65,7 +61,7 @@ export default function Recent_Manga() {
   useEffect(() => {
     fetchData();
     window.scrollTo(0, 0);
-  }, [currentPage]);
+  }, [currentPage, cachedFetch]);
 
   const totalPages = Math.ceil(mangaCount / itemsPerPage);
   const startIndex = 0;

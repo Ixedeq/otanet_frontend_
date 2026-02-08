@@ -6,9 +6,11 @@ import API_BASE from "./Config";
 import ErrorPage from "./ErrorPage";
 import SEOMeta from "./SEOMeta";
 import { generateSearchPageMeta } from "../utils/SEOHelpers";
+import { useCache } from "../context/CacheContext";
 
 export default function SearchResult() {
   const { search } = useParams();
+  const { cachedFetch } = useCache();
   const [manga, setManga] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -19,11 +21,9 @@ export default function SearchResult() {
     const fetchSearchResults = async () => {
       setLoading(true);
       try {
-        const response = await fetch(
+        const data = await cachedFetch(
           `${API_BASE}/search_by_title?title=${encodeURIComponent(search)}`,
         );
-        if (!response.ok) throw new Error("Network response was not ok!");
-        const data = await response.json();
         setManga(data);
       } catch (error) {
         console.error("Error fetching search results!", error);
@@ -33,7 +33,7 @@ export default function SearchResult() {
       }
     };
     fetchSearchResults();
-  }, [search]);
+  }, [search, cachedFetch]);
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(manga.length / itemsPerPage);
@@ -59,11 +59,11 @@ export default function SearchResult() {
       {loading ? (
         <div className="search-loading">Searching...</div>
       ) : currentManga.length > 0 ? (
-        currentManga.map(({ title, description, hash, cover_img }) => (
+        currentManga.map(({ title, hash, cover_img }) => (
           <MangaCard
             key={hash}
             title={title}
-            description={description}
+            description=""  // Description no longer sent in search (loaded on detail page)
             hash={hash}
             cover={cover_img}
           />
