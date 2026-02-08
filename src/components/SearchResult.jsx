@@ -59,11 +59,11 @@ export default function SearchResult() {
       {loading ? (
         <div className="search-loading">Searching...</div>
       ) : currentManga.length > 0 ? (
-        currentManga.map(({ title, hash, cover_img }) => (
+        currentManga.map(({ title, description, hash, cover_img }) => (
           <MangaCard
             key={hash}
             title={title}
-            description=""  // Description no longer sent in search (loaded on detail page)
+            description={description}
             hash={hash}
             cover={cover_img}
           />

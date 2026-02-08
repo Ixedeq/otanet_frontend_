@@ -573,33 +573,32 @@ def get_manga_by_slug(slug):
     con = get_db_connection()
     cursor = con.cursor()
 
-    # Normalize slug back to search pattern - try exact match first
-    search_title = slug.replace("-", " ")
-    
-    # Use database query with normalized title matching
-    # This is MUCH faster than fetching all rows and looping in Python
+    # Fetch all manga and compare using the same slug conversion logic as to_slug()
+    # This handles special characters properly (colons, commas, etc.)
     cursor.execute("""
         SELECT title, description, tags, latest_chapter, cover_img, hash 
         FROM manga_metadata 
-        WHERE LOWER(REPLACE(REPLACE(REPLACE(title, ' ', '-'), '-', ' '), '  ', ' ')) = ?
-        OR LOWER(title) = ?
-        LIMIT 1
-    """, (slug, search_title))
-    row = cursor.fetchone()
-
+        ORDER BY time DESC
+    """)
+    rows = cursor.fetchall()
+    
     result = None
-    if row:
-        orig_cover = row[4] or NOCOVER
-        proxied_cover = generate_proxied_image_url(orig_cover)
-        result = {
-            "title": row[0],
-            "description": row[1],
-            # Return proxied cover URL so clients load covers via the proxy
-            "cover": proxied_cover,
-            "tags": row[2],
-            "chapters": row[3],
-            "hash": row[5]
-        }
+    for row in rows:
+        # Convert title to slug using same logic as to_slug()
+        title_slug = to_slug(row[0])
+        if title_slug == slug:
+            orig_cover = row[4] or NOCOVER
+            proxied_cover = generate_proxied_image_url(orig_cover)
+            result = {
+                "title": row[0],
+                "description": row[1],
+                # Return proxied cover URL so clients load covers via the proxy
+                "cover": proxied_cover,
+                "tags": row[2],
+                "chapters": row[3],
+                "hash": row[5]
+            }
+            break
 
     if result:
         return jsonify(result)
