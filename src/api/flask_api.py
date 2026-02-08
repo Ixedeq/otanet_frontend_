@@ -386,20 +386,20 @@ def fetch_proxied_image(hash_id, filename):
             img_response.headers['X-Cache'] = 'HIT'
             return img_response
         
-        # Remove size suffix to get full quality image
-        full_quality_filename = filename
+        # Prefer .256.jpg for thumbnails (75% smaller than full quality)
+        base_filename = filename
         for suffix in ['.512.jpg', '.256.jpg', '.512.png', '.256.png']:
             if filename.endswith(suffix):
-                full_quality_filename = filename.replace(suffix, '')
+                base_filename = filename.replace(suffix, '')
                 break
         
-        # Build list of URLs to try (in order of preference)
+        # Build list of URLs to try (prioritize .256.jpg for size optimization)
         urls_to_try = [
-            f"https://uploads.mangadex.org/covers/{hash_id}/{full_quality_filename}",
+            f"https://uploads.mangadex.org/covers/{hash_id}/{base_filename}.256.jpg",  # Try thumbnail first
+            f"https://uploads.mangadex.org/covers/{hash_id}/{filename}",  # Then try original filename
+            f"https://uploads.mangadex.org/covers/{hash_id}/{base_filename}",  # Then base filename
+            f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}",  # Fallback CDN
         ]
-        if full_quality_filename != filename:
-            urls_to_try.append(f"https://uploads.mangadex.org/covers/{hash_id}/{filename}")
-        urls_to_try.append(f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}")
         
         # Try each URL
         content = None
