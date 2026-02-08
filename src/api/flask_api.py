@@ -16,7 +16,6 @@ import time
 import hashlib
 from concurrent.futures import ThreadPoolExecutor
 import threading
-from PIL import Image
 
 app = Flask(__name__)
 
@@ -348,23 +347,6 @@ IMAGE_REQUEST_HEADERS = {
     'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
 }
 
-def convert_to_webp(image_data, quality=80):
-    """Convert image data to WebP format for better compression"""
-    try:
-        img = Image.open(BytesIO(image_data))
-        # Convert RGBA to RGB if needed (WebP handles transparency but covers don't need it)
-        if img.mode in ('RGBA', 'LA', 'P'):
-            background = Image.new('RGB', img.size, (255, 255, 255))
-            background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-            img = background
-        # Convert to WebP with quality setting
-        webp_buffer = BytesIO()
-        img.save(webp_buffer, format='WEBP', quality=quality, method=6)
-        return webp_buffer.getvalue()
-    except Exception as e:
-        print(f"WebP conversion error: {e}")
-        return image_data  # Return original if conversion fails
-
 def fetch_image_from_url(url, timeout=8):
     """Fetch image using connection pool with retries"""
     try:
@@ -394,9 +376,7 @@ def fetch_proxied_image(hash_id, filename):
         cached = get_cached_image(cache_key)
         if cached:
             content, content_type = cached
-            # Convert to WebP for cached images
-            webp_content = convert_to_webp(content, quality=80)
-            img_response = send_file(BytesIO(webp_content), mimetype='image/webp')
+            img_response = send_file(BytesIO(content), mimetype=content_type)
             img_response.headers['Access-Control-Allow-Origin'] = '*'
             img_response.headers['Cache-Control'] = 'public, max-age=604800'  # 7 days
             img_response.headers['X-Cache'] = 'HIT'
@@ -429,13 +409,10 @@ def fetch_proxied_image(hash_id, filename):
         if not content:
             return jsonify({"error": "Image not found"}), 404
         
-        # Convert to WebP for compression (25-35% size reduction)
-        webp_content = convert_to_webp(content, quality=80)
-        
-        # Cache the original (not WebP) so we don't re-convert
+        # Cache the result
         set_cached_image(cache_key, (content, content_type))
         
-        img_response = send_file(BytesIO(webp_content), mimetype='image/webp')
+        img_response = send_file(BytesIO(content), mimetype=content_type)
         img_response.headers['Access-Control-Allow-Origin'] = '*'
         img_response.headers['Cache-Control'] = 'public, max-age=604800'  # 7 days
         img_response.headers['X-Cache'] = 'MISS'
