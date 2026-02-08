@@ -225,6 +225,18 @@ def initialize_db_pool():
     conn = sqlite3.connect(DATABASE, check_same_thread=False, timeout=10)
     conn.execute('PRAGMA journal_mode=WAL')  # Write-Ahead Logging for better concurrency
     conn.execute('PRAGMA synchronous=NORMAL')  # Better performance
+    
+    # Create indexes for performance optimization
+    cursor = conn.cursor()
+    try:
+        # Index for pagination sorting (ORDER BY time DESC)
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_manga_time ON manga_metadata(time DESC)')
+        # Index for title searches and slug matching
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_manga_title ON manga_metadata(LOWER(title))')
+        conn.commit()
+    except Exception as e:
+        print(f"[DB] Warning: Could not create indexes: {e}")
+    
     _db_connection_pool = conn
 
 def get_db_connection():
@@ -309,7 +321,6 @@ def recent_manga():
         (10, offset)
     )
     rows = cursor.fetchall()
-    con.close()
     data = []
     for row in rows:
         cleaned_title = to_slug(row[0])
@@ -317,7 +328,11 @@ def recent_manga():
         orig_cover = row[3] or NOCOVER
         proxied_cover = generate_proxied_image_url(orig_cover)
         data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": proxied_cover})
-    return jsonify(data)
+    
+    # Build response with caching headers
+    response = jsonify(data)
+    response.headers['Cache-Control'] = 'public, max-age=300'  # Cache for 5 minutes
+    return response
 
 # Allowed domains for image proxying (SSRF protection)
 ALLOWED_IMAGE_DOMAINS = [
@@ -424,7 +439,9 @@ def manga_count():
     sql = "SELECT COUNT(hash) FROM manga_metadata;"
     cursor.execute(sql)
     total_rows = cursor.fetchone()[0]
-    return jsonify(total_rows)
+    response = jsonify(total_rows)
+    response.headers['Cache-Control'] = 'public, max-age=3600'  # Cache for 1 hour
+    return response
 
 @app.route('/api/all-manga', methods=['GET'])
 @rate_limit
@@ -514,8 +531,7 @@ def from_slug(slug):
     return title
 
 def generate_proxied_image_url(image_url):
-    print(f"Generating proxied URL for: {image_url}")
-    
+    # Removed logging for performance
     FLASK_BASE = os.environ.get('FLASK_BASE_URL', 'https://ota-network.com')
     
     try:
@@ -530,7 +546,6 @@ def generate_proxied_image_url(image_url):
                 manga_id = path_parts[covers_idx + 1]
                 cover_filename = path_parts[covers_idx + 2]
                 proxied = f"{FLASK_BASE}/api/image/{manga_id}/{cover_filename}"
-                print(f"Generated cover URL: {proxied}")
                 return proxied
         
         # Standard CDN URL handling (/data/{hash}/{filename})
@@ -538,10 +553,9 @@ def generate_proxied_image_url(image_url):
             hash_id = path_parts[-2]
             filename = path_parts[-1]
             proxied = f"{FLASK_BASE}/api/image/{hash_id}/{filename}"
-            print(f"Generated CDN URL: {proxied}")
             return proxied
-    except Exception as e:
-        print(f"Error: {e}")
+    except Exception:
+        pass  # Silently ignore errors for performance
     
     return f"{FLASK_BASE}/api/image/{urlquote(image_url, safe='')}"
 
@@ -555,33 +569,33 @@ def get_manga_by_slug(slug):
     con = get_db_connection()
     cursor = con.cursor()
 
-    # Normalize slug back to search pattern
+    # Normalize slug back to search pattern - try exact match first
     search_title = slug.replace("-", " ")
-
-    # Fetch all titles
-    cursor.execute("SELECT title, description, tags, latest_chapter, cover_img, hash FROM manga_metadata")
-    rows = cursor.fetchall()
+    
+    # Use database query with normalized title matching
+    # This is MUCH faster than fetching all rows and looping in Python
+    cursor.execute("""
+        SELECT title, description, tags, latest_chapter, cover_img, hash 
+        FROM manga_metadata 
+        WHERE LOWER(REPLACE(REPLACE(REPLACE(title, ' ', '-'), '-', ' '), '  ', ' ')) = ?
+        OR LOWER(title) = ?
+        LIMIT 1
+    """, (slug, search_title))
+    row = cursor.fetchone()
 
     result = None
-    for row in rows:
-        cleaned_title = to_slug(row[0])
+    if row:
         orig_cover = row[4] or NOCOVER
         proxied_cover = generate_proxied_image_url(orig_cover)
-        db_title = row[0].lower().strip()
-        db_title_normalized = "".join(c for c in db_title if c.isalnum() or c == " ").replace(" ", "-")
-        if db_title_normalized == slug:
-            result = {
-                "title": row[0],
-                "description": row[1],
-                # Return proxied cover URL so clients load covers via the proxy
-                "cover": proxied_cover,
-                "tags": row[2],
-                "chapters": row[3],
-                "hash": row[5]
-            }
-            break
-
-    con.close()
+        result = {
+            "title": row[0],
+            "description": row[1],
+            # Return proxied cover URL so clients load covers via the proxy
+            "cover": proxied_cover,
+            "tags": row[2],
+            "chapters": row[3],
+            "hash": row[5]
+        }
 
     if result:
         return jsonify(result)
@@ -612,8 +626,10 @@ def search_by_title():
         orig_cover = row[3] or NOCOVER
         proxied_cover = generate_proxied_image_url(orig_cover)
         data.append({"title": row[0], "description": row[1], "hash": row[2], "cover_img": proxied_cover})
-    con.close()
-    return jsonify(data)
+    
+    response = jsonify(data)
+    response.headers['Cache-Control'] = 'public, max-age=600'  # Cache search results for 10 minutes
+    return response
 
 @app.route('/get_chapters', methods=['GET'])
 @rate_limit
