@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
+from flask_compress import Compress
 import sqlite3
 import os
 import re
@@ -18,6 +19,9 @@ from concurrent.futures import ThreadPoolExecutor
 import threading
 
 app = Flask(__name__)
+
+# Enable gzip compression for all responses (80-85% reduction on JSON payloads)
+Compress(app)
 
 # Security: Configure CORS with specific origins
 ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'https://ota-network.com,http://localhost:3000').split(',')
