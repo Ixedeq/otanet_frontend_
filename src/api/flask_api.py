@@ -421,7 +421,7 @@ def get_cover():
 def manga_count():
     conn = get_db_connection()
     cursor = conn.cursor()
-    sql = "SELECT COUNT(*) FROM manga_metadata;"
+    sql = "SELECT COUNT(hash) FROM manga_metadata;"
     cursor.execute(sql)
     total_rows = cursor.fetchone()[0]
     return jsonify(total_rows)
@@ -980,6 +980,12 @@ if __name__ == '__main__':
     # Run in dev mode by default when running directly
     os.environ['DEV_MODE'] = '1'
     print("🚀 Running Flask in DEVELOPMENT mode - using local database")
+    
+    # Initialize database on app startup (don't wait for first request)
+    print("[STARTUP] Initializing database pool...")
+    initialize_db_pool()
+    print("[STARTUP] Database pool ready")
+    
     app.run(host='0.0.0.0', threaded=True, debug=True, port=5001)
 
 

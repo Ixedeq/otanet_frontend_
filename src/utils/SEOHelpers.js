@@ -4,14 +4,14 @@
 
 export const generateMangaPageMeta = (manga) => {
   if (!manga) return {};
-  
+
   return {
     title: `${manga.title} - Read Manga Online | OtaNet`,
-    description: `Read ${manga.title} online for free. ${manga.description || 'Explore chapters and enjoy high-quality manga reading experience.'}`,
-    keywords: `${manga.title}, manga, read online, ${manga.tags?.join(', ') || ''}`,
+    description: `Read ${manga.title} online for free. ${manga.description || "Explore chapters and enjoy high-quality manga reading experience."}`,
+    keywords: `${manga.title}, manga, read online, ${manga.tags?.join(", ") || ""}`,
     ogTitle: manga.title,
-    ogDescription: manga.description || 'Read manga online for free',
-    ogImage: manga.coverImage || 'https://ota-network.com/default-cover.jpg',
+    ogDescription: manga.description || "Read manga online for free",
+    ogImage: manga.coverImage || "https://ota-network.com/default-cover.jpg",
   };
 };
 
@@ -36,7 +36,7 @@ export const generateSearchPageMeta = (searchTerm) => {
 };
 
 export const generateTagPageMeta = (tags) => {
-  const tagString = tags.join(', ');
+  const tagString = tags.join(", ");
   return {
     title: `Manga with tags: ${tagString} | OtaNet`,
     description: `Browse manga with tags: ${tagString}. Discover new series with your favorite genres.`,
