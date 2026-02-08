@@ -18,7 +18,7 @@
   "scripts": {
     "start": "react-scripts start",
     "start:prod": "PORT=80 react-scripts start",
-    "start:api": "python3 src/api/flask_api.py",
+    "start:api": "DEV_MODE=1 python3 src/api/flask_api.py",
     "build": "react-scripts build && node obfuscate.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
