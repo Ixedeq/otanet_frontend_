@@ -17,6 +17,20 @@ import time
 import hashlib
 from concurrent.futures import ThreadPoolExecutor
 import threading
+import logging
+from flask import g
+
+# === LOGGING SETUP ===
+# All logs written to file; only WARNING+ goes to console
+LOG_FILE = os.path.join(os.path.dirname(__file__), 'api_logs.txt')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE),
+    ]
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -27,7 +41,12 @@ Compress(app)
 ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'https://ota-network.com,http://localhost:3000').split(',')
 CORS(app, origins=ALLOWED_ORIGINS)
 
-# === PERFORMANCE OPTIMIZATIONS ===
+# === REQUEST TIMING ===
+@app.before_request
+def _start_timer():
+    g.start_time = time.time()
+
+
 
 # Connection pool for external requests (reuse connections)
 session = requests.Session()
@@ -117,6 +136,11 @@ def validate_hash(hash_value):
 # Security headers middleware
 @app.after_request
 def add_security_headers(response):
+    # Log request timing
+    if hasattr(g, 'start_time'):
+        elapsed_ms = (time.time() - g.start_time) * 1000
+        logger.info(f"{request.method} {request.path} -> {response.status_code} ({elapsed_ms:.1f}ms)")
+
     # Prevent clickjacking
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     # XSS protection
@@ -134,11 +158,10 @@ def add_security_headers(response):
 def handle_exception(e):
     if DEV_MODE:
         import traceback
-        traceback.print_exc()
+        logger.exception(f"Unhandled exception: {e}")
         return jsonify({"error": str(e)}), 500
     else:
-        # Log the error but don't expose details to the client
-        print(f"Error: {type(e).__name__}")
+        logger.error(f"Unhandled exception: {type(e).__name__}: {e}")
         return jsonify({"error": "An internal error occurred"}), 500
 
 DATABASE = 'otanet_devo.db'
@@ -215,12 +238,12 @@ def initialize_db_pool():
     
     if should_download:
         try:
-            print(f"[DB] Downloading database from S3...")
+            logger.info("[DB] Downloading database from S3...")
             S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', DATABASE)
             _db_last_download = time.time()
-            print(f"[DB] Database download complete")
+            logger.info("[DB] Database download complete")
         except Exception as e:
-            print(f"[DB] Error downloading from S3: {e}")
+            logger.error(f"[DB] Error downloading from S3: {e}")
             # If download fails and local file exists, use it
             if not os.path.exists(DATABASE):
                 raise
@@ -239,7 +262,7 @@ def initialize_db_pool():
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_manga_title ON manga_metadata(LOWER(title))')
         conn.commit()
     except Exception as e:
-        print(f"[DB] Warning: Could not create indexes: {e}")
+        logger.warning(f"[DB] Could not create indexes: {e}")
     
     _db_connection_pool = conn
 
@@ -258,7 +281,7 @@ def get_db_connection():
     try:
         _db_connection_pool.execute('SELECT 1')
     except (sqlite3.ProgrammingError, sqlite3.OperationalError) as e:
-        print(f"[DB] Connection is closed, reinitializing: {e}")
+        logger.warning(f"[DB] Connection is closed, reinitializing: {e}")
         with _db_pool_lock:
             _db_connection_pool = None
             initialize_db_pool()
@@ -276,12 +299,11 @@ def _refresh_database_thread():
             try:
                 time.sleep(DB_REFRESH_INTERVAL)
                 with _db_pool_lock:
-                    print(f"[DB] Background refresh triggered")
                     # Download new database file, then close and recreate connection
                     try:
-                        print(f"[DB] Downloading database from S3...")
+                        logger.info("[DB] Downloading database from S3...")
                         S3CLIENT.download_file('otanet-manga-devo', 'database/otanet_devo.db', DATABASE)
-                        print(f"[DB] Database download complete")
+                        logger.info("[DB] Database download complete")
                         # Force connection to reinitialize on next get_db_connection call
                         global _db_connection_pool
                         if _db_connection_pool is not None:
@@ -291,13 +313,13 @@ def _refresh_database_thread():
                                 pass
                             _db_connection_pool = None
                     except Exception as e:
-                        print(f"[DB] Error downloading from S3: {e}")
+                        logger.error(f"[DB] Error downloading from S3: {e}")
             except Exception as e:
-                print(f"[DB] Error in background refresh: {e}")
+                logger.error(f"[DB] Error in background refresh: {e}")
     
     thread = threading.Thread(target=refresh_loop, daemon=True)
     thread.start()
-    print("[DB] Background refresh thread started (5 min interval)")
+    logger.info("[DB] Background refresh thread started (5 min interval)")
 
 # Start background refresh thread on app startup
 _refresh_database_thread()
@@ -689,7 +711,6 @@ def get_chapters():
 
                             item = {'title': chapter_word, 'number': num_val}
                             if item not in objs:
-                                print(item)
                                 objs.append(item)
 
                         try:
@@ -697,7 +718,6 @@ def get_chapters():
                         except Exception:
                             pass
 
-                        print(objs)
                         main_con.close()
                         return jsonify(objs)
             main_con.close()
@@ -989,24 +1009,18 @@ def get_recommendations():
         return jsonify(data)
     
     except Exception as e:
-        print(f"Error in get_recommendations: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Error in get_recommendations: {e}")
         return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
     # Run in dev mode by default when running directly
     os.environ['DEV_MODE'] = '1'
-    print("🚀 Running Flask in DEVELOPMENT mode - using local database")
+    logger.info("Running Flask in DEVELOPMENT mode - using local database")
     
     # Initialize database on app startup (don't wait for first request)
-    print("[STARTUP] Initializing database pool...")
+    logger.info("[STARTUP] Initializing database pool...")
     initialize_db_pool()
-    print("[STARTUP] Database pool ready")
+    logger.info("[STARTUP] Database pool ready")
     
     app.run(host='0.0.0.0', threaded=True, debug=True, port=5001)
-
-
-
-
