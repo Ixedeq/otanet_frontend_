@@ -1,0 +1,6 @@
+Flask==2.3.3
+flask-cors==4.0.0
+flask-compress==1.13
+boto3==1.28.25
+requests==2.31.0
+urllib3==1.26.15
