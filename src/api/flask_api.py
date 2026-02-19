@@ -328,7 +328,7 @@ _refresh_database_thread()
 @app.route('/recent_manga', methods=['GET'])
 @rate_limit
 def recent_manga():
-    items_per_page = 10
+    items_per_page = 25
     page = request.args.get('page', 1)
     
     # Validate page parameter
@@ -344,7 +344,7 @@ def recent_manga():
     cursor = con.cursor()
     cursor.execute(
         "SELECT title, description, hash, cover_img FROM manga_metadata ORDER BY time DESC LIMIT ? OFFSET ?",
-        (10, offset)
+        (items_per_page, offset)
     )
     rows = cursor.fetchall()
     data = []
