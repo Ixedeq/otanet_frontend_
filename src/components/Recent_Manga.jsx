@@ -19,7 +19,7 @@ export default function Recent_Manga() {
   const [mangaCount, setMangaCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [connectionError, setConnectionError] = useState(false);
-  const itemsPerPage = 10;
+  const itemsPerPage = 25;
   const currentPage = Number(page) || 1;
 
   // --- New: read manga tracking ---
