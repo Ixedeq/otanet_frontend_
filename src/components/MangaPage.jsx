@@ -11,7 +11,7 @@ import { generateMangaPageMeta } from "../utils/SEOHelpers";
 import { useCache } from "../context/CacheContext";
 
 const DEFAULT_COVER =
-  "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg.512.jpg";
+  "https://mangadex.org/covers/f4045a9e-e5f6-4778-bd33-7a91cefc3f71/df4e9dfe-eb9f-40c7-b13a-d68861cf3071.jpg";
 
 export default function MangaPage() {
   const { slug, hash } = useParams();
@@ -190,8 +190,20 @@ export default function MangaPage() {
   };
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const mangaRes = await fetch(`${API_BASE}/manga/${hash}`);
+        if (mangaRes.ok) {
+          const mangaData = await mangaRes.json();
+          setManga(mangaData);
+        }
+      } catch (err) {
+        console.error("Failed to fetch manga data:", err);
+      }
+    };
+
     fetchData();
-  }, [slug, hash, cachedFetch]);
+  }, [hash]);
 
   if (loading) return <div className="loading-state">Loading...</div>;
   if (connectionError)

@@ -78,66 +78,17 @@ export default function Carousel() {
   // Fetch recommendations based on bookmarked manga tags
   const fetchRecommendations = async () => {
     const bookmarks = getBookmarks();
-    if (bookmarks.length === 0) return null;
-
     try {
-      // Fetch tags from bookmarked manga (limit to first 5)
-      const tagResults = await Promise.all(
-        bookmarks.slice(0, 5).map(async (slug) => {
-          try {
-            const res = await fetch(`${API_BASE}/${slug}`);
-            if (!res.ok) return [];
-            const data = await res.json();
-            return parseTags(data.tags);
-          } catch {
-            return [];
-          }
+      const results = await Promise.all(
+        bookmarks.map(async (hash) => {
+          const res = await fetch(`${API_BASE}/manga/${hash}`);
+          if (!res.ok) return null;
+          return await res.json();
         }),
       );
-
-      // Count tag frequency
-      const tagCounts = {};
-      tagResults.flat().forEach((tag) => {
-        const normalizedTag = tag.toLowerCase().trim();
-        if (normalizedTag) {
-          tagCounts[normalizedTag] = (tagCounts[normalizedTag] || 0) + 1;
-        }
-      });
-
-      // Get top 6 most common tags
-      const topTags = Object.entries(tagCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 6)
-        .map(([tag]) => tag);
-
-      if (topTags.length === 0) return null;
-
-      console.log("Recommending based on tags:", topTags);
-
-      // Fetch recommendations from API
-      const params = new URLSearchParams();
-      params.set("tags", topTags.join(","));
-      params.set("exclude", bookmarks.join(","));
-      params.set("limit", "12");
-
-      const res = await fetch(
-        `${API_BASE}/get_recommendations?${params.toString()}`,
-      );
-      if (!res.ok) return null;
-
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) return null;
-
-      return data.map((m) => ({
-        slug: toSlug(m.title),
-        hash: m.hash,
-        title: m.title,
-        cover: m.cover_img,
-        score: m.score || 0,
-      }));
+      setMangaList(results.filter(Boolean));
     } catch (err) {
       console.error("Failed to fetch recommendations:", err);
-      return null;
     }
   };
 

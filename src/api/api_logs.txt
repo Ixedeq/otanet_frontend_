@@ -1,0 +1,115 @@
+2026-02-23 01:38:22,417 [INFO] Running Flask in DEVELOPMENT mode - using local database
+2026-02-23 01:38:22,417 [INFO] [STARTUP] Initializing database pool...
+2026-02-23 01:38:22,417 [INFO] [STARTUP] Database pool ready
+2026-02-23 01:38:22,499 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.1.68:5001
+2026-02-23 01:38:22,499 [INFO] [33mPress CTRL+C to quit[0m
+2026-02-23 01:38:22,499 [INFO]  * Restarting with stat
+2026-02-23 01:38:22,685 [INFO] Running Flask in DEVELOPMENT mode - using local database
+2026-02-23 01:38:22,685 [INFO] [STARTUP] Initializing database pool...
+2026-02-23 01:38:22,686 [INFO] [STARTUP] Database pool ready
+2026-02-23 01:38:22,695 [WARNING]  * Debugger is active!
+2026-02-23 01:38:22,708 [INFO]  * Debugger PIN: 856-511-515
+2026-02-23 01:38:27,609 [INFO] GET /recent_manga -> 200 (8.8ms)
+2026-02-23 01:38:27,612 [INFO] 127.0.0.1 - - [23/Feb/2026 01:38:27] "GET /recent_manga?per_page=10&page=1 HTTP/1.1" 200 -
+2026-02-23 01:38:31,079 [INFO] GET /manga_count -> 200 (1.8ms)
+2026-02-23 01:38:31,079 [INFO] 127.0.0.1 - - [23/Feb/2026 01:38:31] "GET /manga_count HTTP/1.1" 200 -
+2026-02-23 01:38:31,080 [INFO] GET /recent_manga -> 200 (1.9ms)
+2026-02-23 01:38:31,081 [INFO] 127.0.0.1 - - [23/Feb/2026 01:38:31] "GET /recent_manga?page=1 HTTP/1.1" 200 -
+2026-02-23 01:39:56,524 [INFO]  * Detected change in '/Users/ixe/Documents/Code/otanet_frontend_/src/api/flask_api.py', reloading
+2026-02-23 01:39:56,630 [INFO]  * Restarting with stat
+2026-02-23 01:39:59,069 [INFO] Running Flask in DEVELOPMENT mode - using local database
+2026-02-23 01:39:59,069 [INFO] [STARTUP] Initializing database pool...
+2026-02-23 01:39:59,069 [INFO] [STARTUP] Database pool ready
+2026-02-23 01:39:59,082 [WARNING]  * Debugger is active!
+2026-02-23 01:39:59,093 [INFO]  * Debugger PIN: 856-511-515
+2026-02-23 01:39:59,105 [INFO] GET /recent_manga -> 200 (2.2ms)
+2026-02-23 01:39:59,105 [INFO] 127.0.0.1 - - [23/Feb/2026 01:39:59] "GET /recent_manga?per_page=10&page=4 HTTP/1.1" 200 -
+2026-02-23 01:40:15,967 [INFO] GET /gorin-no-megamisama-nadeshiko-ryou-no-medal-gohan -> 200 (8.6ms)
+2026-02-23 01:40:15,969 [INFO] 127.0.0.1 - - [23/Feb/2026 01:40:15] "GET /gorin-no-megamisama-nadeshiko-ryou-no-medal-gohan HTTP/1.1" 200 -
+2026-02-23 01:40:15,978 [INFO] GET /get_chapters -> 200 (2.4ms)
+2026-02-23 01:40:15,978 [INFO] 127.0.0.1 - - [23/Feb/2026 01:40:15] "GET /get_chapters?hash=c7f428a6-3664-4fab-ad93-b9fa642d35c1 HTTP/1.1" 200 -
+2026-02-23 01:42:12,140 [INFO]  * Detected change in '/Users/ixe/Documents/Code/otanet_frontend_/src/api/flask_api.py', reloading
+2026-02-23 01:42:12,203 [INFO]  * Restarting with stat
+2026-02-23 01:42:14,546 [INFO] Running Flask in DEVELOPMENT mode - using local database
+2026-02-23 01:42:14,546 [INFO] [STARTUP] Initializing database pool...
+2026-02-23 01:42:14,546 [INFO] [STARTUP] Database pool ready
+2026-02-23 01:42:14,560 [WARNING]  * Debugger is active!
+2026-02-23 01:42:14,577 [INFO]  * Debugger PIN: 856-511-515
+2026-02-23 01:43:36,140 [INFO]  * Detected change in '/Users/ixe/Documents/Code/otanet_frontend_/src/api/flask_api.py', reloading
+2026-02-23 01:43:36,204 [INFO]  * Restarting with stat
+2026-02-23 01:43:38,548 [INFO] Running Flask in DEVELOPMENT mode - using local database
+2026-02-23 01:43:38,548 [INFO] [STARTUP] Initializing database pool...
+2026-02-23 01:43:38,548 [INFO] [STARTUP] Database pool ready
+2026-02-23 01:43:38,562 [WARNING]  * Debugger is active!
+2026-02-23 01:43:38,573 [INFO]  * Debugger PIN: 856-511-515
+2026-02-23 01:44:05,821 [INFO]  * Detected change in '/Users/ixe/Documents/Code/otanet_frontend_/src/api/flask_api.py', reloading
+2026-02-23 01:44:05,885 [INFO]  * Restarting with stat
+2026-02-23 01:44:08,208 [INFO] Running Flask in DEVELOPMENT mode - using local database
+2026-02-23 01:44:08,208 [INFO] [STARTUP] Initializing database pool...
+2026-02-23 01:44:08,208 [INFO] [STARTUP] Database pool ready
+2026-02-23 01:44:08,219 [WARNING]  * Debugger is active!
+2026-02-23 01:44:08,228 [INFO]  * Debugger PIN: 856-511-515
+2026-02-23 01:45:55,766 [INFO] GET /recent_manga -> 200 (12.6ms)
+2026-02-23 01:45:55,768 [INFO] GET /recent_manga -> 200 (12.1ms)
+2026-02-23 01:45:55,770 [INFO] 127.0.0.1 - - [23/Feb/2026 01:45:55] "GET /recent_manga?page=1 HTTP/1.1" 200 -
+2026-02-23 01:45:55,771 [INFO] 127.0.0.1 - - [23/Feb/2026 01:45:55] "GET /recent_manga?per_page=10&page=3 HTTP/1.1" 200 -
+2026-02-23 01:45:57,717 [INFO] GET /recent_manga -> 200 (3.5ms)
+2026-02-23 01:45:57,719 [INFO] 127.0.0.1 - - [23/Feb/2026 01:45:57] "GET /recent_manga?per_page=10&page=5 HTTP/1.1" 200 -
+2026-02-23 01:46:04,103 [INFO] GET /recent_manga -> 200 (3.0ms)
+2026-02-23 01:46:04,105 [INFO] 127.0.0.1 - - [23/Feb/2026 01:46:04] "GET /recent_manga?page=2 HTTP/1.1" 200 -
+2026-02-23 01:46:25,017 [INFO] Running Flask in DEVELOPMENT mode - using local database
+2026-02-23 01:46:25,018 [INFO] [STARTUP] Initializing database pool...
+2026-02-23 01:46:25,018 [INFO] [STARTUP] Database pool ready
+2026-02-23 01:58:30,597 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:4000
+ * Running on http://192.168.1.68:4000
+2026-02-23 01:58:30,597 [INFO] [33mPress CTRL+C to quit[0m
+2026-02-23 01:58:30,598 [INFO]  * Restarting with stat
+2026-02-23 01:58:30,789 [WARNING]  * Debugger is active!
+2026-02-23 01:58:30,802 [INFO]  * Debugger PIN: 856-511-515
+2026-02-23 02:01:41,349 [INFO]  * Detected change in '/Users/ixe/Documents/Code/otanet_frontend_/src/api/flask_api.py', reloading
+2026-02-23 02:01:41,424 [INFO]  * Restarting with stat
+2026-02-23 02:01:41,771 [WARNING]  * Debugger is active!
+2026-02-23 02:01:41,784 [INFO]  * Debugger PIN: 856-511-515
+2026-02-23 02:01:46,828 [INFO]  * Detected change in '/Users/ixe/Documents/Code/otanet_frontend_/src/api/flask_api.py', reloading
+2026-02-23 02:01:46,876 [INFO]  * Restarting with stat
+2026-02-23 02:01:47,090 [WARNING]  * Debugger is active!
+2026-02-23 02:01:47,099 [INFO]  * Debugger PIN: 856-511-515
+2026-02-23 02:02:33,476 [INFO]  * Detected change in '/Users/ixe/Documents/Code/otanet_frontend_/src/api/flask_api.py', reloading
+2026-02-23 02:02:33,540 [INFO]  * Restarting with stat
+2026-02-23 02:02:35,916 [WARNING]  * Debugger is active!
+2026-02-23 02:02:35,927 [INFO]  * Debugger PIN: 856-511-515
+2026-02-23 02:02:43,518 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.1.68:5001
+2026-02-23 02:02:43,518 [INFO] [33mPress CTRL+C to quit[0m
+2026-02-23 02:02:43,519 [INFO]  * Restarting with stat
+2026-02-23 02:02:43,706 [WARNING]  * Debugger is active!
+2026-02-23 02:02:43,715 [INFO]  * Debugger PIN: 856-511-515
+2026-02-23 02:02:47,747 [INFO] GET /manga_count -> 200 (29.4ms)
+2026-02-23 02:02:47,747 [INFO] 127.0.0.1 - - [23/Feb/2026 02:02:47] "GET /manga_count HTTP/1.1" 200 -
+2026-02-23 02:02:47,749 [INFO] GET /recent_manga -> 200 (30.3ms)
+2026-02-23 02:02:47,750 [INFO] GET /recent_manga -> 200 (32.1ms)
+2026-02-23 02:02:47,750 [INFO] 127.0.0.1 - - [23/Feb/2026 02:02:47] "GET /recent_manga?page=1 HTTP/1.1" 200 -
+2026-02-23 02:02:47,752 [INFO] 127.0.0.1 - - [23/Feb/2026 02:02:47] "GET /recent_manga?per_page=10&page=2 HTTP/1.1" 200 -
+2026-02-23 02:02:56,883 [INFO] GET /recent_manga -> 200 (3.9ms)
+2026-02-23 02:02:56,884 [INFO] 127.0.0.1 - - [23/Feb/2026 02:02:56] "GET /recent_manga?page=2 HTTP/1.1" 200 -
+2026-02-23 02:03:05,194 [INFO] GET /recent_manga -> 200 (3.8ms)
+2026-02-23 02:03:05,195 [INFO] 127.0.0.1 - - [23/Feb/2026 02:03:05] "GET /recent_manga?page=3 HTTP/1.1" 200 -
+2026-02-23 02:03:14,473 [INFO] GET /recent_manga -> 200 (3.7ms)
+2026-02-23 02:03:14,475 [INFO] 127.0.0.1 - - [23/Feb/2026 02:03:14] "GET /recent_manga?page=4 HTTP/1.1" 200 -
+2026-02-23 02:03:21,504 [INFO] GET /recent_manga -> 200 (3.4ms)
+2026-02-23 02:03:21,506 [INFO] 127.0.0.1 - - [23/Feb/2026 02:03:21] "GET /recent_manga?page=5 HTTP/1.1" 200 -
+2026-02-23 02:03:33,270 [INFO] GET /recent_manga -> 200 (2.6ms)
+2026-02-23 02:03:33,272 [INFO] 127.0.0.1 - - [23/Feb/2026 02:03:33] "GET /recent_manga?per_page=10&page=1 HTTP/1.1" 200 -
+2026-02-23 02:04:17,781 [INFO] GET /recent_manga -> 200 (4.0ms)
+2026-02-23 02:04:17,783 [INFO] 127.0.0.1 - - [23/Feb/2026 02:04:17] "GET /recent_manga?per_page=10&page=5 HTTP/1.1" 200 -
+2026-02-23 02:07:53,135 [INFO] GET /recent_manga -> 200 (7.5ms)
+2026-02-23 02:07:53,137 [INFO] 127.0.0.1 - - [23/Feb/2026 02:07:53] "GET /recent_manga?page=6 HTTP/1.1" 200 -
+2026-02-23 02:21:08,555 [WARNING]  * Debugger is active!
+2026-02-23 02:21:08,566 [INFO]  * Debugger PIN: 856-511-515

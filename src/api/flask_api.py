@@ -585,47 +585,43 @@ def generate_proxied_image_url(image_url):
     
     return f"{FLASK_BASE}/api/image/{urlquote(image_url, safe='')}"
 
-@app.route("/<slug>", methods=["GET"])
+@app.route("/manga/<hash>", methods=["GET"])
 @rate_limit
-def get_manga_by_slug(slug):
-    # Validate slug format
-    if not re.match(r'^[a-z0-9\-]+$', slug) or len(slug) > 200:
-        return jsonify({"error": "Invalid slug format"}), 400
-    
-    con = get_db_connection()
-    cursor = con.cursor()
+def get_manga_by_hash(hash):
+    """Fetch manga details by hash with optimized query."""
+    try:
+        con = get_db_connection()
+        cursor = con.cursor()
 
-    # Fetch all manga and compare using the same slug conversion logic as to_slug()
-    # This handles special characters properly (colons, commas, etc.)
-    cursor.execute("""
-        SELECT title, description, tags, latest_chapter, cover_img, hash 
-        FROM manga_metadata 
-        ORDER BY time DESC
-    """)
-    rows = cursor.fetchall()
-    
-    result = None
-    for row in rows:
-        # Convert title to slug using same logic as to_slug()
-        title_slug = to_slug(row[0])
-        if title_slug == slug:
+        # Optimized query to fetch only necessary fields
+        cursor.execute(
+            """
+            SELECT title, description, tags, latest_chapter, cover_img, hash
+            FROM manga_metadata
+            WHERE hash = ?
+            LIMIT 1
+            """,
+            (hash,)
+        )
+        row = cursor.fetchone()
+
+        if row:
             orig_cover = row[4] or NOCOVER
             proxied_cover = generate_proxied_image_url(orig_cover)
             result = {
                 "title": row[0],
                 "description": row[1],
-                # Return proxied cover URL so clients load covers via the proxy
                 "cover": proxied_cover,
                 "tags": row[2],
                 "chapters": row[3],
-                "hash": row[5]
+                "hash": row[5],
             }
-            break
-
-    if result:
-        return jsonify(result)
-    else:
-        return jsonify({"error": "Manga not found", "cover": NOCOVER}), 404
+            return jsonify(result)
+        else:
+            return jsonify({"error": "Manga not found", "cover": NOCOVER}), 404
+    except Exception as e:
+        logger.error(f"Error fetching manga by hash: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 # Search endpoint
@@ -1012,15 +1008,5 @@ def get_recommendations():
         logger.error(f"Error in get_recommendations: {e}")
         return jsonify({"error": str(e)}), 500
 
-
 if __name__ == '__main__':
-    # Run in dev mode by default when running directly
-    os.environ['DEV_MODE'] = '1'
-    logger.info("Running Flask in DEVELOPMENT mode - using local database")
-    
-    # Initialize database on app startup (don't wait for first request)
-    logger.info("[STARTUP] Initializing database pool...")
-    initialize_db_pool()
-    logger.info("[STARTUP] Database pool ready")
-    
-    app.run(host='0.0.0.0', threaded=True, debug=True, port=5001)
+    app.run(host='0.0.0.0', port=5001, debug=True)

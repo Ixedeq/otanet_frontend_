@@ -111,25 +111,25 @@ export default function ChapterPage() {
       try {
         const [chaptersRes, mangaRes] = await Promise.all([
           fetch(`${API_BASE}/get_chapters?hash=${hash}`),
-          fetch(`${API_BASE}/${slug}`),
+          fetch(`${API_BASE}/manga/${hash}`),
         ]);
 
-        const chaptersData = await chaptersRes.json();
-        const sortedChapters = chaptersData
-          .map((ch) => ({ ...ch, numberStr: ch.number.toString() }))
-          .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
-        setChapters(sortedChapters);
+        if (chaptersRes.ok) {
+          const chaptersData = await chaptersRes.json();
+          setChapters(chaptersData);
+        }
 
-        const mangaData = await mangaRes.json();
-        setMangaTitle(mangaData.title || slug);
+        if (mangaRes.ok) {
+          const mangaData = await mangaRes.json();
+          setMangaTitle(mangaData.title || "");
+        }
       } catch (err) {
-        console.error("Failed to fetch chapters/manga info:", err);
-        setMangaTitle(slug);
-        setChapters([]);
+        console.error("Failed to fetch data:", err);
       }
     };
+
     fetchData();
-  }, [slug]);
+  }, [hash]);
 
   // --- Current chapter index & navigation ---
   const currentIndex = useMemo(
