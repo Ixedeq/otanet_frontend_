@@ -143,7 +143,7 @@ export default function MangaPage() {
 
       // Fetch manga detail first (critical for rendering)
       try {
-        const data = await fetchWithTimeout(`${API_BASE}/${slug}`);
+        const data = await fetchWithTimeout(`${API_BASE}/manga/${hash}`);
 
         if (!data.cover) data.cover = DEFAULT_COVER;
 
@@ -190,18 +190,6 @@ export default function MangaPage() {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const mangaRes = await fetch(`${API_BASE}/manga/${hash}`);
-        if (mangaRes.ok) {
-          const mangaData = await mangaRes.json();
-          setManga(mangaData);
-        }
-      } catch (err) {
-        console.error("Failed to fetch manga data:", err);
-      }
-    };
-
     fetchData();
   }, [hash]);
 
