@@ -131,7 +131,7 @@ def validate_hash(hash_value):
     if not hash_value:
         return False
     # Allow UUIDs and common hash formats
-    return bool(re.match(r'^[a-fA-F0-9\-]{8,64}$', hash_value))
+    return bool(re.match(r'^([a-fA-F0-9\-]{8,64}|as-[a-fA-F0-9]{8}-[a-fA-F0-9]{8})$', hash_value))
 
 # Security headers middleware
 @app.after_request
