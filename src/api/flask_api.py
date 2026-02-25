@@ -660,7 +660,7 @@ def get_chapters():
         return jsonify([])
     
     # Validate hash format
-    if not validate_hash(hash_param.replace('_', '-').replace('-', '')):
+    if not validate_hash(hash_param):
         return jsonify({"error": "Invalid hash format"}), 400
 
     db_path = os.path.join(MANGA_DB_DIR, f"{hash_param}.db")
@@ -770,13 +770,11 @@ def get_pages():
         return jsonify({"error": "Missing required parameters"}), 400
     
     # Validate hash format to prevent SQL injection via table name
-    if not validate_hash(hash_param.replace('_', '-').replace('-', '')):
+    if not validate_hash(hash_param):
         return jsonify({"error": "Invalid hash format"}), 400
     
-    # Sanitize table name - only allow alphanumeric and underscores
+    # Normalize to table-name format (hyphens -> underscores)
     hash_copy = hash_param.replace('-', '_')
-    if not validate_hash(hash_copy):
-        return jsonify({"error": "Invalid hash format"}), 400
     
     # Clean chapter input
     chapter = chapter.replace("chapter_", '').replace("-", '_')
