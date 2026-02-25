@@ -775,7 +775,7 @@ def get_pages():
     
     # Sanitize table name - only allow alphanumeric and underscores
     hash_copy = hash_param.replace('-', '_')
-    if not re.match(r'^[a-zA-Z0-9_]+$', hash_copy):
+    if not validate_hash(hash_copy):
         return jsonify({"error": "Invalid hash format"}), 400
     
     # Clean chapter input
