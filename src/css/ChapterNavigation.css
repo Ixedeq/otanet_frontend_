@@ -1,0 +1,121 @@
+/* Navigation - Top & Bottom */
+.chapter-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 500px;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.chapter-navigation.top-nav {
+  margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.chapter-navigation.bottom-nav {
+  margin-top: 3rem;
+  gap: 1rem;
+}
+
+.nav-btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-align: center;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Top nav buttons - compact */
+.top-nav .nav-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.top-nav .nav-btn:hover:not(.disabled) {
+  background: rgba(208, 54, 138, 0.2);
+  color: #fff;
+  border-color: rgba(208, 54, 138, 0.35);
+}
+
+.top-nav .nav-btn.prev:hover:not(.disabled) {
+  transform: translateX(-2px);
+}
+
+.top-nav .nav-btn.next:hover:not(.disabled) {
+  transform: translateX(2px);
+}
+
+.top-nav .nav-btn.disabled {
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.25);
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
+.nav-chapter-indicator {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #d0368a;
+  background: rgba(208, 54, 138, 0.1);
+  border-radius: 6px;
+}
+
+/* Bottom nav buttons - full */
+.bottom-nav .nav-btn.prev {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.8rem 1.5rem;
+}
+
+.bottom-nav .nav-btn.prev:hover:not(.disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(-4px);
+}
+
+.bottom-nav .nav-btn.next {
+  background: linear-gradient(135deg, #d0368a 0%, #a855f7 100%);
+  color: #fff;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  box-shadow: 0 4px 20px rgba(208, 54, 138, 0.3);
+}
+
+.bottom-nav .nav-btn.next:hover:not(.disabled) {
+  background: linear-gradient(135deg, #e04898 0%, #b966f7 100%);
+  transform: translateX(4px);
+  box-shadow: 0 6px 28px rgba(208, 54, 138, 0.45);
+}
+
+.bottom-nav .nav-btn.disabled {
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.bottom-nav .nav-btn.disabled:hover {
+  transform: none;
+}
