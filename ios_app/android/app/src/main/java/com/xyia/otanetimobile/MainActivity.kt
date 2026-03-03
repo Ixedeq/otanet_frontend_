@@ -1,4 +1,4 @@
-package com.otanetimobile
+package com.xyia.otanetimobile
 
 import android.os.Build
 import android.os.Bundle
