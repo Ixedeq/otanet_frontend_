@@ -1,0 +1,355 @@
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  ActivityIndicator,
+  TouchableOpacity,
+  Image,
+  RefreshControl,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { LinearGradient } from "expo-linear-gradient";
+import MaskedView from "@react-native-masked-view/masked-view";
+import apiService from "../api/apiService";
+import storageService from "../utils/storageService";
+import { useUnread } from "../context/UnreadContext";
+
+// Gradient text component
+const GradientText = ({ children, style }) => (
+  <MaskedView
+    maskElement={
+      <Text style={[style, { backgroundColor: "transparent" }]}>
+        {children}
+      </Text>
+    }
+  >
+    <LinearGradient
+      colors={["#d0368a", "#708ad4"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+    >
+      <Text style={[style, { opacity: 0 }]}>{children}</Text>
+    </LinearGradient>
+  </MaskedView>
+);
+
+export default function HomeScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+  const { unreadCounts, refreshUnreadCounts } = useUnread();
+  const [bookmarkedManga, setBookmarkedManga] = useState([]);
+  const [recentManga, setRecentManga] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadHome();
+      refreshUnreadCounts();
+    }, []),
+  );
+
+  const loadHome = async () => {
+    try {
+      setLoading(true);
+
+      // Load bookmarked manga
+      const bookmarks = await storageService.getBookmarks();
+
+      // Sort by bookmarkedAt date, most recent first
+      const sortedBookmarks = bookmarks
+        .sort(
+          (a, b) =>
+            new Date(b.bookmarkedAt || 0) - new Date(a.bookmarkedAt || 0),
+        )
+        .slice(0, 20);
+
+      setBookmarkedManga(sortedBookmarks);
+
+      // Also load some recent manga for discovery
+      const recent = await apiService.getRecentManga(1, 10);
+      setRecentManga(recent || []);
+    } catch (err) {
+      console.error("Failed to load home:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadHome();
+    setRefreshing(false);
+  };
+
+  const handleMangaTap = (item) => {
+    navigation.navigate("MangaDetail", {
+      hash: item.hash,
+      title: item.title,
+      manga: item,
+    });
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => {
+            setError(null);
+            setLoading(true);
+          }}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#d0368a"
+          />
+        }
+      >
+        <View style={styles.header}>
+          <Text style={styles.welcomeText}>Welcome to</Text>
+          <GradientText style={styles.title}>OtaNet</GradientText>
+        </View>
+
+        {/* Bookmarked Manga Section */}
+        {bookmarkedManga.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="bookmark" size={18} color="#d0368a" />
+              <Text style={styles.sectionTitle}>Your Bookmarks</Text>
+            </View>
+            <View style={styles.mangaGrid}>
+              {bookmarkedManga.map((item) => {
+                const unreadCount = unreadCounts[item.hash]?.unread || 0;
+                return (
+                  <TouchableOpacity
+                    key={item.hash}
+                    style={styles.mangaCard}
+                    onPress={() => handleMangaTap(item)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.coverContainer}>
+                      <Image
+                        source={{ uri: item.cover_img || item.coverUrl }}
+                        style={styles.coverImage}
+                      />
+                      {unreadCount > 0 && (
+                        <View style={styles.unreadBadge}>
+                          <Text style={styles.unreadBadgeText}>
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.mangaTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* No Bookmarks Message */}
+        {bookmarkedManga.length === 0 && (
+          <View style={styles.emptyBookmarks}>
+            <Ionicons name="bookmark-outline" size={48} color="#555" />
+            <Text style={styles.emptyTitle}>No bookmarks yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Bookmark manga to see them here
+            </Text>
+          </View>
+        )}
+
+        {/* Recent Releases Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="time-outline" size={18} color="#d0368a" />
+            <Text style={styles.sectionTitle}>Recent Releases</Text>
+          </View>
+          <View style={styles.mangaGrid}>
+            {recentManga.map((item) => (
+              <TouchableOpacity
+                key={item.hash}
+                style={styles.mangaCard}
+                onPress={() => handleMangaTap(item)}
+                activeOpacity={0.7}
+              >
+                <Image
+                  source={{ uri: item.cover_img || item.coverUrl }}
+                  style={styles.coverImage}
+                />
+                <View style={styles.cardInfo}>
+                  <Text style={styles.mangaTitle} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#121212",
+  },
+  centerContent: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  welcomeText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#888",
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: "800",
+    letterSpacing: -1,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#f5f5f5",
+  },
+  emptyBookmarks: {
+    alignItems: "center",
+    paddingVertical: 32,
+    marginBottom: 24,
+    backgroundColor: "rgba(255, 255, 255, 0.02)",
+    borderRadius: 12,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#f5f5f5",
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: "#666",
+    marginTop: 4,
+  },
+  mangaGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  mangaCard: {
+    width: "48%",
+    marginBottom: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.04)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  coverImage: {
+    width: "100%",
+    aspectRatio: 3 / 4.3,
+    backgroundColor: "#1e1e1e",
+  },
+  coverContainer: {
+    position: "relative",
+  },
+  unreadBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    backgroundColor: "#d0368a",
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 6,
+  },
+  unreadBadgeText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  cardInfo: {
+    padding: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.02)",
+  },
+  mangaTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#f5f5f5",
+    lineHeight: 18,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#d32f2f",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: "#d0368a",
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+});
