@@ -111,25 +111,25 @@ export default function ChapterPage() {
       try {
         const [chaptersRes, mangaRes] = await Promise.all([
           fetch(`${API_BASE}/get_chapters?hash=${hash}`),
-          fetch(`${API_BASE}/manga/${hash}`),
+          fetch(`${API_BASE}/${slug}`),
         ]);
 
-        if (chaptersRes.ok) {
-          const chaptersData = await chaptersRes.json();
-          setChapters(chaptersData);
-        }
+        const chaptersData = await chaptersRes.json();
+        const sortedChapters = chaptersData
+          .map((ch) => ({ ...ch, numberStr: ch.number.toString() }))
+          .sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
+        setChapters(sortedChapters);
 
-        if (mangaRes.ok) {
-          const mangaData = await mangaRes.json();
-          setMangaTitle(mangaData.title || "");
-        }
+        const mangaData = await mangaRes.json();
+        setMangaTitle(mangaData.title || slug);
       } catch (err) {
-        console.error("Failed to fetch data:", err);
+        console.error("Failed to fetch chapters/manga info:", err);
+        setMangaTitle(slug);
+        setChapters([]);
       }
     };
-
     fetchData();
-  }, [hash]);
+  }, [slug]);
 
   // --- Current chapter index & navigation ---
   const currentIndex = useMemo(
@@ -271,7 +271,7 @@ export default function ChapterPage() {
       />
       {!fullscreen && (
         <div className="chapter-header">
-          <Link to={`/${slug}/${hash}`} className="back-link">
+          <Link to={`/${slug}#${hash}`} className="back-link">
             ← {mangaTitle}
           </Link>
           <h1 className="chapter-title">Chapter {chapterNumberStr}</h1>
@@ -292,35 +292,13 @@ export default function ChapterPage() {
       )}
 
       {!fullscreen && (
-        <div className="chapter-navigation top-nav">
-          {prevChapter ? (
-            <Link
-              to={`/read/${slug}/${hash}/chapter-${prevChapter.numberStr.replace(/\./g, "-")}`}
-              className="nav-btn prev"
-              onClick={() =>
-                markChapterAsRead(parseFloat(prevChapter.numberStr))
-              }
-            >
-              ‹ Prev
-            </Link>
-          ) : (
-            <span className="nav-btn prev disabled">‹ Prev</span>
-          )}
-          <span className="nav-chapter-indicator">Ch. {chapterNumberStr}</span>
-          {nextChapter ? (
-            <Link
-              to={`/read/${slug}/${hash}/chapter-${nextChapter.numberStr.replace(/\./g, "-")}`}
-              className="nav-btn next"
-              onClick={() =>
-                markChapterAsRead(parseFloat(nextChapter.numberStr))
-              }
-            >
-              Next ›
-            </Link>
-          ) : (
-            <span className="nav-btn next disabled">Next ›</span>
-          )}
-        </div>
+        <ChapterNavigation className="chapter-nav-top"
+          slug={slug}
+          hash={hash}
+          chapters={chapters}
+          currentChapterNumberStr={chapterNumberStr}
+          markChapterAsRead={markChapterAsRead}
+        />
       )}
 
       {loadingPages && <p className="loading-text">Loading pages...</p>}
