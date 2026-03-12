@@ -13,6 +13,8 @@ import {
   TextInput,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import LoadingIndicator from "../components/LoadingIndicator";
+import NetworkErrorView from "../components/NetworkErrorView";
 import apiService from "../api/apiService";
 
 export default function TagFilterScreen({ navigation, route }) {
@@ -20,11 +22,12 @@ export default function TagFilterScreen({ navigation, route }) {
 
   const [allTags, setAllTags] = useState([]);
   const [selectedTags, setSelectedTags] = useState(
-    preSelectedTag ? [preSelectedTag] : []
+    preSelectedTag ? [preSelectedTag] : [],
   );
   const [excludedTags, setExcludedTags] = useState([]);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searching, setSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [tagSearch, setTagSearch] = useState("");
@@ -41,7 +44,10 @@ export default function TagFilterScreen({ navigation, route }) {
         try {
           setSearching(true);
           setHasSearched(true);
-          const data = await apiService.searchByTags(selectedTags, excludedTags);
+          const data = await apiService.searchByTags(
+            selectedTags,
+            excludedTags,
+          );
           setResults(data || []);
         } catch (error) {
           console.error("Auto-search failed:", error);
@@ -77,14 +83,15 @@ export default function TagFilterScreen({ navigation, route }) {
   const loadTags = async () => {
     try {
       setLoading(true);
+      setError(null);
       const tags = await apiService.getAllTags();
       const normalizedTags = Array.isArray(tags)
         ? tags.map((tag, index) => normalizeTag(tag, index))
         : [];
       setAllTags(normalizedTags);
-    } catch (error) {
-      console.error("Failed to load tags:", error);
-      Alert.alert("Error", "Failed to load tags");
+    } catch (err) {
+      console.error("Failed to load tags:", err);
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -233,9 +240,21 @@ export default function TagFilterScreen({ navigation, route }) {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#d0368a" />
-        <Text style={styles.loadingText}>Loading tags...</Text>
+        <LoadingIndicator size="medium" text="Loading tags..." />
       </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <NetworkErrorView
+        error={error}
+        onRetry={() => {
+          setError(null);
+          loadTags();
+        }}
+        showDownloadsHint={true}
+      />
     );
   }
 

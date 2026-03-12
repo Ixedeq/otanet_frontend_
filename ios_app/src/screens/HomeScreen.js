@@ -4,11 +4,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  ActivityIndicator,
   TouchableOpacity,
   Image,
   RefreshControl,
+  Dimensions,
 } from "react-native";
+import LoadingIndicator from "../components/LoadingIndicator";
+import NetworkErrorView from "../components/NetworkErrorView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -18,7 +20,7 @@ import apiService from "../api/apiService";
 import storageService from "../utils/storageService";
 import { useUnread } from "../context/UnreadContext";
 
-// Gradient text component
+// Gradient text component - uses 135deg angle like web app
 const GradientText = ({ children, style }) => (
   <MaskedView
     maskElement={
@@ -30,12 +32,15 @@ const GradientText = ({ children, style }) => (
     <LinearGradient
       colors={["#d0368a", "#708ad4"]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
+      end={{ x: 1, y: 1 }}
     >
       <Text style={[style, { opacity: 0 }]}>{children}</Text>
     </LinearGradient>
   </MaskedView>
 );
+
+// Logo component
+const Logo = require("../../assets/icon.png");
 
 export default function HomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -56,8 +61,9 @@ export default function HomeScreen({ navigation }) {
   const loadHome = async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      // Load bookmarked manga
+      // Load bookmarked manga (local storage - always works offline)
       const bookmarks = await storageService.getBookmarks();
 
       // Sort by bookmarkedAt date, most recent first
@@ -70,12 +76,21 @@ export default function HomeScreen({ navigation }) {
 
       setBookmarkedManga(sortedBookmarks);
 
-      // Also load some recent manga for discovery
-      const recent = await apiService.getRecentManga(1, 10);
-      setRecentManga(recent || []);
+      // Try to load recent manga (may fail offline)
+      try {
+        const recent = await apiService.getRecentManga(1, 10);
+        setRecentManga(recent || []);
+      } catch (apiErr) {
+        console.log(
+          "Failed to load recent manga (may be offline):",
+          apiErr.message,
+        );
+        // Don't set error - we still have bookmarks to show
+        setRecentManga([]);
+      }
     } catch (err) {
       console.error("Failed to load home:", err);
-      setError(err.message);
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -98,25 +113,21 @@ export default function HomeScreen({ navigation }) {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <LoadingIndicator size="medium" />
       </View>
     );
   }
 
-  if (error) {
+  if (error && bookmarkedManga.length === 0) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={() => {
-            setError(null);
-            setLoading(true);
-          }}
-        >
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
+      <NetworkErrorView
+        error={error}
+        onRetry={() => {
+          setError(null);
+          loadHome();
+        }}
+        showDownloadsHint={true}
+      />
     );
   }
 
@@ -133,8 +144,16 @@ export default function HomeScreen({ navigation }) {
         }
       >
         <View style={styles.header}>
-          <Text style={styles.welcomeText}>Welcome to</Text>
-          <GradientText style={styles.title}>OtaNet</GradientText>
+          <View style={styles.logoRow}>
+            <Image source={Logo} style={styles.logoImage} />
+            <View style={styles.titleContainer}>
+              <View style={styles.titleRow}>
+                <GradientText style={styles.title}>Ota</GradientText>
+                <Text style={styles.titleNet}>Net</Text>
+              </View>
+              <Text style={styles.tagline}>Your Manga Library</Text>
+            </View>
+          </View>
         </View>
 
         {/* Bookmarked Manga Section */}
@@ -237,16 +256,39 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 20,
   },
-  welcomeText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#888",
-    marginBottom: 4,
+  logoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  logoImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+  },
+  titleContainer: {
+    flex: 1,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
   },
   title: {
-    fontSize: 36,
-    fontWeight: "800",
-    letterSpacing: -1,
+    fontSize: 32,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+  },
+  titleNet: {
+    fontSize: 32,
+    fontWeight: "400",
+    color: "#f5f5f5",
+    opacity: 0.9,
+    letterSpacing: -0.5,
+  },
+  tagline: {
+    fontSize: 13,
+    color: "#888",
+    marginTop: 2,
   },
   section: {
     marginBottom: 24,

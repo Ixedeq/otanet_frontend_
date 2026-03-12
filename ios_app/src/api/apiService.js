@@ -4,6 +4,19 @@ import Config from "../config";
 
 const API_BASE = Config.API_BASE;
 
+// Log the API base URL for debugging
+console.log("API_BASE configured as:", API_BASE);
+
+// Custom error class for network errors
+export class NetworkError extends Error {
+  constructor(message, originalError) {
+    super(message);
+    this.name = "NetworkError";
+    this.isNetworkError = true;
+    this.originalError = originalError;
+  }
+}
+
 // Create axios instance with timeout
 const api = axios.create({
   baseURL: API_BASE,
@@ -16,6 +29,19 @@ const api = axios.create({
 // In-memory cache for API responses
 const cache = {};
 const CACHE_TTL = 1800000; // 30 minutes
+
+/**
+ * Check if an error is a network connectivity issue
+ */
+function isNetworkConnectivityError(error) {
+  return (
+    error.message === "Network Error" ||
+    error.code === "ECONNABORTED" ||
+    error.code === "ETIMEDOUT" ||
+    error.message?.includes("Network request failed") ||
+    !error.response // No response means network issue
+  );
+}
 
 /**
  * Make cached API request
@@ -44,7 +70,28 @@ async function cachedFetch(url, params = {}, ttl = CACHE_TTL) {
 
     return data;
   } catch (error) {
-    console.error(`API request failed: ${url}`, error);
+    console.error(`API request failed: ${url}`);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+
+    // Check if we have cached data to return as fallback
+    if (cache[cacheKey]) {
+      console.log(`Returning stale cache for: ${url}`);
+      return cache[cacheKey].data;
+    }
+
+    // Wrap network errors with more helpful message
+    if (isNetworkConnectivityError(error)) {
+      throw new NetworkError(
+        "Unable to connect. Please check your internet connection.",
+        error,
+      );
+    }
+
     throw error;
   }
 }

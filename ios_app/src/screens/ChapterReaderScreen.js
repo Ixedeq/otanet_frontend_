@@ -14,6 +14,8 @@ import {
   FlatList,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import LoadingIndicator from "../components/LoadingIndicator";
+import NetworkErrorView from "../components/NetworkErrorView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import apiService from "../api/apiService";
 import storageService from "../utils/storageService";
@@ -35,11 +37,17 @@ const PageImage = React.memo(({ source, style, resizeMode, isScrollMode }) => {
 
   useEffect(() => {
     const uri = source?.uri;
-    if (!uri) return;
+    if (!uri) {
+      console.log("PageImage: No URI provided");
+      return;
+    }
+
+    console.log("PageImage loading URI:", uri.substring(0, 80));
 
     Image.getSize(
       uri,
       (imgWidth, imgHeight) => {
+        console.log("PageImage getSize success:", imgWidth, "x", imgHeight);
         if (imgWidth && imgHeight) {
           const aspectRatio = imgWidth / imgHeight;
           if (isScrollMode) {
@@ -59,8 +67,14 @@ const PageImage = React.memo(({ source, style, resizeMode, isScrollMode }) => {
           }
         }
       },
-      () => {
+      (getSizeError) => {
         // On error, use default dimensions
+        console.log(
+          "PageImage getSize error:",
+          getSizeError,
+          "for URI:",
+          source?.uri?.substring(0, 80),
+        );
         setError(true);
       },
     );
@@ -86,8 +100,22 @@ const PageImage = React.memo(({ source, style, resizeMode, isScrollMode }) => {
           !loaded && { opacity: 0 },
         ]}
         resizeMode={resizeMode || "contain"}
-        onLoad={() => setLoaded(true)}
-        onError={() => setError(true)}
+        onLoad={() => {
+          console.log(
+            "PageImage loaded successfully:",
+            source?.uri?.substring(0, 50),
+          );
+          setLoaded(true);
+        }}
+        onError={(e) => {
+          console.log(
+            "PageImage load error:",
+            e.nativeEvent?.error,
+            "for:",
+            source?.uri?.substring(0, 80),
+          );
+          setError(true);
+        }}
       />
     </View>
   );
@@ -108,10 +136,11 @@ export default function ChapterReaderScreen({ route, navigation }) {
   const [pages, setPages] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showControls, setShowControls] = useState(false);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
-  const [readingMode, setReadingMode] = useState("paginated");
+  const [readingMode, setReadingMode] = useState("scroll");
   const didSwipeRef = useRef(false);
   const scrollViewRef = useRef(null);
 
@@ -143,7 +172,7 @@ export default function ChapterReaderScreen({ route, navigation }) {
   useEffect(() => {
     // Mark chapter as read when loaded
     if (pages.length > 0) {
-      const chapterNum = parseFloat(chapter);
+      const chapterNum = String(chapter);
       storageService.markChapterAsRead(hash, chapterNum).catch((err) => {
         console.error("Failed to mark chapter as read:", err);
       });
@@ -157,7 +186,9 @@ export default function ChapterReaderScreen({ route, navigation }) {
     if (pages.length > 0) {
       const prefetchImages = async () => {
         const urls = pages
-          .map((p) => (typeof p === "string" ? p : p?.src))
+          .map((p) =>
+            typeof p === "string" ? p : p?.src || p?.url || p?.image,
+          )
           .filter(Boolean);
 
         // Prefetch in batches of 5 to avoid overwhelming the network
@@ -188,7 +219,10 @@ export default function ChapterReaderScreen({ route, navigation }) {
 
       nearbyIndices.forEach((i) => {
         const page = pages[i];
-        const url = typeof page === "string" ? page : page?.src;
+        const url =
+          typeof page === "string"
+            ? page
+            : page?.src || page?.url || page?.image;
         if (url) {
           Image.prefetch(url).catch(() => {});
         }
@@ -209,6 +243,9 @@ export default function ChapterReaderScreen({ route, navigation }) {
         Array.isArray(offlineChapters) &&
         offlineChapters.length
       ) {
+        console.log("Loading offline chapter", chapter);
+        console.log("Offline chapters count:", offlineChapters.length);
+
         const normalizedOfflineChapters = offlineChapters.map((ch) => ({
           number: getChapterNumber(ch),
           pages: ch?.pages || [],
@@ -217,6 +254,15 @@ export default function ChapterReaderScreen({ route, navigation }) {
         const currentOfflineChapter = normalizedOfflineChapters.find(
           (ch) => parseFloat(ch.number) === parseFloat(chapter),
         );
+
+        console.log("Current offline chapter found:", !!currentOfflineChapter);
+        console.log("Pages count:", currentOfflineChapter?.pages?.length || 0);
+        if (currentOfflineChapter?.pages?.[0]) {
+          console.log(
+            "First page path:",
+            currentOfflineChapter.pages[0].substring(0, 100),
+          );
+        }
 
         setChapters(normalizedOfflineChapters);
         setPages(currentOfflineChapter?.pages || []);
@@ -243,9 +289,9 @@ export default function ChapterReaderScreen({ route, navigation }) {
         );
         setCurrentChapterIndex(currentIdx >= 0 ? currentIdx : 0);
       }
-    } catch (error) {
-      console.error("Failed to load chapter pages:", error);
-      Alert.alert("Error", "Failed to load chapter");
+    } catch (err) {
+      console.error("Failed to load chapter pages:", err);
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -335,9 +381,22 @@ export default function ChapterReaderScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading chapter...</Text>
+        <LoadingIndicator size="large" text="Loading chapter..." />
       </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <NetworkErrorView
+        error={error}
+        onRetry={() => {
+          setError(null);
+          setLoading(true);
+          loadChapter();
+        }}
+        showDownloadsHint={true}
+      />
     );
   }
 
@@ -359,7 +418,12 @@ export default function ChapterReaderScreen({ route, navigation }) {
 
   const renderScrollPage = ({ item, index }) => (
     <PageImage
-      source={{ uri: typeof item === "string" ? item : item?.src }}
+      source={{
+        uri:
+          typeof item === "string"
+            ? item
+            : item?.src || item?.url || item?.image,
+      }}
       style={styles.scrollPageImage}
       resizeMode="contain"
       isScrollMode={true}
@@ -411,7 +475,7 @@ export default function ChapterReaderScreen({ route, navigation }) {
               uri:
                 typeof currentPage === "string"
                   ? currentPage
-                  : currentPage?.src,
+                  : currentPage?.src || currentPage?.url || currentPage?.image,
             }}
             style={styles.pageImage}
             resizeMode="contain"

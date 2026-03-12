@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Keyboard,
+  Alert,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import apiService from "../api/apiService";
@@ -19,6 +20,7 @@ export default function SearchScreen({ navigation }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -30,13 +32,21 @@ export default function SearchScreen({ navigation }) {
     try {
       setLoading(true);
       setHasSearched(true);
+      setError(null);
       Keyboard.dismiss();
 
       const data = await apiService.searchByTitle(searchQuery);
       setResults(data || []);
-    } catch (error) {
-      console.error("Search failed:", error);
+    } catch (err) {
+      console.error("Search failed:", err);
       setResults([]);
+      const isNetwork =
+        err?.isNetworkError || err?.message?.includes("Network");
+      setError(
+        isNetwork
+          ? "Unable to search. Please check your connection."
+          : "Search failed. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -105,10 +115,18 @@ export default function SearchScreen({ navigation }) {
       {/* Results */}
       {loading ? (
         <View style={[styles.container, styles.centerContent]}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#d0368a" />
         </View>
       ) : hasSearched ? (
-        results.length > 0 ? (
+        error ? (
+          <View style={[styles.container, styles.centerContent]}>
+            <Ionicons name="cloud-offline" size={48} color="#d0368a" />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleSearch}>
+              <Text style={styles.retryText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : results.length > 0 ? (
           <FlatList
             data={results}
             renderItem={renderResultItem}
@@ -235,5 +253,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 12,
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#999",
+    marginTop: 12,
+    textAlign: "center",
+    paddingHorizontal: 32,
+  },
+  retryButton: {
+    marginTop: 16,
+    backgroundColor: "#d0368a",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  retryText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });

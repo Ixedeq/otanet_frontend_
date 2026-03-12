@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect } from "@react-navigation/native";
+import LoadingIndicator from "../components/LoadingIndicator";
 import storageService from "../utils/storageService";
 import { useUnread } from "../context/UnreadContext";
 
@@ -113,6 +114,14 @@ export default function BookmarksScreen({ navigation }) {
       </View>
     );
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <LoadingIndicator size="medium" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

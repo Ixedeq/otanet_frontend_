@@ -10,6 +10,8 @@ import {
   SafeAreaView,
 } from "react-native";
 import apiService from "../api/apiService";
+import LoadingIndicator from "../components/LoadingIndicator";
+import NetworkErrorView from "../components/NetworkErrorView";
 
 export default function RecentScreen({ navigation }) {
   const [manga, setManga] = useState([]);
@@ -27,6 +29,7 @@ export default function RecentScreen({ navigation }) {
   const loadInitial = async () => {
     try {
       setInitialLoading(true);
+      setError(null);
       const data = await apiService.getRecentManga(1);
 
       if (data && data.length > 0) {
@@ -39,7 +42,7 @@ export default function RecentScreen({ navigation }) {
       }
     } catch (err) {
       console.error("Failed to load recent manga:", err);
-      setError(err.message);
+      setError(err);
     } finally {
       setInitialLoading(false);
     }
@@ -121,29 +124,24 @@ export default function RecentScreen({ navigation }) {
   if (initialLoading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#d0368a" />
-        <Text style={styles.loadingText}>Loading manga...</Text>
+        <LoadingIndicator size="medium" text="Loading manga..." />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={() => {
-            setError(null);
-            setManga([]);
-            setPage(1);
-            setHasMore(true);
-            loadMore();
-          }}
-        >
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
+      <NetworkErrorView
+        error={error}
+        onRetry={() => {
+          setError(null);
+          setManga([]);
+          setPage(1);
+          setHasMore(true);
+          loadInitial();
+        }}
+        showDownloadsHint={true}
+      />
     );
   }
 

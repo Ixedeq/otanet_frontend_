@@ -37,7 +37,7 @@ function HomeStack() {
       <Stack.Screen
         name="HomeTab"
         component={HomeScreen}
-        options={{ title: "OtaNet" }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="MangaDetail"
@@ -107,7 +107,6 @@ function RecentStack() {
     </Stack.Navigator>
   );
 }
-
 
 // Search stack
 function SearchStack() {

@@ -11,12 +11,16 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import LoadingIndicator from "../components/LoadingIndicator";
 import { useFocusEffect } from "@react-navigation/native";
 import storageService from "../utils/storageService";
 
 export default function DownloadsScreen({ navigation }) {
   const [downloads, setDownloads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [autoRepairing, setAutoRepairing] = useState(false);
+  const [repairing, setRepairing] = useState(null); // hash of manga being repaired
+  const [repairProgress, setRepairProgress] = useState(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -27,13 +31,78 @@ export default function DownloadsScreen({ navigation }) {
   const loadDownloads = async () => {
     try {
       setLoading(true);
-      const data = await storageService.getDownloads();
+      // First, repair any downloads missing local covers (for previous downloads)
+      await storageService.repairDownloadCovers();
+      let data = await storageService.getDownloads();
+
+      // Auto-repair downloads needing chapter repair (enable offline viewing automatically)
+      const needsRepair =
+        data?.filter((d) => storageService.downloadNeedsRepair(d)) || [];
+
+      if (needsRepair.length > 0) {
+        console.log(
+          `Auto-repairing ${needsRepair.length} download(s) for offline viewing...`,
+        );
+        setAutoRepairing(true);
+
+        for (const download of needsRepair) {
+          try {
+            setRepairProgress({
+              chapter: 0,
+              total: download.chapters?.length || 0,
+              status: `Enabling offline for ${download.title}...`,
+            });
+            await storageService.repairDownloadChapters(
+              download,
+              (progress) => {
+                setRepairProgress(progress);
+              },
+            );
+          } catch (err) {
+            console.error(`Failed to auto-repair ${download.title}:`, err);
+          }
+        }
+
+        setAutoRepairing(false);
+        setRepairProgress(null);
+        // Reload after repairs
+        data = await storageService.getDownloads();
+      }
+
       setDownloads(data || []);
     } catch (error) {
       console.error("Failed to load downloads:", error);
       Alert.alert("Error", "Failed to load downloads");
     } finally {
       setLoading(false);
+      setAutoRepairing(false);
+    }
+  };
+
+  const handleRepairDownload = async (download) => {
+    try {
+      setRepairing(download.hash);
+      setRepairProgress({
+        chapter: 0,
+        total: download.chapters?.length || 0,
+        status: "Starting repair...",
+      });
+
+      await storageService.repairDownloadChapters(download, (progress) => {
+        setRepairProgress(progress);
+      });
+
+      Alert.alert("Success", "Download repaired for offline viewing!");
+      await loadDownloads();
+    } catch (error) {
+      console.error("Failed to repair download:", error);
+      Alert.alert(
+        "Error",
+        "Failed to repair download. Please try re-downloading.",
+      );
+    } finally {
+      setRepairing(null);
+      setRepairProgress(null);
     }
   };
 
@@ -68,6 +137,29 @@ export default function DownloadsScreen({ navigation }) {
     );
   };
 
+  const handleClearAllDownloads = () => {
+    Alert.alert(
+      "Clear All Downloads",
+      "Are you sure you want to delete ALL downloads? This cannot be undone.",
+      [
+        { text: "Cancel", onPress: () => {} },
+        {
+          text: "Delete All",
+          onPress: async () => {
+            try {
+              await storageService.clearAllDownloads();
+              setDownloads([]);
+              Alert.alert("Success", "All downloads cleared");
+            } catch (error) {
+              Alert.alert("Error", "Failed to clear downloads");
+            }
+          },
+          style: "destructive",
+        },
+      ],
+    );
+  };
+
   const getStorageSize = (bytes) => {
     if (!bytes) return "0 B";
     const k = 1024;
@@ -83,6 +175,10 @@ export default function DownloadsScreen({ navigation }) {
       item.chapters?.reduce((sum, ch) => sum + (ch.size || 0), 0) ||
       0;
     const chapterCount = item.chapters?.length || 0;
+    // Use local cover path if available, otherwise fall back to remote
+    const coverUri = item.localCoverPath || item.cover_img;
+    const needsRepair = storageService.downloadNeedsRepair(item);
+    const isRepairing = repairing === item.hash;
 
     return (
       <View style={styles.downloadItem}>
@@ -91,7 +187,7 @@ export default function DownloadsScreen({ navigation }) {
           onPress={() => handleMangaTap(item)}
           activeOpacity={0.7}
         >
-          <Image source={{ uri: item.cover_img }} style={styles.cover} />
+          <Image source={{ uri: coverUri }} style={styles.cover} />
           <View style={styles.info}>
             <Text style={styles.title} numberOfLines={2}>
               {item.title}
@@ -108,16 +204,40 @@ export default function DownloadsScreen({ navigation }) {
                 <Text style={styles.statText}>{getStorageSize(totalSize)}</Text>
               </View>
             </View>
-            <Text style={styles.downloadedAt}>
-              Downloaded {new Date(item.downloadedAt).toLocaleDateString()}
-            </Text>
+            {needsRepair && !isRepairing && (
+              <TouchableOpacity
+                style={styles.repairButton}
+                onPress={() => handleRepairDownload(item)}
+              >
+                <Ionicons name="cloud-download" size={14} color="#708ad4" />
+                <Text style={styles.repairText}>Tap to enable offline</Text>
+              </TouchableOpacity>
+            )}
+            {isRepairing && (
+              <View style={styles.repairingRow}>
+                <ActivityIndicator size="small" color="#708ad4" />
+                <Text style={styles.repairingText}>
+                  {repairProgress?.status || "Repairing..."}
+                </Text>
+              </View>
+            )}
+            {!needsRepair && !isRepairing && (
+              <Text style={styles.downloadedAt}>
+                Downloaded {new Date(item.downloadedAt).toLocaleDateString()}
+              </Text>
+            )}
           </View>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => handleRemoveDownload(item.hash)}
+          disabled={isRepairing}
         >
-          <Ionicons name="trash" size={16} color="#d32f2f" />
+          <Ionicons
+            name="trash"
+            size={16}
+            color={isRepairing ? "#666" : "#d32f2f"}
+          />
         </TouchableOpacity>
       </View>
     );
@@ -126,7 +246,12 @@ export default function DownloadsScreen({ navigation }) {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#d0368a" />
+        <LoadingIndicator
+          size="medium"
+          text={
+            autoRepairing && repairProgress ? repairProgress.status : undefined
+          }
+        />
       </View>
     );
   }
@@ -134,12 +259,23 @@ export default function DownloadsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       {downloads.length > 0 ? (
-        <FlatList
-          data={downloads}
-          renderItem={renderDownloadItem}
-          keyExtractor={(item) => item.hash}
-          contentContainerStyle={styles.listContent}
-        />
+        <>
+          <FlatList
+            data={downloads}
+            renderItem={renderDownloadItem}
+            keyExtractor={(item) => item.hash}
+            contentContainerStyle={styles.listContent}
+            ListFooterComponent={
+              <TouchableOpacity
+                style={styles.clearAllButton}
+                onPress={handleClearAllDownloads}
+              >
+                <Ionicons name="trash-outline" size={16} color="#d32f2f" />
+                <Text style={styles.clearAllText}>Clear All Downloads</Text>
+              </TouchableOpacity>
+            }
+          />
+        </>
       ) : (
         <View style={[styles.container, styles.centerContent]}>
           <Ionicons name="download" size={48} color="#555" />
@@ -219,6 +355,27 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#666",
   },
+  repairButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 4,
+  },
+  repairText: {
+    fontSize: 12,
+    color: "#708ad4",
+    fontWeight: "500",
+  },
+  repairingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 4,
+  },
+  repairingText: {
+    fontSize: 11,
+    color: "#708ad4",
+  },
   deleteButton: {
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -238,5 +395,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: "center",
     paddingHorizontal: 16,
+  },
+  clearAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 16,
+    marginTop: 12,
+    marginBottom: 24,
+  },
+  clearAllText: {
+    fontSize: 14,
+    color: "#d32f2f",
+    fontWeight: "500",
   },
 });

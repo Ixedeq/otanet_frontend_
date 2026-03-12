@@ -12,6 +12,8 @@ import {
   AppState,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import LoadingIndicator from "../components/LoadingIndicator";
+import NetworkErrorView from "../components/NetworkErrorView";
 import apiService from "../api/apiService";
 import storageService from "../utils/storageService";
 import { useUnread } from "../context/UnreadContext";
@@ -26,6 +28,7 @@ export default function MangaDetailScreen({ route, navigation }) {
   const [manga, setManga] = useState(initialManga);
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(!initialManga);
+  const [error, setError] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -74,7 +77,7 @@ export default function MangaDetailScreen({ route, navigation }) {
     }
     if (typeof tags === "string" && tags.trim()) {
       let tagStr = tags.trim();
-      
+
       // Try JSON parse first (handles ["tag1", "tag2"] format)
       try {
         const parsed = JSON.parse(tagStr);
@@ -84,18 +87,25 @@ export default function MangaDetailScreen({ route, navigation }) {
       } catch (e) {
         // Not valid JSON
       }
-      
+
       // Handle Python-style list string: ['tag1', 'tag2'] or ["tag1", "tag2"]
       // Remove surrounding brackets
-      if ((tagStr.startsWith("[") && tagStr.endsWith("]")) ||
-          (tagStr.startsWith("(") && tagStr.endsWith(")"))) {
+      if (
+        (tagStr.startsWith("[") && tagStr.endsWith("]")) ||
+        (tagStr.startsWith("(") && tagStr.endsWith(")"))
+      ) {
         tagStr = tagStr.slice(1, -1);
       }
-      
+
       // Split by comma and clean each tag
       return tagStr
         .split(",")
-        .map((t) => t.trim().replace(/^['"]|['"]$/g, "").trim())
+        .map((t) =>
+          t
+            .trim()
+            .replace(/^['"]|['"]$/g, "")
+            .trim(),
+        )
         .filter(Boolean);
     }
     return [];
@@ -114,19 +124,44 @@ export default function MangaDetailScreen({ route, navigation }) {
       // Load manga details if not provided or if missing key fields (description/tags)
       if (!manga || !manga.description || !Array.isArray(manga.tags)) {
         const details = await apiService.getMangaDetails(hash);
-        // Parse tags from comma-separated string to array
-        setManga({
+        // Merge with existing manga data to preserve cover_img and other fields
+        setManga((prevManga) => ({
+          ...prevManga,
           ...details,
+          // Preserve local cover path for offline mode
+          localCoverPath:
+            prevManga?.localCoverPath || initialManga?.localCoverPath,
+          // Preserve cover_img from initial data if API doesn't provide it
+          cover_img:
+            details?.cover_img ||
+            details?.coverUrl ||
+            prevManga?.cover_img ||
+            prevManga?.coverUrl ||
+            initialManga?.cover_img ||
+            initialManga?.coverUrl,
           tags: parseTags(details?.tags),
-        });
+        }));
       }
 
       // Load chapters
       const chapterData = await apiService.getChapters(hash);
       setChapters(chapterData || []);
-    } catch (error) {
-      console.error("Failed to load manga data:", error);
-      Alert.alert("Error", "Failed to load manga details");
+    } catch (err) {
+      console.error("Failed to load manga data:", err);
+      // Only show error if we don't have initial data
+      if (!initialManga) {
+        setError(err);
+      } else {
+        // Use offline chapters if available
+        if (isOffline && initialManga?.chapters) {
+          setChapters(initialManga.chapters);
+        } else {
+          Alert.alert(
+            "Connection Error",
+            "Unable to load chapter list. Please check your connection.",
+          );
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -347,6 +382,22 @@ export default function MangaDetailScreen({ route, navigation }) {
   };
 
   const handleReadChapter = (chapter) => {
+    console.log("handleReadChapter - isOffline:", isOffline);
+    console.log(
+      "handleReadChapter - manga.chapters count:",
+      manga?.chapters?.length || 0,
+    );
+    if (manga?.chapters?.[0]) {
+      console.log(
+        "handleReadChapter - first chapter has pages:",
+        manga.chapters[0].pages?.length || 0,
+      );
+      console.log(
+        "handleReadChapter - first page:",
+        manga.chapters[0].pages?.[0]?.substring?.(0, 80) || "N/A",
+      );
+    }
+
     navigation.navigate("ChapterReader", {
       hash,
       chapter,
@@ -410,8 +461,21 @@ export default function MangaDetailScreen({ route, navigation }) {
   if (loading && !manga) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <LoadingIndicator size="medium" />
       </View>
+    );
+  }
+
+  if (error && !manga) {
+    return (
+      <NetworkErrorView
+        error={error}
+        onRetry={() => {
+          setError(null);
+          loadManga();
+        }}
+        showDownloadsHint={true}
+      />
     );
   }
 
@@ -434,7 +498,12 @@ export default function MangaDetailScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header with cover */}
         <View style={styles.headerSection}>
-          <Image source={{ uri: manga.cover_img }} style={styles.coverImage} />
+          <Image
+            source={{
+              uri: manga.localCoverPath || manga.cover_img || manga.coverUrl,
+            }}
+            style={styles.coverImage}
+          />
           <View style={styles.headerInfo}>
             <Text style={styles.mangaTitle}>{manga.title}</Text>
             {manga.author && (
@@ -534,13 +603,15 @@ export default function MangaDetailScreen({ route, navigation }) {
           <View style={styles.chaptersList}>
             {chapters.length > 0 ? (
               chapters.map((chapter, index) => {
-                const chapterNum = String(chapter.number || chapter);
-                const chapterNumFloat = parseFloat(chapterNum);
+                const chapterNum = String(chapter.number ?? chapter);
                 const isChapterDownloaded =
                   downloadedChapters.includes(chapterNum);
                 const isChapterDownloading =
                   downloadingChapters.includes(chapterNum);
-                const isChapterRead = readChapters.includes(chapterNumFloat);
+                // Compare as strings for consistency
+                const isChapterRead = readChapters
+                  .map((c) => String(c))
+                  .includes(chapterNum);
                 return (
                   <View
                     key={index}
@@ -552,7 +623,7 @@ export default function MangaDetailScreen({ route, navigation }) {
                     <TouchableOpacity
                       style={styles.chapterTapArea}
                       onPress={() =>
-                        handleReadChapter(chapter.number || chapter)
+                        handleReadChapter(chapter.number ?? chapter)
                       }
                       activeOpacity={0.7}
                     >
