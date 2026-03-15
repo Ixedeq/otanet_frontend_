@@ -1,11 +1,6 @@
 // src/config.js
 
-const isDev = process.env.NODE_ENV === 'development';
-
-// In development, use Flask API on port 5001
-// Use window.location.hostname to work across devices on local network
-const API_BASE = isDev 
-  ? `http://${window.location.hostname}:5001` 
-  : "/api";
+// Always use the production API
+const API_BASE = "https://ota-network.com/api";
 
 export default API_BASE;

@@ -26,6 +26,23 @@ const { width, height: screenHeight } = Dimensions.get("window");
 // Default aspect ratio for manga pages (typical manga is taller than wide)
 const DEFAULT_ASPECT_RATIO = 0.7;
 
+// Helper to build image source with proper headers for external CDNs
+const buildImageSource = (uri) => {
+  if (!uri) return { uri: '' };
+  // MangaDex CDN requires proper User-Agent header
+  if (uri.includes('mangadex.org') || uri.includes('mangadex.network')) {
+    return {
+      uri,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        'Referer': 'https://mangadex.org/',
+      },
+    };
+  }
+  return { uri };
+};
+
 // Page image component that maintains uniform sizing
 const PageImage = React.memo(({ source, style, resizeMode, isScrollMode }) => {
   const [dimensions, setDimensions] = useState({
@@ -68,14 +85,19 @@ const PageImage = React.memo(({ source, style, resizeMode, isScrollMode }) => {
         }
       },
       (getSizeError) => {
-        // On error, use default dimensions
+        // On getSize error, use default dimensions but still try to render
         console.log(
-          "PageImage getSize error:",
+          "PageImage getSize error (using defaults):",
           getSizeError,
           "for URI:",
           source?.uri?.substring(0, 80),
         );
-        setError(true);
+        // Don't set error=true here - let the Image component try to load
+        // getSize can fail but Image can still render successfully
+        setDimensions({
+          width: width,
+          height: isScrollMode ? width / DEFAULT_ASPECT_RATIO : screenHeight * 0.85,
+        });
       },
     );
   }, [source?.uri, isScrollMode]);
@@ -416,14 +438,14 @@ export default function ChapterReaderScreen({ route, navigation }) {
 
   const currentPage = pages[currentPageIndex];
 
+  const getPageUri = (item) => {
+    const raw = typeof item === "string" ? item : item?.src || item?.url || item?.image;
+    return raw || '';
+  };
+
   const renderScrollPage = ({ item, index }) => (
     <PageImage
-      source={{
-        uri:
-          typeof item === "string"
-            ? item
-            : item?.src || item?.url || item?.image,
-      }}
+      source={buildImageSource(getPageUri(item))}
       style={styles.scrollPageImage}
       resizeMode="contain"
       isScrollMode={true}
@@ -471,12 +493,7 @@ export default function ChapterReaderScreen({ route, navigation }) {
           {...panResponder.panHandlers}
         >
           <PageImage
-            source={{
-              uri:
-                typeof currentPage === "string"
-                  ? currentPage
-                  : currentPage?.src || currentPage?.url || currentPage?.image,
-            }}
+            source={buildImageSource(getPageUri(currentPage))}
             style={styles.pageImage}
             resizeMode="contain"
             isScrollMode={false}

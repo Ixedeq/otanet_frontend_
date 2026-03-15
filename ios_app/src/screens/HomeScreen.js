@@ -21,23 +21,37 @@ import storageService from "../utils/storageService";
 import { useUnread } from "../context/UnreadContext";
 
 // Gradient text component - uses 135deg angle like web app
-const GradientText = ({ children, style }) => (
-  <MaskedView
-    maskElement={
-      <Text style={[style, { backgroundColor: "transparent" }]}>
-        {children}
-      </Text>
-    }
-  >
-    <LinearGradient
-      colors={["#d0368a", "#708ad4"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <Text style={[style, { opacity: 0 }]}>{children}</Text>
-    </LinearGradient>
-  </MaskedView>
-);
+// Wrapped in a View with fixed height so MaskedView doesn't break baseline alignment
+const GradientText = ({ children, style }) => {
+  const fontSize = style?.fontSize || 32;
+  const lineHeight = fontSize * 1.15;
+  return (
+    <View style={{ height: lineHeight, justifyContent: "center" }}>
+      <MaskedView
+        maskElement={
+          <Text
+            style={[
+              style,
+              { backgroundColor: "transparent", lineHeight, includeFontPadding: false },
+            ]}
+          >
+            {children}
+          </Text>
+        }
+      >
+        <LinearGradient
+          colors={["#d0368a", "#708ad4"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <Text style={[style, { opacity: 0, lineHeight, includeFontPadding: false }]}>
+            {children}
+          </Text>
+        </LinearGradient>
+      </MaskedView>
+    </View>
+  );
+};
 
 // Logo component
 const Logo = require("../../assets/icon.png");
@@ -271,7 +285,7 @@ const styles = StyleSheet.create({
   },
   titleRow: {
     flexDirection: "row",
-    alignItems: "baseline",
+    alignItems: "center",
   },
   title: {
     fontSize: 32,
@@ -284,6 +298,8 @@ const styles = StyleSheet.create({
     color: "#f5f5f5",
     opacity: 0.9,
     letterSpacing: -0.5,
+    lineHeight: 32 * 1.15,
+    includeFontPadding: false,
   },
   tagline: {
     fontSize: 13,

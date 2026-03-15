@@ -410,18 +410,34 @@ def fetch_proxied_image(hash_id, filename):
         
         # Prefer .256.jpg for thumbnails (75% smaller than full quality)
         base_filename = filename
+        is_thumbnail = False
         for suffix in ['.512.jpg', '.256.jpg', '.512.png', '.256.png']:
             if filename.endswith(suffix):
                 base_filename = filename.replace(suffix, '')
+                is_thumbnail = True
                 break
         
-        # Build list of URLs to try (prioritize .256.jpg for size optimization)
-        urls_to_try = [
-            f"https://uploads.mangadex.org/covers/{hash_id}/{base_filename}.256.jpg",  # Try thumbnail first
-            f"https://uploads.mangadex.org/covers/{hash_id}/{filename}",  # Then try original filename
-            f"https://uploads.mangadex.org/covers/{hash_id}/{base_filename}",  # Then base filename
-            f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}",  # Fallback CDN
-        ]
+        # Detect if this is a chapter page request vs a cover request
+        # Cover filenames typically contain a UUID/hash, chapter pages are like x1-..., w1-..., etc.
+        # Also check for a query hint
+        is_page = request.args.get('type') == 'page'
+        
+        # Build list of URLs to try based on whether this is a page or cover image
+        urls_to_try = []
+        if is_page:
+            # Chapter page images - try CDN data path first
+            urls_to_try = [
+                f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}",
+                f"https://uploads.mangadex.org/data/{hash_id}/{filename}",
+            ]
+        else:
+            # Cover images - try cover paths with size optimization
+            urls_to_try = [
+                f"https://uploads.mangadex.org/covers/{hash_id}/{base_filename}.256.jpg",  # Try thumbnail first
+                f"https://uploads.mangadex.org/covers/{hash_id}/{filename}",  # Then try original filename
+                f"https://uploads.mangadex.org/covers/{hash_id}/{base_filename}",  # Then base filename
+                f"https://cmdxd98sb0x3yprd.mangadex.network/data/{hash_id}/{filename}",  # Fallback CDN
+            ]
         
         # Try each URL
         content = None
@@ -556,7 +572,7 @@ def from_slug(slug):
     title = slug.replace("-", " ")
     return title
 
-def generate_proxied_image_url(image_url):
+def generate_proxied_image_url(image_url, image_type=None):
     # Removed logging for performance
     FLASK_BASE = os.environ.get('FLASK_BASE_URL', 'https://ota-network.com')
     
@@ -574,11 +590,21 @@ def generate_proxied_image_url(image_url):
                 proxied = f"{FLASK_BASE}/api/image/{manga_id}/{cover_filename}"
                 return proxied
         
+        # Check if it's a CDN /data/ URL (chapter page)
+        if 'data' in path_parts:
+            data_idx = path_parts.index('data')
+            if len(path_parts) > data_idx + 2:
+                hash_id = path_parts[data_idx + 1]
+                filename = path_parts[data_idx + 2]
+                proxied = f"{FLASK_BASE}/api/image/{hash_id}/{filename}?type=page"
+                return proxied
+
         # Standard CDN URL handling (/data/{hash}/{filename})
         if len(path_parts) >= 2:
             hash_id = path_parts[-2]
             filename = path_parts[-1]
-            proxied = f"{FLASK_BASE}/api/image/{hash_id}/{filename}"
+            type_hint = '?type=page' if image_type == 'page' else ''
+            proxied = f"{FLASK_BASE}/api/image/{hash_id}/{filename}{type_hint}"
             return proxied
     except Exception:
         pass  # Silently ignore errors for performance
@@ -612,6 +638,8 @@ def get_manga_by_hash(hash):
                 "title": row[0],
                 "description": row[1],
                 "cover": proxied_cover,
+                "cover_img": proxied_cover,
+                "coverUrl": proxied_cover,
                 "tags": row[2],
                 "chapters": row[3],
                 "hash": row[5],
@@ -796,10 +824,13 @@ def get_pages():
     rows = cursor.fetchall()
 
     pages = []
+    use_proxy = request.args.get('proxy', '').lower() in ('1', 'true', 'yes')
     for page in rows:
         src = page[1]
-        # Return DIRECT CDN URLs for chapter pages - much faster than proxying
-        # Images loaded via <img> tags don't have CORS restrictions
+        if use_proxy:
+            # Proxy through our server for mobile apps that can't load CDN URLs directly
+            src = generate_proxied_image_url(src, image_type='page')
+        # Default: return DIRECT CDN URLs for web (faster, no CORS issues with <img> tags)
         pages.append({'key': page[0], 'src': src})
         
     pages = sorted(pages, key=lambda x: float(x['key']))
