@@ -105,10 +105,18 @@ export default function MangaPage() {
   };
 
   // --- Manga-level bookmarks (with error handling) ---
+
+  // Bookmarks now store objects: { slug, hash }
   const [bookmarks, setBookmarks] = useState(() => {
     try {
       const saved = localStorage.getItem("bookmarkedManga");
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      // Migrate old format (array of slugs) to new format (array of {slug, hash})
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "string") {
+        return parsed.map((s) => ({ slug: s, hash: hash || "" }));
+      }
+      return parsed;
     } catch {
       return [];
     }
@@ -116,10 +124,11 @@ export default function MangaPage() {
 
   const toggleBookmark = () => {
     let updated;
-    if (bookmarks.includes(slug)) {
-      updated = bookmarks.filter((s) => s !== slug);
+    const exists = bookmarks.some((b) => b.slug === slug);
+    if (exists) {
+      updated = bookmarks.filter((b) => b.slug !== slug);
     } else {
-      updated = [...bookmarks, slug];
+      updated = [...bookmarks, { slug, hash }];
     }
     setBookmarks(updated);
     localStorage.setItem("bookmarkedManga", JSON.stringify(updated));
@@ -240,17 +249,17 @@ export default function MangaPage() {
           {/* Manga-level bookmark button */}
           <button
             onClick={toggleBookmark}
-            className={`bookmark-star ${bookmarks.includes(slug) ? "bookmarked" : ""}`}
+            className={`bookmark-star ${bookmarks.some((b) => b.slug === slug) ? "bookmarked" : ""}`}
             aria-label={
-              bookmarks.includes(slug) ? "Remove bookmark" : "Add bookmark"
+              bookmarks.some((b) => b.slug === slug) ? "Remove bookmark" : "Add bookmark"
             }
             title={
-              bookmarks.includes(slug)
+              bookmarks.some((b) => b.slug === slug)
                 ? "Remove from bookmarks"
                 : "Add to bookmarks"
             }
           >
-            {bookmarks.includes(slug) ? (
+            {bookmarks.some((b) => b.slug === slug) ? (
               <FaStar size={18} />
             ) : (
               <FiStar size={18} />

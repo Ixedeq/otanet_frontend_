@@ -11,15 +11,27 @@ export default function BookmarksPage() {
   const [loading, setLoading] = useState(true);
   const [loadedImages, setLoadedImages] = useState({});
 
+  // Bookmarks now store objects: { slug, hash }
   const loadBookmarks = () => {
     const saved = JSON.parse(localStorage.getItem("bookmarkedManga")) || [];
-    setBookmarkedManga(saved);
+    // Migrate old format (array of slugs) to new format (array of {slug, hash})
+    if (
+      Array.isArray(saved) &&
+      saved.length > 0 &&
+      typeof saved[0] === "string"
+    ) {
+      setBookmarkedManga(saved.map((s) => ({ slug: s, hash: "" })));
+    } else {
+      setBookmarkedManga(saved);
+    }
   };
+  console.log("Bookmarked manga slugs:", bookmarkedManga);
+  console.log("Loaded manga data:", mangaData);
 
   const removeBookmark = (e, slug) => {
     e.preventDefault(); // Prevent navigating to manga page
     e.stopPropagation();
-    const updated = bookmarkedManga.filter((s) => s !== slug);
+    const updated = bookmarkedManga.filter((b) => b.slug !== slug);
     localStorage.setItem("bookmarkedManga", JSON.stringify(updated));
     setBookmarkedManga(updated);
     setMangaData((prev) => prev.filter((m) => m.slug !== slug));
@@ -46,12 +58,18 @@ export default function BookmarksPage() {
       setLoading(true);
       try {
         const results = await Promise.all(
-          bookmarkedManga.map(async (slug) => {
-            const res = await fetch(`${API_BASE}/${slug}`);
-            if (!res.ok) return null;
-            const data = await res.json();
-            return { ...data, slug };
-          })
+          bookmarkedManga
+            .filter(
+              (b) =>
+                b.hash && typeof b.hash === "string" && b.hash.trim() !== "",
+            )
+            .map(async (b) => {
+              const url = `${API_BASE}/manga/${b.hash}`;
+              const res = await fetch(url);
+              if (!res.ok) return null;
+              const data = await res.json();
+              return { ...data, slug: b.slug, hash: b.hash };
+            }),
         );
         setMangaData(results.filter((m) => m !== null));
       } catch (err) {
@@ -69,16 +87,24 @@ export default function BookmarksPage() {
     setLoadedImages((prev) => ({ ...prev, [slug]: true }));
   };
 
-  if (loading) return <div className="bookmarks-loading">Loading bookmarks...</div>;
-  if (mangaData.length === 0) return <div className="bookmarks-empty">No bookmarked manga.</div>;
+  if (loading)
+    return <div className="bookmarks-loading">Loading bookmarks...</div>;
+  if (mangaData.length === 0)
+    return <div className="bookmarks-empty">No bookmarked manga.</div>;
 
   return (
     <div className="manga-list">
       <h1 className="bookmarks-title">Your Bookmarks</h1>
       {mangaData.map((manga) => (
-        <Link key={manga.slug} to={`/${manga.slug}/${manga.hash}`} className="manga-card bookmark-card">
+        <Link
+          key={manga.slug}
+          to={`/${manga.slug}/${manga.hash}`}
+          className="manga-card bookmark-card"
+        >
           <div className="manga-thumb-wrapper">
-            {!loadedImages[manga.slug] && <div className="manga-thumb-skeleton" />}
+            {!loadedImages[manga.slug] && (
+              <div className="manga-thumb-skeleton" />
+            )}
             <img
               src={manga.cover}
               alt={manga.title}
