@@ -37,6 +37,7 @@ export default function MangaDetailScreen({ route, navigation }) {
   const [downloadingChapters, setDownloadingChapters] = useState([]);
   const [readChapters, setReadChapters] = useState([]);
   const [isPaused, setIsPaused] = useState(false);
+  const [staleDownload, setStaleDownload] = useState(null);
 
   // Refs to track download state
   const downloadAbortRef = useRef(false);
@@ -193,8 +194,12 @@ export default function MangaDetailScreen({ route, navigation }) {
     const activeDownloads = await storageService.getActiveDownloads();
     if (activeDownloads[hash]) {
       const active = activeDownloads[hash];
-      setDownloading(true);
-      setDownloadProgress({ current: active.current, total: active.total });
+      // If there's already a live download running (e.g. navigated away and back), leave it alone
+      if (isDownloadingRef.current) {
+        return;
+      }
+      // Stale download from a previous session — offer resume or cancel
+      setStaleDownload(active);
     }
   };
 
@@ -292,7 +297,8 @@ export default function MangaDetailScreen({ route, navigation }) {
     }
   };
 
-  const runDownload = async (chapterNumbers) => {
+  const runDownload = async (chapterNumbers, startOffset = 0, overrideTotal = null) => {
+    const displayTotal = overrideTotal || chapterNumbers.length;
     let totalSize = 0;
     let successfulChapters = 0;
     let i = 0;
@@ -317,12 +323,12 @@ export default function MangaDetailScreen({ route, navigation }) {
           });
         }
         const chapterNumber = chapterNumbers[i];
-        const progress = { current: i + 1, total: chapterNumbers.length };
+        const progress = { current: startOffset + i + 1, total: displayTotal };
         downloadProgressRef.current = progress;
         setDownloadProgress({ ...progress });
         await storageService.setActiveDownload(hash, {
-          current: i + 1,
-          total: chapterNumbers.length,
+          current: startOffset + i + 1,
+          total: displayTotal,
           title: manga?.title || title,
         });
         try {
@@ -397,6 +403,66 @@ export default function MangaDetailScreen({ route, navigation }) {
     downloadAbortRef.current = true;
     downloadPausedRef.current = false;
     setIsPaused(false);
+  };
+
+  const handleResumeStaleDownload = async () => {
+    if (!staleDownload) return;
+    setStaleDownload(null);
+
+    // Wait for chapters to be loaded
+    if (!chapters || chapters.length === 0) {
+      Alert.alert("Please wait", "Chapters are still loading...");
+      return;
+    }
+
+    if (isDownloadingRef.current) return;
+
+    // Figure out which chapters still need downloading
+    const alreadyDownloaded = await storageService.getDownloadedChapters(hash);
+    const allChapterNumbers = chapters
+      .map((ch) => getChapterNumber(ch))
+      .filter((ch) => ch !== undefined && ch !== null);
+    const remaining = allChapterNumbers.filter(
+      (ch) => !alreadyDownloaded.includes(String(ch)),
+    );
+
+    if (remaining.length === 0) {
+      // Everything was actually downloaded already
+      await storageService.clearActiveDownload(hash);
+      setIsDownloaded(true);
+      loadDownloadedChapters();
+      return;
+    }
+
+    // Kick off the download for remaining chapters
+    isDownloadingRef.current = true;
+    setDownloading(true);
+    downloadAbortRef.current = false;
+    downloadPausedRef.current = false;
+    setIsPaused(false);
+
+    const alreadyDone = allChapterNumbers.length - remaining.length;
+    downloadProgressRef.current = {
+      current: alreadyDone,
+      total: allChapterNumbers.length,
+    };
+    setDownloadProgress({
+      current: alreadyDone,
+      total: allChapterNumbers.length,
+    });
+
+    await storageService.setActiveDownload(hash, {
+      current: alreadyDone,
+      total: allChapterNumbers.length,
+      title: manga?.title || title,
+    });
+
+    runDownload(remaining, alreadyDone, allChapterNumbers.length);
+  };
+
+  const handleDismissStaleDownload = async () => {
+    setStaleDownload(null);
+    await storageService.clearActiveDownload(hash);
   };
 
   const handleReadChapter = (chapter) => {
@@ -568,23 +634,23 @@ export default function MangaDetailScreen({ route, navigation }) {
                     {isPaused ? (
                       <TouchableOpacity
                         onPress={handleResumeDownload}
-                        style={{ marginLeft: 10 }}
+                        style={styles.dlControlBtn}
                       >
-                        <Ionicons name="play" size={20} color="#fff" />
+                        <Ionicons name="play" size={16} color="#fff" />
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
                         onPress={handlePauseDownload}
-                        style={{ marginLeft: 10 }}
+                        style={styles.dlControlBtn}
                       >
-                        <Ionicons name="pause" size={20} color="#fff" />
+                        <Ionicons name="pause" size={16} color="#fff" />
                       </TouchableOpacity>
                     )}
                     <TouchableOpacity
                       onPress={handleAbortDownload}
-                      style={{ marginLeft: 10 }}
+                      style={styles.dlAbortBtn}
                     >
-                      <Ionicons name="close" size={20} color="#fff" />
+                      <Ionicons name="close" size={16} color="#fff" />
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -608,6 +674,34 @@ export default function MangaDetailScreen({ route, navigation }) {
             </View>
           </View>
         </View>
+
+        {/* Stale download resume banner */}
+        {staleDownload && !downloading && (
+          <View style={styles.resumeBanner}>
+            <View style={styles.resumeBannerInfo}>
+              <Ionicons name="cloud-download-outline" size={18} color="#708ad4" />
+              <Text style={styles.resumeBannerText}>
+                Download interrupted ({staleDownload.current}/{staleDownload.total})
+              </Text>
+            </View>
+            <View style={styles.resumeBannerActions}>
+              <TouchableOpacity
+                style={styles.resumeBtn}
+                onPress={handleResumeStaleDownload}
+              >
+                <Ionicons name="play" size={14} color="#fff" />
+                <Text style={styles.resumeBtnText}>Resume</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.dismissBtn}
+                onPress={handleDismissStaleDownload}
+              >
+                <Ionicons name="close" size={14} color="#ff6b6b" />
+                <Text style={styles.dismissBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Description */}
         {manga.description && (
@@ -812,12 +906,32 @@ const styles = StyleSheet.create({
   downloadProgressWrap: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   downloadProgressText: {
     color: "#fff",
     fontSize: 11,
     fontWeight: "600",
+  },
+  dlControlBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(112, 138, 212, 0.35)",
+    borderWidth: 1,
+    borderColor: "rgba(112, 138, 212, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dlAbortBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(211, 47, 47, 0.35)",
+    borderWidth: 1,
+    borderColor: "rgba(211, 47, 47, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   section: {
     marginBottom: 28,
@@ -914,5 +1028,65 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
     fontSize: 16,
+  },
+  resumeBanner: {
+    backgroundColor: "rgba(112, 138, 212, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(112, 138, 212, 0.25)",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+  },
+  resumeBannerInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  resumeBannerText: {
+    color: "#c0c0c0",
+    fontSize: 13,
+    fontWeight: "500",
+    flex: 1,
+  },
+  resumeBannerActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  resumeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(112, 138, 212, 0.3)",
+    borderWidth: 1,
+    borderColor: "rgba(112, 138, 212, 0.5)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flex: 1,
+    justifyContent: "center",
+  },
+  resumeBtnText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  dismissBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(211, 47, 47, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(211, 47, 47, 0.3)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flex: 1,
+    justifyContent: "center",
+  },
+  dismissBtnText: {
+    color: "#ff6b6b",
+    fontSize: 13,
+    fontWeight: "600",
   },
 });
