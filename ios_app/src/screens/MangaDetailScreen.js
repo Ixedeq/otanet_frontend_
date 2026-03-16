@@ -289,84 +289,64 @@ export default function MangaDetailScreen({ route, navigation }) {
   };
 
   const runDownload = async (chapterNumbers) => {
-    const downloadedChapters = [];
     let totalSize = 0;
-
+    let successfulChapters = 0;
     try {
       for (let i = 0; i < chapterNumbers.length; i += 1) {
-        // Check if download was aborted
         if (downloadAbortRef.current) {
           break;
         }
-
         const chapterNumber = chapterNumbers[i];
-
-        // Update progress in both ref and state
         const progress = { current: i + 1, total: chapterNumbers.length };
         downloadProgressRef.current = progress;
         setDownloadProgress({ ...progress });
-
-        // Update active download status in storage
         await storageService.setActiveDownload(hash, {
           current: i + 1,
           total: chapterNumbers.length,
           title: manga?.title || title,
         });
-
         try {
           const pages = await apiService.getChapterPages(
             hash,
             String(chapterNumber),
           );
-
           const pageCount = (pages || []).length;
           const chapterSize = pageCount * ESTIMATED_PAGE_SIZE;
           totalSize += chapterSize;
-
-          downloadedChapters.push({
+          const chapterData = {
             number: String(chapterNumber),
             pages: pages || [],
             pageCount: pageCount,
             size: chapterSize,
-          });
-
-          // Update UI to show checkmark for this chapter immediately
+          };
+          await storageService.addChapterToDownload(
+            {
+              hash,
+              title: manga?.title || title,
+              cover_img: manga?.cover_img,
+              description: manga?.description,
+              author: manga?.author,
+            },
+            chapterData,
+          );
           setDownloadedChapters((prev) => [...prev, String(chapterNumber)]);
+          successfulChapters++;
         } catch (chapterError) {
           console.error(
             `Failed to download chapter ${chapterNumber}:`,
             chapterError,
           );
         }
-
-        // Small delay to allow UI updates
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
-
-      // Save all downloaded chapters
-      await storageService.addDownload(
-        {
-          hash,
-          title: manga?.title || title,
-          cover_img: manga?.cover_img,
-          description: manga?.description,
-          author: manga?.author,
-          totalSize: totalSize,
-        },
-        downloadedChapters,
-      );
-
-      // Clear active download status
       await storageService.clearActiveDownload(hash);
-
       setIsDownloaded(true);
       loadDownloadedChapters();
-
-      const failedCount = chapterNumbers.length - downloadedChapters.length;
+      const failedCount = chapterNumbers.length - successfulChapters;
       if (failedCount > 0 && !downloadAbortRef.current) {
         Alert.alert(
           "Download completed with warnings",
-          `${downloadedChapters.length}/${chapterNumbers.length} chapters were downloaded successfully.`,
+          `${successfulChapters}/${chapterNumbers.length} chapters were downloaded successfully.`,
         );
       }
     } catch (error) {
