@@ -177,7 +177,7 @@ export default function DownloadsScreen({ navigation }) {
     const chapterCount = item.chapters?.length || 0;
     // Use local cover path if available, otherwise fall back to remote
     const coverUri = item.localCoverPath || item.cover_img;
-    // const needsRepair = storageService.downloadNeedsRepair(item);
+    const needsRepair = storageService.downloadNeedsRepair(item);
     const isRepairing = repairing === item.hash;
 
     return (
