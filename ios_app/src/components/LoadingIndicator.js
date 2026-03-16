@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Animated, Easing, Image, Text } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 
 const Logo = require("../../assets/icon.png");
 
@@ -25,28 +24,6 @@ const SIZES = {
     orbitRadius: 75,
   },
 };
-
-// Gradient dot component
-const GradientDot = ({ size, opacity, x, y }) => (
-  <View
-    style={[
-      styles.dotWrapper,
-      {
-        width: size,
-        height: size,
-        opacity,
-        transform: [{ translateX: x }, { translateY: y }],
-      },
-    ]}
-  >
-    <LinearGradient
-      colors={["#d0368a", "#708ad4"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.gradientDot, { borderRadius: size / 2 }]}
-    />
-  </View>
-);
 
 export default function LoadingIndicator({
   size = "medium",
@@ -91,27 +68,46 @@ export default function LoadingIndicator({
       const x = Math.cos(angle) * orbitRadius;
       const y = Math.sin(angle) * orbitRadius;
 
-      // Staggered opacity for trailing effect
       const opacity = 0.2 + (i / dotCount) * 0.8;
       const dotSizeScaled = dotSize * (0.5 + (i / dotCount) * 0.5);
 
+      // Interpolate color from pink to blue
+      const t = i / dotCount;
+      const r = Math.round(208 + (112 - 208) * t);
+      const g = Math.round(54 + (138 - 54) * t);
+      const b = Math.round(138 + (212 - 138) * t);
+
       dots.push(
-        <GradientDot
+        <View
           key={i}
-          size={dotSizeScaled}
-          opacity={opacity}
-          x={x}
-          y={y}
+          style={[
+            styles.dotWrapper,
+            {
+              width: dotSizeScaled,
+              height: dotSizeScaled,
+              borderRadius: dotSizeScaled / 2,
+              backgroundColor: `rgb(${r}, ${g}, ${b})`,
+              opacity,
+              transform: [{ translateX: x }, { translateY: y }],
+            },
+          ]}
         />,
       );
     }
     return dots;
   };
 
+  const orbitContainerSize = orbitRadius * 2 + dotSize;
+
   const content = (
-    <View style={styles.loaderContent}>
-      {/* Logo */}
-      <Animated.View style={[styles.logoContainer, { opacity: logoOpacity }]}>
+    <View style={[styles.loaderContent, { width: orbitContainerSize, height: orbitContainerSize }]}>
+      {/* Logo – absolutely centered via the sized parent */}
+      <Animated.View
+        style={[
+          styles.logoContainer,
+          { opacity: logoOpacity },
+        ]}
+      >
         <Image
           source={Logo}
           style={[
@@ -126,8 +122,8 @@ export default function LoadingIndicator({
         style={[
           styles.dotsContainer,
           {
-            width: orbitRadius * 2 + dotSize,
-            height: orbitRadius * 2 + dotSize,
+            width: orbitContainerSize,
+            height: orbitContainerSize,
             transform: [{ rotate: rotationDegrees }],
           },
         ]}
@@ -165,6 +161,12 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 2,
   },
   logo: {
@@ -176,9 +178,6 @@ const styles = StyleSheet.create({
   },
   dotWrapper: {
     position: "absolute",
-  },
-  gradientDot: {
-    flex: 1,
   },
   loadingText: {
     marginTop: 20,

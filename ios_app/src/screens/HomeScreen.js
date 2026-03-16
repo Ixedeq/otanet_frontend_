@@ -14,44 +14,9 @@ import NetworkErrorView from "../components/NetworkErrorView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { LinearGradient } from "expo-linear-gradient";
-import MaskedView from "@react-native-masked-view/masked-view";
 import apiService from "../api/apiService";
 import storageService from "../utils/storageService";
 import { useUnread } from "../context/UnreadContext";
-
-// Gradient text component - uses 135deg angle like web app
-// Wrapped in a View with fixed height so MaskedView doesn't break baseline alignment
-const GradientText = ({ children, style }) => {
-  const fontSize = style?.fontSize || 32;
-  const lineHeight = fontSize * 1.15;
-  return (
-    <View style={{ height: lineHeight, justifyContent: "center" }}>
-      <MaskedView
-        maskElement={
-          <Text
-            style={[
-              style,
-              { backgroundColor: "transparent", lineHeight, includeFontPadding: false },
-            ]}
-          >
-            {children}
-          </Text>
-        }
-      >
-        <LinearGradient
-          colors={["#d0368a", "#708ad4"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Text style={[style, { opacity: 0, lineHeight, includeFontPadding: false }]}>
-            {children}
-          </Text>
-        </LinearGradient>
-      </MaskedView>
-    </View>
-  );
-};
 
 // Logo component
 const Logo = require("../../assets/icon.png");
@@ -161,10 +126,10 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.logoRow}>
             <Image source={Logo} style={styles.logoImage} />
             <View style={styles.titleContainer}>
-              <View style={styles.titleRow}>
-                <GradientText style={styles.title}>Ota</GradientText>
+              <Text style={styles.titleText}>
+                <Text style={styles.titleOta}>Ota</Text>
                 <Text style={styles.titleNet}>Net</Text>
-              </View>
+              </Text>
               <Text style={styles.tagline}>Your Manga Library</Text>
             </View>
           </View>
@@ -283,23 +248,18 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1,
   },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  title: {
+  titleText: {
     fontSize: 32,
     fontWeight: "700",
     letterSpacing: -0.5,
   },
+  titleOta: {
+    color: "#d0368a",
+  },
   titleNet: {
-    fontSize: 32,
     fontWeight: "400",
     color: "#f5f5f5",
     opacity: 0.9,
-    letterSpacing: -0.5,
-    lineHeight: 32 * 1.15,
-    includeFontPadding: false,
   },
   tagline: {
     fontSize: 13,
