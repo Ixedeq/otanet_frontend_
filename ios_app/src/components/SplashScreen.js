@@ -5,9 +5,9 @@ import {
   Animated,
   Easing,
   Image,
+  Text,
   Dimensions,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 const LOGO_SIZE = 100;
@@ -17,32 +17,11 @@ const ORBIT_RADIUS = 75;
 
 const Logo = require("../../assets/icon.png");
 
-// Gradient dot component
-const GradientDot = ({ size, opacity, x, y }) => (
-  <View
-    style={[
-      styles.dotWrapper,
-      {
-        width: size,
-        height: size,
-        opacity,
-        transform: [{ translateX: x }, { translateY: y }],
-      },
-    ]}
-  >
-    <LinearGradient
-      colors={["#d0368a", "#708ad4"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.gradientDot, { borderRadius: size / 2 }]}
-    />
-  </View>
-);
-
 export default function SplashScreen() {
   const rotation = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.8)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
+  const textOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Logo fade in and scale
@@ -59,6 +38,14 @@ export default function SplashScreen() {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Text fade in after a short delay
+    Animated.timing(textOpacity, {
+      toValue: 1,
+      duration: 600,
+      delay: 300,
+      useNativeDriver: true,
+    }).start();
 
     // Continuous rotation for dots
     Animated.loop(
@@ -88,8 +75,27 @@ export default function SplashScreen() {
       const opacity = 0.2 + (i / DOT_COUNT) * 0.8;
       const size = DOT_SIZE * (0.5 + (i / DOT_COUNT) * 0.5);
 
+      // Interpolate color between #d0368a (pink) and #708ad4 (blue)
+      const t = i / DOT_COUNT;
+      const r = Math.round(208 + (112 - 208) * t);
+      const g = Math.round(54 + (138 - 54) * t);
+      const b = Math.round(138 + (212 - 138) * t);
+
       dots.push(
-        <GradientDot key={i} size={size} opacity={opacity} x={x} y={y} />,
+        <View
+          key={i}
+          style={[
+            styles.dotWrapper,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              backgroundColor: `rgb(${r}, ${g}, ${b})`,
+              opacity,
+              transform: [{ translateX: x }, { translateY: y }],
+            },
+          ]}
+        />,
       );
     }
     return dots;
@@ -97,7 +103,7 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Animated logo */}
+      {/* Animated logo – centered via absolute fill */}
       <Animated.View
         style={[
           styles.logoContainer,
@@ -121,6 +127,14 @@ export default function SplashScreen() {
       >
         {renderDots()}
       </Animated.View>
+
+      {/* App name below the spinner */}
+      <Animated.View style={[styles.titleContainer, { opacity: textOpacity }]}>
+        <Text style={styles.titleText}>
+          <Text style={styles.titleOta}>Ota</Text>
+          <Text style={styles.titleNet}>Net</Text>
+        </Text>
+      </Animated.View>
     </View>
   );
 }
@@ -134,6 +148,12 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 2,
   },
   logo: {
@@ -143,15 +163,31 @@ const styles = StyleSheet.create({
   },
   dotsContainer: {
     position: "absolute",
-    width: ORBIT_RADIUS * 2 + DOT_SIZE,
-    height: ORBIT_RADIUS * 2 + DOT_SIZE,
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     justifyContent: "center",
     alignItems: "center",
   },
   dotWrapper: {
     position: "absolute",
   },
-  gradientDot: {
-    flex: 1,
+  titleContainer: {
+    position: "absolute",
+    bottom: "30%",
+  },
+  titleText: {
+    fontSize: 28,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+  },
+  titleOta: {
+    color: "#d0368a",
+  },
+  titleNet: {
+    color: "#f5f5f5",
+    fontWeight: "400",
+    opacity: 0.9,
   },
 });
