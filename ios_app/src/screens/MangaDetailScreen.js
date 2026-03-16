@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Alert,
   AppState,
+  Animated,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import LoadingIndicator from "../components/LoadingIndicator";
@@ -21,6 +22,142 @@ import { useUnread } from "../context/UnreadContext";
 // Estimated average page size in bytes (~200KB is reasonable for manga images)
 const ESTIMATED_PAGE_SIZE = 200 * 1024;
 
+const DELETE_THRESHOLD = -80;
+
+function SwipeableChapterRow({ isDownloaded, onDelete, children }) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const [isSwiping, setIsSwiping] = useState(false);
+
+  // Use refs so our touch handlers always have current values
+  const touchStartRef = useRef({ x: 0, y: 0 });
+  const isTrackingRef = useRef(false);
+  const lockedRef = useRef(false);
+
+  const onTouchStart = (e) => {
+    if (!isDownloaded) return;
+    const touch = e.nativeEvent;
+    touchStartRef.current = { x: touch.pageX, y: touch.pageY };
+    isTrackingRef.current = false;
+    lockedRef.current = false;
+  };
+
+  const onTouchMove = (e) => {
+    if (!isDownloaded) return;
+    const touch = e.nativeEvent;
+    const dx = touch.pageX - touchStartRef.current.x;
+    const dy = touch.pageY - touchStartRef.current.y;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    // Decide direction once past threshold
+    if (!lockedRef.current && (absDx > 10 || absDy > 10)) {
+      if (absDx > absDy) {
+        lockedRef.current = true;
+        isTrackingRef.current = true;
+        setIsSwiping(true);
+      } else {
+        lockedRef.current = true;
+        isTrackingRef.current = false;
+        return;
+      }
+    }
+
+    if (!isTrackingRef.current) return;
+
+    // Only allow left swipe, with friction limit
+    if (dx < 0) {
+      const frictionDx = Math.max(dx, -180);
+      translateX.setValue(frictionDx);
+    }
+  };
+
+  const onTouchEnd = () => {
+    if (!isTrackingRef.current) {
+      setIsSwiping(false);
+      return;
+    }
+    isTrackingRef.current = false;
+
+    const currentVal = translateX.__getValue();
+
+    if (currentVal < -120) {
+      // Swipe past threshold → animate off, call delete, then snap back
+      Animated.timing(translateX, {
+        toValue: -300,
+        duration: 200,
+        useNativeDriver: false,
+      }).start(() => {
+        onDelete();
+        // Snap back after deletion so the row stays visible
+        translateX.setValue(0);
+        setIsSwiping(false);
+      });
+    } else {
+      // Snap back
+      Animated.spring(translateX, {
+        toValue: 0,
+        useNativeDriver: false,
+        tension: 120,
+        friction: 12,
+      }).start(() => {
+        setIsSwiping(false);
+      });
+    }
+  };
+
+  // Only show delete background while actively swiping
+  const revealWidth = translateX.interpolate({
+    inputRange: [-180, 0],
+    outputRange: [180, 0],
+    extrapolate: "clamp",
+  });
+
+  const deleteOpacity = translateX.interpolate({
+    inputRange: [-180, -60, 0],
+    outputRange: [1, 0.6, 0],
+    extrapolate: "clamp",
+  });
+
+  return (
+    <View style={{ position: "relative", overflow: "hidden" }}>
+      {/* Only render the pink delete background when actively swiping */}
+      {isSwiping && isDownloaded && (
+        <Animated.View
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            right: 0,
+            width: revealWidth,
+            backgroundColor: "#d0368a",
+            justifyContent: "center",
+            alignItems: "flex-end",
+            paddingRight: 20,
+            borderRadius: 4,
+            zIndex: 1,
+          }}
+        >
+          <Animated.View style={[styles.deleteAction, { opacity: deleteOpacity }]}>
+            <Ionicons name="trash-outline" size={20} color="#fff" />
+            <Text style={styles.deleteActionText}>Delete</Text>
+          </Animated.View>
+        </Animated.View>
+      )}
+      <Animated.View
+        style={{ transform: [{ translateX: isDownloaded ? translateX : 0 }], zIndex: 2 }}
+        onStartShouldSetResponder={() => isDownloaded}
+        onMoveShouldSetResponder={() => isTrackingRef.current}
+        onResponderStart={onTouchStart}
+        onResponderMove={onTouchMove}
+        onResponderRelease={onTouchEnd}
+        onResponderTerminate={onTouchEnd}
+      >
+        {children}
+      </Animated.View>
+    </View>
+  );
+}
+
 export default function MangaDetailScreen({ route, navigation }) {
   const { hash, title, manga: initialManga, isOffline } = route.params;
   const { refreshUnreadCounts } = useUnread();
@@ -30,7 +167,6 @@ export default function MangaDetailScreen({ route, navigation }) {
   const [loading, setLoading] = useState(!initialManga);
   const [error, setError] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isDownloaded, setIsDownloaded] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
   const [downloadedChapters, setDownloadedChapters] = useState([]);
@@ -58,7 +194,6 @@ export default function MangaDetailScreen({ route, navigation }) {
   useEffect(() => {
     loadMangaData();
     checkBookmark();
-    checkDownload();
     checkActiveDownload();
     loadDownloadedChapters();
     loadReadChapters();
@@ -175,11 +310,6 @@ export default function MangaDetailScreen({ route, navigation }) {
     setIsBookmarked(bookmarked);
   };
 
-  const checkDownload = async () => {
-    const downloaded = await storageService.isDownloaded(hash);
-    setIsDownloaded(downloaded);
-  };
-
   const loadDownloadedChapters = async () => {
     const chapters = await storageService.getDownloadedChapters(hash);
     setDownloadedChapters(chapters);
@@ -224,26 +354,21 @@ export default function MangaDetailScreen({ route, navigation }) {
 
   const handleDownload = async () => {
     try {
-      if (isDownloaded) {
-        // Remove download
+      if(downloadedChapters.length === chapters.length) {
         Alert.alert(
-          "Remove Download",
-          "Are you sure you want to remove this download?",
+          "Already downloaded",
+          "All chapters are already downloaded.",
           [
-            { text: "Cancel" },
+            { text: "OK", style: "cancel" },
             {
-              text: "Remove",
-              onPress: async () => {
-                await storageService.removeDownload(hash);
-                setIsDownloaded(false);
-              },
+              text: "Delete All",
               style: "destructive",
+              onPress: handleDeleteAllChapters,
             },
-          ],
+          ]
         );
         return;
       }
-
       // Ensure chapters are loaded
       if (!chapters || chapters.length === 0) {
         Alert.alert("Please wait", "Chapters are still loading...");
@@ -367,7 +492,6 @@ export default function MangaDetailScreen({ route, navigation }) {
         i++;
       }
       await storageService.clearActiveDownload(hash);
-      setIsDownloaded(true);
       loadDownloadedChapters();
       const failedCount = chapterNumbers.length - successfulChapters;
       if (failedCount > 0 && !downloadAbortRef.current) {
@@ -425,14 +549,6 @@ export default function MangaDetailScreen({ route, navigation }) {
     const remaining = allChapterNumbers.filter(
       (ch) => !alreadyDownloaded.includes(String(ch)),
     );
-
-    if (remaining.length === 0) {
-      // Everything was actually downloaded already
-      await storageService.clearActiveDownload(hash);
-      setIsDownloaded(true);
-      loadDownloadedChapters();
-      return;
-    }
 
     // Kick off the download for remaining chapters
     isDownloadingRef.current = true;
@@ -529,16 +645,38 @@ export default function MangaDetailScreen({ route, navigation }) {
         },
         chapterData,
       );
-
       // Update UI
       setDownloadedChapters((prev) => [...prev, chapterNum]);
-      setIsDownloaded(true);
     } catch (error) {
       console.error(`Failed to download chapter ${chapterNum}:`, error);
       Alert.alert("Error", `Failed to download chapter ${chapterNum}`);
     } finally {
       // Remove from downloading state
       setDownloadingChapters((prev) => prev.filter((c) => c !== chapterNum));
+    }
+  };
+
+  const handleDeleteChapter = async (chapterNumber) => {
+    const chapterNum = String(chapterNumber);
+    try {
+      await storageService.removeChapterDownload(hash, chapterNum);
+      setDownloadedChapters((prev) => prev.filter((c) => c !== chapterNum));
+    } catch (error) {
+      console.error(`Failed to delete chapter ${chapterNum}:`, error);
+      Alert.alert("Error", `Failed to delete chapter ${chapterNum}`);
+      // Reload in case state got out of sync
+      loadDownloadedChapters();
+    }
+  };
+
+  const handleDeleteAllChapters = async () => {
+    try {
+      await storageService.removeDownload(hash);
+      setDownloadedChapters([]);
+    } catch (error) {
+      console.error("Failed to delete all chapters:", error);
+      Alert.alert("Error", "Failed to delete downloaded chapters");
+      loadDownloadedChapters();
     }
   };
 
@@ -556,7 +694,6 @@ export default function MangaDetailScreen({ route, navigation }) {
         error={error}
         onRetry={() => {
           setError(null);
-          loadManga();
         }}
         showDownloadsHint={true}
       />
@@ -618,7 +755,7 @@ export default function MangaDetailScreen({ route, navigation }) {
               <TouchableOpacity
                 style={[
                   styles.downloadButton,
-                  isDownloaded && styles.downloadButtonActive,
+                  styles.downloadButtonActive,
                 ]}
                 onPress={handleDownload}
                 disabled={downloading}
@@ -655,18 +792,14 @@ export default function MangaDetailScreen({ route, navigation }) {
                   </View>
                 ) : (
                   <>
-                    <Ionicons
-                      name={isDownloaded ? "download" : "download-outline"}
-                      size={16}
-                      color={isDownloaded ? "#d0368a" : "#a0a0a0"}
-                    />
+                    <Ionicons name="download-outline" size={16} color="#d0368a" />
                     <Text
                       style={[
                         styles.downloadButtonText,
-                        isDownloaded && { color: "#d0368a" },
+                        { color: "#d0368a" },
                       ]}
                     >
-                      {isDownloaded ? "Ready" : "Download"}
+                      Download
                     </Text>
                   </>
                 )}
@@ -746,8 +879,12 @@ export default function MangaDetailScreen({ route, navigation }) {
                   .map((c) => String(c))
                   .includes(chapterNum);
                 return (
+                  <SwipeableChapterRow
+                    key={chapterNum}
+                    isDownloaded={isChapterDownloaded}
+                    onDelete={() => handleDeleteChapter(chapterNum)}
+                  >
                   <View
-                    key={index}
                     style={[
                       styles.chapterItem,
                       isChapterRead && styles.chapterItemRead,
@@ -799,6 +936,7 @@ export default function MangaDetailScreen({ route, navigation }) {
                       <Ionicons name="chevron-forward" size={20} color="#999" />
                     </View>
                   </View>
+                  </SwipeableChapterRow>
                 );
               })
             ) : (
@@ -977,6 +1115,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: "#121212",
   },
   chapterItemRead: {
     opacity: 0.5,
@@ -995,6 +1134,16 @@ const styles = StyleSheet.create({
   },
   chapterDownloadBtn: {
     padding: 4,
+  },
+  deleteAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  deleteActionText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
   chapterNumber: {
     fontSize: 14,

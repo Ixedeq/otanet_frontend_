@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
@@ -10,7 +10,7 @@ import {
   SafeAreaView,
   Alert,
   Dimensions,
-  PanResponder,
+  Animated,
   FlatList,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -163,8 +163,23 @@ export default function ChapterReaderScreen({ route, navigation }) {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [readingMode, setReadingMode] = useState("scroll");
-  const didSwipeRef = useRef(false);
   const scrollViewRef = useRef(null);
+
+  // ── Custom swipe gesture state (avoids stale closure bugs) ──
+  const swipeAnim = useRef(new Animated.Value(0)).current;
+  const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
+  const isSwipingRef = useRef(false);
+  const swipeLockedRef = useRef(false); // locks to horizontal once confirmed
+  const currentPageRef = useRef(0);
+  const pagesRef = useRef([]);
+  const currentChapterRef = useRef(0);
+  const chaptersRef = useRef([]);
+
+  // Keep refs in sync with state
+  useEffect(() => { currentPageRef.current = currentPageIndex; }, [currentPageIndex]);
+  useEffect(() => { pagesRef.current = pages; }, [pages]);
+  useEffect(() => { currentChapterRef.current = currentChapterIndex; }, [currentChapterIndex]);
+  useEffect(() => { chaptersRef.current = chapters; }, [chapters]);
 
   const getChapterNumber = (chapterItem) => {
     if (typeof chapterItem === "number" || typeof chapterItem === "string") {
@@ -319,32 +334,11 @@ export default function ChapterReaderScreen({ route, navigation }) {
     }
   };
 
-  const handlePageTap = () => {
-    if (didSwipeRef.current) {
-      didSwipeRef.current = false;
-      return;
-    }
-    setShowControls(!showControls);
-  };
-
-  const goToNextPage = () => {
-    if (currentPageIndex < pages.length - 1) {
-      setCurrentPageIndex(currentPageIndex + 1);
-    } else if (currentPageIndex === pages.length - 1) {
-      // At last page, automatically go to next chapter
-      goToNextChapter();
-    }
-  };
-
-  const goToPrevPage = () => {
-    if (currentPageIndex > 0) {
-      setCurrentPageIndex(currentPageIndex - 1);
-    }
-  };
-
-  const goToNextChapter = async () => {
-    if (currentChapterIndex < chapters.length - 1) {
-      const nextChapter = chapters[currentChapterIndex + 1];
+  const goToNextChapter = useCallback(() => {
+    const chIdx = currentChapterRef.current;
+    const chs = chaptersRef.current;
+    if (chIdx < chs.length - 1) {
+      const nextChapter = chs[chIdx + 1];
       const nextChapterNumber = getChapterNumber(nextChapter);
       if (nextChapterNumber === undefined || nextChapterNumber === null) {
         Alert.alert("Error", "Could not determine next chapter number");
@@ -358,11 +352,13 @@ export default function ChapterReaderScreen({ route, navigation }) {
         offlineChapters,
       });
     }
-  };
+  }, [hash, mangaTitle, isOffline, offlineChapters, navigation]);
 
-  const goToPrevChapter = async () => {
-    if (currentChapterIndex > 0) {
-      const prevChapter = chapters[currentChapterIndex - 1];
+  const goToPrevChapter = useCallback(() => {
+    const chIdx = currentChapterRef.current;
+    const chs = chaptersRef.current;
+    if (chIdx > 0) {
+      const prevChapter = chs[chIdx - 1];
       const prevChapterNumber = getChapterNumber(prevChapter);
       if (prevChapterNumber === undefined || prevChapterNumber === null) {
         Alert.alert("Error", "Could not determine previous chapter number");
@@ -376,29 +372,116 @@ export default function ChapterReaderScreen({ route, navigation }) {
         offlineChapters,
       });
     }
-  };
+  }, [hash, mangaTitle, isOffline, offlineChapters, navigation]);
 
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gestureState) => {
-          const isHorizontalSwipe =
-            Math.abs(gestureState.dx) > 20 &&
-            Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
-          return isHorizontalSwipe;
-        },
-        onPanResponderRelease: (_, gestureState) => {
-          if (gestureState.dx <= -50) {
-            didSwipeRef.current = true;
-            goToNextPage();
-          } else if (gestureState.dx >= 50) {
-            didSwipeRef.current = true;
-            goToPrevPage();
-          }
-        },
-      }),
-    [currentPageIndex, pages.length, currentChapterIndex, chapters.length],
-  );
+  const goToNextPage = useCallback(() => {
+    if (currentPageRef.current < pagesRef.current.length - 1) {
+      setCurrentPageIndex(currentPageRef.current + 1);
+    } else if (currentPageRef.current === pagesRef.current.length - 1) {
+      goToNextChapter();
+    }
+  }, [goToNextChapter]);
+
+  const goToPrevPage = useCallback(() => {
+    if (currentPageRef.current > 0) {
+      setCurrentPageIndex(currentPageRef.current - 1);
+    }
+  }, []);
+
+  // ── Custom swipe gesture handlers ──
+  const SWIPE_THRESHOLD = 60;        // minimum dx to trigger a page change
+  const VELOCITY_THRESHOLD = 0.3;    // fast flick threshold (px/ms)
+  const LOCK_THRESHOLD = 15;         // px moved before we decide horizontal vs vertical
+  const EDGE_PEEK = 40;              // how much of the next/prev page peeks during drag
+
+  const onSwipeTouchStart = useCallback((e) => {
+    const touch = e.nativeEvent;
+    touchStartRef.current = { x: touch.pageX, y: touch.pageY, time: Date.now() };
+    isSwipingRef.current = false;
+    swipeLockedRef.current = false;
+    swipeAnim.setValue(0);
+  }, [swipeAnim]);
+
+  const onSwipeTouchMove = useCallback((e) => {
+    const touch = e.nativeEvent;
+    const dx = touch.pageX - touchStartRef.current.x;
+    const dy = touch.pageY - touchStartRef.current.y;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    // Decide direction once we pass the lock threshold
+    if (!swipeLockedRef.current && (absDx > LOCK_THRESHOLD || absDy > LOCK_THRESHOLD)) {
+      if (absDx > absDy * 1.2) {
+        // Horizontal swipe confirmed
+        swipeLockedRef.current = true;
+        isSwipingRef.current = true;
+      } else {
+        // Vertical — bail out, don't handle
+        swipeLockedRef.current = true;
+        isSwipingRef.current = false;
+        return;
+      }
+    }
+
+    if (!isSwipingRef.current) return;
+
+    // Apply resistance at the edges (can't swipe right on first page, left on last)
+    const pageIdx = currentPageRef.current;
+    const totalPages = pagesRef.current.length;
+    let clampedDx = dx;
+
+    if (dx > 0 && pageIdx === 0 && currentChapterRef.current === 0) {
+      // First page of first chapter — heavy resistance
+      clampedDx = dx * 0.15;
+    } else if (dx < 0 && pageIdx === totalPages - 1 && currentChapterRef.current >= chaptersRef.current.length - 1) {
+      // Last page of last chapter — heavy resistance
+      clampedDx = dx * 0.15;
+    }
+
+    swipeAnim.setValue(clampedDx);
+  }, [swipeAnim]);
+
+  const onSwipeTouchEnd = useCallback((e) => {
+    if (!isSwipingRef.current) return;
+    isSwipingRef.current = false;
+
+    const touch = e.nativeEvent;
+    const dx = touch.pageX - touchStartRef.current.x;
+    const dt = Date.now() - touchStartRef.current.time;
+    const velocity = Math.abs(dx) / Math.max(dt, 1);
+
+    const shouldNavigate = Math.abs(dx) > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD;
+
+    if (shouldNavigate && dx < 0) {
+      // Swipe left → next page
+      Animated.timing(swipeAnim, {
+        toValue: -width,
+        duration: 180,
+        useNativeDriver: true,
+      }).start(() => {
+        swipeAnim.setValue(0);
+        goToNextPage();
+      });
+    } else if (shouldNavigate && dx > 0) {
+      // Swipe right → prev page
+      Animated.timing(swipeAnim, {
+        toValue: width,
+        duration: 180,
+        useNativeDriver: true,
+      }).start(() => {
+        swipeAnim.setValue(0);
+        goToPrevPage();
+      });
+    } else {
+      // Snap back
+      Animated.spring(swipeAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 120,
+        friction: 12,
+      }).start();
+    }
+  }, [swipeAnim, goToNextPage, goToPrevPage]);
 
   if (loading) {
     return (
@@ -485,32 +568,83 @@ export default function ChapterReaderScreen({ route, navigation }) {
           )}
         </View>
       ) : (
-        // Paginated mode
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={handlePageTap}
+        // Paginated mode with custom swipe gesture
+        <View
           style={styles.pageContainer}
-          {...panResponder.panHandlers}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderStart={onSwipeTouchStart}
+          onResponderMove={onSwipeTouchMove}
+          onResponderRelease={onSwipeTouchEnd}
+          onResponderTerminate={onSwipeTouchEnd}
         >
-          <PageImage
-            source={buildImageSource(getPageUri(currentPage))}
-            style={styles.pageImage}
-            resizeMode="contain"
-            isScrollMode={false}
-          />
+          <Animated.View
+            style={[
+              styles.swipeablePageWrapper,
+              { transform: [{ translateX: swipeAnim }] },
+            ]}
+          >
+            <PageImage
+              source={buildImageSource(getPageUri(currentPage))}
+              style={styles.pageImage}
+              resizeMode="contain"
+              isScrollMode={false}
+            />
+          </Animated.View>
 
-          {/* Tap zones for navigation */}
-          <TouchableOpacity
-            style={styles.leftTapZone}
-            onPress={goToPrevPage}
-            activeOpacity={0}
-          />
-          <TouchableOpacity
-            style={styles.rightTapZone}
-            onPress={goToNextPage}
-            activeOpacity={0}
-          />
-        </TouchableOpacity>
+          {/* Invisible tap zones — left/right edges for tap navigation, center for controls */}
+          <View style={styles.tapZoneRow} pointerEvents="box-none">
+            <TouchableOpacity
+              style={styles.leftTapZone}
+              onPress={goToPrevPage}
+              activeOpacity={1}
+            />
+            <TouchableOpacity
+              style={styles.centerTapZone}
+              onPress={() => setShowControls((prev) => !prev)}
+              activeOpacity={1}
+            />
+            <TouchableOpacity
+              style={styles.rightTapZone}
+              onPress={goToNextPage}
+              activeOpacity={1}
+            />
+          </View>
+
+          {/* Swipe direction indicators */}
+          <Animated.View
+            style={[
+              styles.swipeIndicator,
+              styles.swipeIndicatorLeft,
+              {
+                opacity: swipeAnim.interpolate({
+                  inputRange: [0, 60],
+                  outputRange: [0, 0.8],
+                  extrapolate: "clamp",
+                }),
+              },
+            ]}
+            pointerEvents="none"
+          >
+            <Ionicons name="chevron-back" size={32} color="#fff" />
+          </Animated.View>
+          <Animated.View
+            style={[
+              styles.swipeIndicator,
+              styles.swipeIndicatorRight,
+              {
+                opacity: swipeAnim.interpolate({
+                  inputRange: [-60, 0],
+                  outputRange: [0.8, 0],
+                  extrapolate: "clamp",
+                }),
+              },
+            ]}
+            pointerEvents="none"
+          >
+            <Ionicons name="chevron-forward" size={32} color="#fff" />
+          </Animated.View>
+        </View>
       )}
 
       {/* Controls */}
@@ -642,23 +776,45 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#000",
+    overflow: "hidden",
+  },
+  swipeablePageWrapper: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
   },
   pageImage: {
     backgroundColor: "#000",
   },
+  tapZoneRow: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: "row",
+  },
   leftTapZone: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: width * 0.25,
+    flex: 1,
+  },
+  centerTapZone: {
+    flex: 2,
   },
   rightTapZone: {
+    flex: 1,
+  },
+  swipeIndicator: {
     position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: width * 0.25,
+    top: "45%",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  swipeIndicatorLeft: {
+    left: 8,
+  },
+  swipeIndicatorRight: {
+    right: 8,
   },
   controls: {
     position: "absolute",
