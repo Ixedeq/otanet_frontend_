@@ -32,12 +32,12 @@ export default function DownloadsScreen({ navigation }) {
     try {
       setLoading(true);
       // First, repair any downloads missing local covers (for previous downloads)
-      await storageService.repairDownloadCovers();
+      //await storageService.repairDownloadCovers();
       let data = await storageService.getDownloads();
 
       // Auto-repair downloads needing chapter repair (enable offline viewing automatically)
-      const needsRepair =
-        data?.filter((d) => storageService.downloadNeedsRepair(d)) || [];
+      // const needsRepair = data?.filter((d) => storageService.downloadNeedsRepair(d)) || [];
+      const needsRepair = [];
 
       if (needsRepair.length > 0) {
         console.log(
@@ -177,7 +177,7 @@ export default function DownloadsScreen({ navigation }) {
     const chapterCount = item.chapters?.length || 0;
     // Use local cover path if available, otherwise fall back to remote
     const coverUri = item.localCoverPath || item.cover_img;
-    const needsRepair = storageService.downloadNeedsRepair(item);
+    // const needsRepair = storageService.downloadNeedsRepair(item);
     const isRepairing = repairing === item.hash;
 
     return (
