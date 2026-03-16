@@ -113,3 +113,15 @@
 2026-02-23 02:07:53,137 [INFO] 127.0.0.1 - - [23/Feb/2026 02:07:53] "GET /recent_manga?page=6 HTTP/1.1" 200 -
 2026-02-23 02:21:08,555 [WARNING]  * Debugger is active!
 2026-02-23 02:21:08,566 [INFO]  * Debugger PIN: 856-511-515
+2026-03-15 15:50:37,507 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.0.0.2:5001
+2026-03-15 15:50:37,507 [INFO] [33mPress CTRL+C to quit[0m
+2026-03-15 15:50:37,512 [INFO]  * Restarting with stat
+2026-03-15 15:50:37,708 [WARNING]  * Debugger is active!
+2026-03-15 15:50:37,724 [INFO]  * Debugger PIN: 856-511-515
+2026-03-15 18:55:23,789 [INFO]  * Detected change in '/Users/ixe/Documents/Code/otanet_frontend_/src/api/flask_api.py', reloading
+2026-03-15 18:55:23,941 [INFO]  * Restarting with stat
+2026-03-15 18:55:26,497 [WARNING]  * Debugger is active!
+2026-03-15 18:55:26,514 [INFO]  * Debugger PIN: 856-511-515

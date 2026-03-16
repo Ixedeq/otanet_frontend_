@@ -439,7 +439,14 @@ export const storageService = {
    */
   downloadImage: async (url, localPath) => {
     try {
-      const result = await FileSystem.downloadAsync(url, localPath);
+      // MangaDex CDN requires proper headers to avoid 403 errors on iOS
+      const headers = {};
+      if (url.includes('mangadex.org') || url.includes('mangadex.network')) {
+        headers['User-Agent'] = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15';
+        headers['Referer'] = 'https://mangadex.org/';
+        headers['Accept'] = 'image/webp,image/apng,image/*,*/*;q=0.8';
+      }
+      const result = await FileSystem.downloadAsync(url, localPath, { headers });
       return result.status === 200;
     } catch (error) {
       console.error(`Failed to download image: ${url}`, error);

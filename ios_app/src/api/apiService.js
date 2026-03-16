@@ -145,7 +145,7 @@ export const apiService = {
    * @param {string} chapter - Chapter identifier
    */
   getChapterPages: async (hash, chapter) => {
-    return cachedFetch(`/get_pages?hash=${hash}&chapter=${chapter}`);
+    return cachedFetch(`/get_pages?hash=${hash}&chapter=${chapter}&proxy=1`);
   },
 
   /**
