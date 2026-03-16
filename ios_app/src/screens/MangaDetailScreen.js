@@ -36,9 +36,11 @@ export default function MangaDetailScreen({ route, navigation }) {
   const [downloadedChapters, setDownloadedChapters] = useState([]);
   const [downloadingChapters, setDownloadingChapters] = useState([]);
   const [readChapters, setReadChapters] = useState([]);
+  const [isPaused, setIsPaused] = useState(false);
 
-  // Ref to track if download should continue (for background support)
+  // Refs to track download state
   const downloadAbortRef = useRef(false);
+  const downloadPausedRef = useRef(false);
   const appStateRef = useRef(AppState.currentState);
   const downloadProgressRef = useRef(null);
   const isDownloadingRef = useRef(false);
@@ -252,6 +254,8 @@ export default function MangaDetailScreen({ route, navigation }) {
       isDownloadingRef.current = true;
       setDownloading(true);
       downloadAbortRef.current = false;
+      downloadPausedRef.current = false;
+      setIsPaused(false);
 
       const chapterNumbers = chapters
         .map((ch) => getChapterNumber(ch))
@@ -291,10 +295,26 @@ export default function MangaDetailScreen({ route, navigation }) {
   const runDownload = async (chapterNumbers) => {
     let totalSize = 0;
     let successfulChapters = 0;
+    let i = 0;
     try {
-      for (let i = 0; i < chapterNumbers.length; i += 1) {
+      while (i < chapterNumbers.length) {
         if (downloadAbortRef.current) {
           break;
+        }
+        if (downloadPausedRef.current) {
+          setIsPaused(true);
+          // Wait until resumed
+          await new Promise((resolve) => {
+            const check = () => {
+              if (!downloadPausedRef.current) {
+                setIsPaused(false);
+                resolve();
+              } else {
+                setTimeout(check, 200);
+              }
+            };
+            check();
+          });
         }
         const chapterNumber = chapterNumbers[i];
         const progress = { current: i + 1, total: chapterNumbers.length };
@@ -338,6 +358,7 @@ export default function MangaDetailScreen({ route, navigation }) {
           );
         }
         await new Promise((resolve) => setTimeout(resolve, 50));
+        i++;
       }
       await storageService.clearActiveDownload(hash);
       setIsDownloaded(true);
@@ -358,7 +379,24 @@ export default function MangaDetailScreen({ route, navigation }) {
       downloadProgressRef.current = null;
       setDownloading(false);
       setDownloadProgress(null);
+      setIsPaused(false);
     }
+  };
+  // Pause, resume, and abort handlers
+  const handlePauseDownload = () => {
+    downloadPausedRef.current = true;
+    setIsPaused(true);
+  };
+
+  const handleResumeDownload = () => {
+    downloadPausedRef.current = false;
+    setIsPaused(false);
+  };
+
+  const handleAbortDownload = () => {
+    downloadAbortRef.current = true;
+    downloadPausedRef.current = false;
+    setIsPaused(false);
   };
 
   const handleReadChapter = (chapter) => {
@@ -527,6 +565,27 @@ export default function MangaDetailScreen({ route, navigation }) {
                         {downloadProgress.current}/{downloadProgress.total}
                       </Text>
                     )}
+                    {isPaused ? (
+                      <TouchableOpacity
+                        onPress={handleResumeDownload}
+                        style={{ marginLeft: 10 }}
+                      >
+                        <Ionicons name="play" size={20} color="#fff" />
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={handlePauseDownload}
+                        style={{ marginLeft: 10 }}
+                      >
+                        <Ionicons name="pause" size={20} color="#fff" />
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      onPress={handleAbortDownload}
+                      style={{ marginLeft: 10 }}
+                    >
+                      <Ionicons name="close" size={20} color="#fff" />
+                    </TouchableOpacity>
                   </View>
                 ) : (
                   <>
