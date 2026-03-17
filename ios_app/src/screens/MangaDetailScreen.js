@@ -172,12 +172,10 @@ export default function MangaDetailScreen({ route, navigation }) {
   const [downloadedChapters, setDownloadedChapters] = useState([]);
   const [downloadingChapters, setDownloadingChapters] = useState([]);
   const [readChapters, setReadChapters] = useState([]);
-  const [isPaused, setIsPaused] = useState(false);
   const [staleDownload, setStaleDownload] = useState(null);
 
   // Refs to track download state
   const downloadAbortRef = useRef(false);
-  const downloadPausedRef = useRef(false);
   const appStateRef = useRef(AppState.currentState);
   const downloadProgressRef = useRef(null);
   const isDownloadingRef = useRef(false);
@@ -384,8 +382,6 @@ export default function MangaDetailScreen({ route, navigation }) {
       isDownloadingRef.current = true;
       setDownloading(true);
       downloadAbortRef.current = false;
-      downloadPausedRef.current = false;
-      setIsPaused(false);
 
       const chapterNumbers = chapters
         .map((ch) => getChapterNumber(ch))
@@ -431,21 +427,6 @@ export default function MangaDetailScreen({ route, navigation }) {
       while (i < chapterNumbers.length) {
         if (downloadAbortRef.current) {
           break;
-        }
-        if (downloadPausedRef.current) {
-          setIsPaused(true);
-          // Wait until resumed
-          await new Promise((resolve) => {
-            const check = () => {
-              if (!downloadPausedRef.current) {
-                setIsPaused(false);
-                resolve();
-              } else {
-                setTimeout(check, 200);
-              }
-            };
-            check();
-          });
         }
         const chapterNumber = chapterNumbers[i];
         const progress = { current: startOffset + i + 1, total: displayTotal };
@@ -509,24 +490,11 @@ export default function MangaDetailScreen({ route, navigation }) {
       downloadProgressRef.current = null;
       setDownloading(false);
       setDownloadProgress(null);
-      setIsPaused(false);
     }
   };
-  // Pause, resume, and abort handlers
-  const handlePauseDownload = () => {
-    downloadPausedRef.current = true;
-    setIsPaused(true);
-  };
-
-  const handleResumeDownload = () => {
-    downloadPausedRef.current = false;
-    setIsPaused(false);
-  };
-
+  // Abort handlers
   const handleAbortDownload = () => {
     downloadAbortRef.current = true;
-    downloadPausedRef.current = false;
-    setIsPaused(false);
   };
 
   const handleResumeStaleDownload = async () => {
@@ -554,8 +522,6 @@ export default function MangaDetailScreen({ route, navigation }) {
     isDownloadingRef.current = true;
     setDownloading(true);
     downloadAbortRef.current = false;
-    downloadPausedRef.current = false;
-    setIsPaused(false);
 
     const alreadyDone = allChapterNumbers.length - remaining.length;
     downloadProgressRef.current = {
@@ -758,6 +724,23 @@ export default function MangaDetailScreen({ route, navigation }) {
                   styles.downloadButtonActive,
                 ]}
                 onPress={handleDownload}
+                onLongPress={() => {
+                  if (downloadedChapters.length > 0 && !downloading) {
+                    Alert.alert(
+                      "Delete All Downloads",
+                      `Remove all ${downloadedChapters.length} downloaded chapter${downloadedChapters.length !== 1 ? "s" : ""}?`,
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Delete All",
+                          style: "destructive",
+                          onPress: handleDeleteAllChapters,
+                        },
+                      ]
+                    );
+                  }
+                }}
+                delayLongPress={1500}
                 disabled={downloading}
               >
                 {downloading ? (
@@ -767,21 +750,6 @@ export default function MangaDetailScreen({ route, navigation }) {
                       <Text style={styles.downloadProgressText}>
                         {downloadProgress.current}/{downloadProgress.total}
                       </Text>
-                    )}
-                    {isPaused ? (
-                      <TouchableOpacity
-                        onPress={handleResumeDownload}
-                        style={styles.dlControlBtn}
-                      >
-                        <Ionicons name="play" size={16} color="#fff" />
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        onPress={handlePauseDownload}
-                        style={styles.dlControlBtn}
-                      >
-                        <Ionicons name="pause" size={16} color="#fff" />
-                      </TouchableOpacity>
                     )}
                     <TouchableOpacity
                       onPress={handleAbortDownload}

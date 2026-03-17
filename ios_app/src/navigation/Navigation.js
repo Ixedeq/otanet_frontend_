@@ -198,6 +198,51 @@ function BookmarksStack() {
   );
 }
 
+// Downloads stack
+function DownloadsStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: "#1e1e1e",
+        },
+        headerTintColor: "#d0368a",
+        headerTitleStyle: {
+          color: "#f5f5f5",
+          fontWeight: "700",
+        },
+      }}
+    >
+      <Stack.Screen
+        name="DownloadsTab"
+        component={DownloadsScreen}
+        options={{ title: "Downloads" }}
+      />
+      <Stack.Screen
+        name="MangaDetail"
+        component={MangaDetailScreen}
+        options={({ route }) => ({
+          title: route.params?.title || "Manga",
+        })}
+      />
+      <Stack.Screen
+        name="ChapterReader"
+        component={ChapterReaderScreen}
+        options={{
+          headerShown: false,
+          animationEnabled: true,
+        }}
+      />
+      <Stack.Screen
+        name="TagFilter"
+        component={TagFilterScreen}
+        options={{ title: "Filter by Tags" }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function Navigation() {
   return (
     <UnreadProvider>
@@ -267,7 +312,7 @@ function NavigationContent() {
         />
         <Tab.Screen
           name="Downloads"
-          component={DownloadsScreen}
+          component={DownloadsStack}
           options={{
             title: "Downloads",
           }}

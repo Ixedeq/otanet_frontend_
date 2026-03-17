@@ -26,6 +26,220 @@ const { width, height: screenHeight } = Dimensions.get("window");
 // Default aspect ratio for manga pages (typical manga is taller than wide)
 const DEFAULT_ASPECT_RATIO = 0.7;
 
+// ── Pinch-to-zoom wrapper ──────────────────────────────────────────────────
+const getDistance = (touches) => {
+  const dx = touches[0].pageX - touches[1].pageX;
+  const dy = touches[0].pageY - touches[1].pageY;
+  return Math.sqrt(dx * dx + dy * dy);
+};
+
+const ZoomableImage = React.memo(({ children, onSingleTap, onSwipeStart, onSwipeMove, onSwipeEnd, enabled = true }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const translateXAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(0)).current;
+
+  const scaleRef = useRef(1);
+  const translateRef = useRef({ x: 0, y: 0 });
+  const pinchRef = useRef({ active: false, startDist: 0, startScale: 1 });
+  const panRef = useRef({ active: false, startX: 0, startY: 0, startTX: 0, startTY: 0 });
+  const touchCountRef = useRef(0);
+  const lastTapRef = useRef(0);
+  const tapPosRef = useRef({ x: 0, y: 0 });
+  const didPinchOrPanRef = useRef(false);   // true if pinch or zoomed-pan occurred
+  const totalMoveRef = useRef(0);            // total finger movement in px
+  const isZoomedRef = useRef(false);
+  const singleTapTimerRef = useRef(null);
+  const TAP_MOVE_TOLERANCE = 10;             // max px movement to still count as a tap
+
+  const resetZoom = useCallback((animated = true) => {
+    scaleRef.current = 1;
+    translateRef.current = { x: 0, y: 0 };
+    isZoomedRef.current = false;
+    if (animated) {
+      Animated.parallel([
+        Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 100, friction: 12 }),
+        Animated.spring(translateXAnim, { toValue: 0, useNativeDriver: true, tension: 100, friction: 12 }),
+        Animated.spring(translateYAnim, { toValue: 0, useNativeDriver: true, tension: 100, friction: 12 }),
+      ]).start();
+    } else {
+      scaleAnim.setValue(1);
+      translateXAnim.setValue(0);
+      translateYAnim.setValue(0);
+    }
+  }, [scaleAnim, translateXAnim, translateYAnim]);
+
+  const clampTranslate = useCallback((tx, ty, s) => {
+    const maxTX = Math.max(0, (width * s - width) / 2);
+    const maxTY = Math.max(0, (screenHeight * 0.85 * s - screenHeight * 0.85) / 2);
+    return {
+      x: Math.max(-maxTX, Math.min(maxTX, tx)),
+      y: Math.max(-maxTY, Math.min(maxTY, ty)),
+    };
+  }, []);
+
+  const handleTouchStart = useCallback((e) => {
+    if (!enabled) return;
+    const touches = e.nativeEvent.touches;
+    touchCountRef.current = touches.length;
+    didPinchOrPanRef.current = false;
+    totalMoveRef.current = 0;
+
+    if (touches.length === 2) {
+      didPinchOrPanRef.current = true;
+      pinchRef.current = {
+        active: true,
+        startDist: getDistance(touches),
+        startScale: scaleRef.current,
+      };
+      panRef.current.active = false;
+    } else if (touches.length === 1) {
+      tapPosRef.current = { x: touches[0].pageX, y: touches[0].pageY };
+      if (isZoomedRef.current) {
+        didPinchOrPanRef.current = true;
+        panRef.current = {
+          active: true,
+          startX: touches[0].pageX,
+          startY: touches[0].pageY,
+          startTX: translateRef.current.x,
+          startTY: translateRef.current.y,
+        };
+      } else {
+        // Not zoomed — forward to swipe start
+        if (onSwipeStart) onSwipeStart(e);
+      }
+    }
+  }, [enabled, onSwipeStart]);
+
+  const handleTouchMove = useCallback((e) => {
+    if (!enabled) return;
+    const touches = e.nativeEvent.touches;
+
+    if (touches.length === 2 && pinchRef.current.active) {
+      const dist = getDistance(touches);
+      const newScale = Math.max(1, Math.min(5, pinchRef.current.startScale * (dist / pinchRef.current.startDist)));
+      scaleRef.current = newScale;
+      isZoomedRef.current = newScale > 1.05;
+      scaleAnim.setValue(newScale);
+
+      const clamped = clampTranslate(translateRef.current.x, translateRef.current.y, newScale);
+      translateRef.current = clamped;
+      translateXAnim.setValue(clamped.x);
+      translateYAnim.setValue(clamped.y);
+    } else if (touches.length === 1 && panRef.current.active && isZoomedRef.current) {
+      const dx = touches[0].pageX - panRef.current.startX;
+      const dy = touches[0].pageY - panRef.current.startY;
+      const clamped = clampTranslate(panRef.current.startTX + dx, panRef.current.startTY + dy, scaleRef.current);
+      translateRef.current = clamped;
+      translateXAnim.setValue(clamped.x);
+      translateYAnim.setValue(clamped.y);
+    } else if (touches.length === 1 && !isZoomedRef.current && !pinchRef.current.active) {
+      // Not zoomed — track movement and forward to swipe move
+      const dx = touches[0].pageX - tapPosRef.current.x;
+      const dy = touches[0].pageY - tapPosRef.current.y;
+      totalMoveRef.current = Math.sqrt(dx * dx + dy * dy);
+      if (onSwipeMove) onSwipeMove(e);
+    }
+  }, [enabled, scaleAnim, translateXAnim, translateYAnim, clampTranslate, onSwipeMove]);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (!enabled) return;
+    const remainingCount = e.nativeEvent.touches?.length || 0;
+
+    // Pinch just ended (lifted one of two fingers)
+    if (pinchRef.current.active && remainingCount < 2) {
+      pinchRef.current.active = false;
+      if (scaleRef.current < 1.1) {
+        resetZoom();
+      }
+      return;
+    }
+
+    // Zoomed pan ended
+    if (panRef.current.active && remainingCount === 0) {
+      panRef.current.active = false;
+      return;
+    }
+
+    // All fingers lifted
+    if (remainingCount === 0) {
+      // Always forward swipe end so the swipe handler can finalize
+      if (!isZoomedRef.current && !didPinchOrPanRef.current) {
+        if (onSwipeEnd) onSwipeEnd(e);
+      }
+
+      // Tap detection: only if finger barely moved, single finger, no pinch/pan
+      const isTap = totalMoveRef.current < TAP_MOVE_TOLERANCE;
+      if (isTap && !didPinchOrPanRef.current && touchCountRef.current === 1) {
+        const now = Date.now();
+        const tapX = tapPosRef.current.x;
+        const tapY = tapPosRef.current.y;
+
+        if (now - lastTapRef.current < 300) {
+          // Double-tap: toggle zoom
+          if (singleTapTimerRef.current) {
+            clearTimeout(singleTapTimerRef.current);
+            singleTapTimerRef.current = null;
+          }
+          if (isZoomedRef.current) {
+            resetZoom();
+          } else {
+            const targetScale = 2.5;
+            scaleRef.current = targetScale;
+            isZoomedRef.current = true;
+            const centerX = width / 2;
+            const centerY = screenHeight * 0.85 / 2;
+            const focusX = (centerX - tapX) * (targetScale - 1);
+            const focusY = (centerY - tapY) * (targetScale - 1);
+            const clamped = clampTranslate(focusX, focusY, targetScale);
+            translateRef.current = clamped;
+            Animated.parallel([
+              Animated.spring(scaleAnim, { toValue: targetScale, useNativeDriver: true, tension: 100, friction: 12 }),
+              Animated.spring(translateXAnim, { toValue: clamped.x, useNativeDriver: true, tension: 100, friction: 12 }),
+              Animated.spring(translateYAnim, { toValue: clamped.y, useNativeDriver: true, tension: 100, friction: 12 }),
+            ]).start();
+          }
+          lastTapRef.current = 0;
+        } else {
+          lastTapRef.current = now;
+          // Delayed single tap — wait to rule out double-tap
+          singleTapTimerRef.current = setTimeout(() => {
+            singleTapTimerRef.current = null;
+            if (!isZoomedRef.current && onSingleTap) {
+              // Build a synthetic event with pageX so the handler can detect zones
+              onSingleTap({ nativeEvent: { pageX: tapX, pageY: tapY } });
+            }
+          }, 300);
+        }
+      }
+
+      didPinchOrPanRef.current = false;
+      totalMoveRef.current = 0;
+    }
+  }, [enabled, resetZoom, clampTranslate, scaleAnim, translateXAnim, translateYAnim, onSingleTap, onSwipeEnd]);
+
+  return (
+    <View
+      style={{ flex: 1 }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <Animated.View
+        style={{
+          flex: 1,
+          transform: [
+            { translateX: translateXAnim },
+            { translateY: translateYAnim },
+            { scale: scaleAnim },
+          ],
+        }}
+      >
+        {children}
+      </Animated.View>
+    </View>
+  );
+});
+
 // Helper to build image source with proper headers for external CDNs
 const buildImageSource = (uri) => {
   if (!uri) return { uri: '' };
@@ -43,64 +257,68 @@ const buildImageSource = (uri) => {
   return { uri };
 };
 
+// Cache for image dimensions to avoid re-measuring on page changes
+const imageDimensionsCache = {};
+
 // Page image component that maintains uniform sizing
 const PageImage = React.memo(({ source, style, resizeMode, isScrollMode }) => {
-  const [dimensions, setDimensions] = useState({
-    width: width,
-    height: width / DEFAULT_ASPECT_RATIO,
-  });
+  const uri = source?.uri;
+  const cached = uri ? imageDimensionsCache[uri] : null;
+
+  const getDefaultDims = () => {
+    if (cached) return cached;
+    return {
+      width: width,
+      height: isScrollMode ? width / DEFAULT_ASPECT_RATIO : screenHeight * 0.85,
+    };
+  };
+
+  const [dimensions, setDimensions] = useState(getDefaultDims);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
+  const computeDimensions = useCallback((imgWidth, imgHeight) => {
+    if (!imgWidth || !imgHeight) return;
+    const aspectRatio = imgWidth / imgHeight;
+    let dims;
+    if (isScrollMode) {
+      dims = { width: width, height: width / aspectRatio };
+    } else {
+      const maxHeight = screenHeight * 0.85;
+      let finalWidth = width;
+      let finalHeight = width / aspectRatio;
+      if (finalHeight > maxHeight) {
+        finalHeight = maxHeight;
+        finalWidth = maxHeight * aspectRatio;
+      }
+      dims = { width: finalWidth, height: finalHeight };
+    }
+    if (uri) imageDimensionsCache[uri] = dims;
+    setDimensions(dims);
+  }, [uri, isScrollMode]);
+
   useEffect(() => {
-    const uri = source?.uri;
-    if (!uri) {
-      console.log("PageImage: No URI provided");
+    if (!uri) return;
+    // If already cached, use it immediately
+    if (imageDimensionsCache[uri]) {
+      setDimensions(imageDimensionsCache[uri]);
       return;
     }
-
-    console.log("PageImage loading URI:", uri.substring(0, 80));
 
     Image.getSize(
       uri,
       (imgWidth, imgHeight) => {
-        console.log("PageImage getSize success:", imgWidth, "x", imgHeight);
-        if (imgWidth && imgHeight) {
-          const aspectRatio = imgWidth / imgHeight;
-          if (isScrollMode) {
-            // For scroll mode: full width, calculated height
-            setDimensions({ width: width, height: width / aspectRatio });
-          } else {
-            // For paginated mode: fit within screen while maintaining aspect ratio
-            const maxHeight = screenHeight * 0.85;
-            let finalWidth = width;
-            let finalHeight = width / aspectRatio;
-
-            if (finalHeight > maxHeight) {
-              finalHeight = maxHeight;
-              finalWidth = maxHeight * aspectRatio;
-            }
-            setDimensions({ width: finalWidth, height: finalHeight });
-          }
-        }
+        computeDimensions(imgWidth, imgHeight);
       },
-      (getSizeError) => {
-        // On getSize error, use default dimensions but still try to render
-        console.log(
-          "PageImage getSize error (using defaults):",
-          getSizeError,
-          "for URI:",
-          source?.uri?.substring(0, 80),
-        );
-        // Don't set error=true here - let the Image component try to load
-        // getSize can fail but Image can still render successfully
+      () => {
+        // getSize failed — keep defaults, Image might still render
         setDimensions({
           width: width,
           height: isScrollMode ? width / DEFAULT_ASPECT_RATIO : screenHeight * 0.85,
         });
       },
     );
-  }, [source?.uri, isScrollMode]);
+  }, [uri, isScrollMode, computeDimensions]);
 
   return (
     <View
@@ -122,20 +340,15 @@ const PageImage = React.memo(({ source, style, resizeMode, isScrollMode }) => {
           !loaded && { opacity: 0 },
         ]}
         resizeMode={resizeMode || "contain"}
-        onLoad={() => {
-          console.log(
-            "PageImage loaded successfully:",
-            source?.uri?.substring(0, 50),
-          );
+        onLoad={(e) => {
           setLoaded(true);
+          // Also use the load event to get dimensions if getSize was slow
+          const { width: natW, height: natH } = e.nativeEvent?.source || {};
+          if (natW && natH && !imageDimensionsCache[uri]) {
+            computeDimensions(natW, natH);
+          }
         }}
-        onError={(e) => {
-          console.log(
-            "PageImage load error:",
-            e.nativeEvent?.error,
-            "for:",
-            source?.uri?.substring(0, 80),
-          );
+        onError={() => {
           setError(true);
         }}
       />
@@ -167,6 +380,7 @@ export default function ChapterReaderScreen({ route, navigation }) {
 
   // ── Custom swipe gesture state (avoids stale closure bugs) ──
   const swipeAnim = useRef(new Animated.Value(0)).current;
+  const pageOpacity = useRef(new Animated.Value(1)).current;
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
   const isSwipingRef = useRef(false);
   const swipeLockedRef = useRef(false); // locks to horizontal once confirmed
@@ -174,6 +388,7 @@ export default function ChapterReaderScreen({ route, navigation }) {
   const pagesRef = useRef([]);
   const currentChapterRef = useRef(0);
   const chaptersRef = useRef([]);
+  const isAnimatingRef = useRef(false); // prevent input during page transition
 
   // Keep refs in sync with state
   useEffect(() => { currentPageRef.current = currentPageIndex; }, [currentPageIndex]);
@@ -385,8 +600,49 @@ export default function ChapterReaderScreen({ route, navigation }) {
   const goToPrevPage = useCallback(() => {
     if (currentPageRef.current > 0) {
       setCurrentPageIndex(currentPageRef.current - 1);
+    } else if (currentPageRef.current === 0) {
+      goToPrevChapter();
     }
-  }, []);
+  }, [goToPrevChapter]);
+
+  // Animated page change for tap zones (not swipes — swipes have their own animation)
+  const animatedGoToNextPage = useCallback(() => {
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
+    Animated.timing(pageOpacity, {
+      toValue: 0,
+      duration: 80,
+      useNativeDriver: true,
+    }).start(() => {
+      goToNextPage();
+      Animated.timing(pageOpacity, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true,
+      }).start(() => {
+        isAnimatingRef.current = false;
+      });
+    });
+  }, [pageOpacity, goToNextPage]);
+
+  const animatedGoToPrevPage = useCallback(() => {
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
+    Animated.timing(pageOpacity, {
+      toValue: 0,
+      duration: 80,
+      useNativeDriver: true,
+    }).start(() => {
+      goToPrevPage();
+      Animated.timing(pageOpacity, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true,
+      }).start(() => {
+        isAnimatingRef.current = false;
+      });
+    });
+  }, [pageOpacity, goToPrevPage]);
 
   // ── Custom swipe gesture handlers ──
   const SWIPE_THRESHOLD = 60;        // minimum dx to trigger a page change
@@ -395,7 +651,8 @@ export default function ChapterReaderScreen({ route, navigation }) {
   const EDGE_PEEK = 40;              // how much of the next/prev page peeks during drag
 
   const onSwipeTouchStart = useCallback((e) => {
-    const touch = e.nativeEvent;
+    if (isAnimatingRef.current) return;
+    const touch = e.nativeEvent.touches?.[0] || e.nativeEvent;
     touchStartRef.current = { x: touch.pageX, y: touch.pageY, time: Date.now() };
     isSwipingRef.current = false;
     swipeLockedRef.current = false;
@@ -403,7 +660,8 @@ export default function ChapterReaderScreen({ route, navigation }) {
   }, [swipeAnim]);
 
   const onSwipeTouchMove = useCallback((e) => {
-    const touch = e.nativeEvent;
+    if (isAnimatingRef.current) return;
+    const touch = e.nativeEvent.touches?.[0] || e.nativeEvent;
     const dx = touch.pageX - touchStartRef.current.x;
     const dy = touch.pageY - touchStartRef.current.y;
     const absDx = Math.abs(dx);
@@ -442,10 +700,10 @@ export default function ChapterReaderScreen({ route, navigation }) {
   }, [swipeAnim]);
 
   const onSwipeTouchEnd = useCallback((e) => {
-    if (!isSwipingRef.current) return;
+    if (!isSwipingRef.current || isAnimatingRef.current) return;
     isSwipingRef.current = false;
 
-    const touch = e.nativeEvent;
+    const touch = e.nativeEvent.changedTouches?.[0] || e.nativeEvent;
     const dx = touch.pageX - touchStartRef.current.x;
     const dt = Date.now() - touchStartRef.current.time;
     const velocity = Math.abs(dx) / Math.max(dt, 1);
@@ -453,24 +711,43 @@ export default function ChapterReaderScreen({ route, navigation }) {
     const shouldNavigate = Math.abs(dx) > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD;
 
     if (shouldNavigate && dx < 0) {
-      // Swipe left → next page
+      // Swipe left → next page — slide off then fade new page in
+      isAnimatingRef.current = true;
       Animated.timing(swipeAnim, {
         toValue: -width,
-        duration: 180,
+        duration: 150,
         useNativeDriver: true,
       }).start(() => {
+        pageOpacity.setValue(0);
         swipeAnim.setValue(0);
         goToNextPage();
+        // Fade the new page in quickly
+        Animated.timing(pageOpacity, {
+          toValue: 1,
+          duration: 120,
+          useNativeDriver: true,
+        }).start(() => {
+          isAnimatingRef.current = false;
+        });
       });
     } else if (shouldNavigate && dx > 0) {
-      // Swipe right → prev page
+      // Swipe right → prev page — slide off then fade new page in
+      isAnimatingRef.current = true;
       Animated.timing(swipeAnim, {
         toValue: width,
-        duration: 180,
+        duration: 150,
         useNativeDriver: true,
       }).start(() => {
+        pageOpacity.setValue(0);
         swipeAnim.setValue(0);
         goToPrevPage();
+        Animated.timing(pageOpacity, {
+          toValue: 1,
+          duration: 120,
+          useNativeDriver: true,
+        }).start(() => {
+          isAnimatingRef.current = false;
+        });
       });
     } else {
       // Snap back
@@ -481,7 +758,25 @@ export default function ChapterReaderScreen({ route, navigation }) {
         friction: 12,
       }).start();
     }
-  }, [swipeAnim, goToNextPage, goToPrevPage]);
+  }, [swipeAnim, pageOpacity, goToNextPage, goToPrevPage]);
+
+  // ── Scroll-mode chapter transition ──
+  const scrollChapterCooldownRef = useRef(false);
+  const OVERSCROLL_THRESHOLD = 80;
+
+  const handleScroll = useCallback((event) => {
+    if (scrollChapterCooldownRef.current) return;
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const maxOffset = contentSize.height - layoutMeasurement.height;
+
+    if (contentOffset.y < -OVERSCROLL_THRESHOLD) {
+      scrollChapterCooldownRef.current = true;
+      goToPrevChapter();
+    } else if (maxOffset > 0 && contentOffset.y > maxOffset + OVERSCROLL_THRESHOLD) {
+      scrollChapterCooldownRef.current = true;
+      goToNextChapter();
+    }
+  }, [goToPrevChapter, goToNextChapter]);
 
   if (loading) {
     return (
@@ -546,16 +841,27 @@ export default function ChapterReaderScreen({ route, navigation }) {
             renderItem={renderScrollPage}
             keyExtractor={(item, index) => index.toString()}
             showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            ListHeaderComponent={
+              currentChapterIndex > 0 ? (
+                <View style={styles.chapterTransitionHint}>
+                  <Ionicons name="chevron-up" size={16} color="#666" />
+                  <Text style={styles.chapterTransitionHintText}>Pull to load previous chapter</Text>
+                </View>
+              ) : null
+            }
             ListFooterComponent={
               currentChapterIndex < chapters.length - 1 ? (
-                <TouchableOpacity
-                  style={styles.nextChapterButton}
-                  onPress={goToNextChapter}
-                >
-                  <Text style={styles.nextChapterButtonText}>Next Chapter</Text>
-                  <Ionicons name="chevron-forward" size={20} color="#fff" />
-                </TouchableOpacity>
-              ) : null
+                <View style={styles.chapterTransitionHint}>
+                  <Text style={styles.chapterTransitionHintText}>Keep scrolling for next chapter</Text>
+                  <Ionicons name="chevron-down" size={16} color="#666" />
+                </View>
+              ) : (
+                <View style={styles.chapterTransitionHint}>
+                  <Text style={styles.chapterTransitionHintText}>Last chapter</Text>
+                </View>
+              )
             }
           />
           {/* Tap area to toggle controls in scroll mode */}
@@ -568,20 +874,30 @@ export default function ChapterReaderScreen({ route, navigation }) {
           )}
         </View>
       ) : (
-        // Paginated mode with custom swipe gesture
-        <View
-          style={styles.pageContainer}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderStart={onSwipeTouchStart}
-          onResponderMove={onSwipeTouchMove}
-          onResponderRelease={onSwipeTouchEnd}
-          onResponderTerminate={onSwipeTouchEnd}
+        // Paginated mode with pinch zoom + swipe gestures
+        <ZoomableImage
+          onSingleTap={(e) => {
+            const touchX = e.nativeEvent.pageX || e.nativeEvent.touches?.[0]?.pageX || width / 2;
+            const zoneWidth = width * 0.25;
+            if (touchX < zoneWidth) {
+              animatedGoToPrevPage();
+            } else if (touchX > width - zoneWidth) {
+              animatedGoToNextPage();
+            } else {
+              setShowControls((prev) => !prev);
+            }
+          }}
+          onSwipeStart={onSwipeTouchStart}
+          onSwipeMove={onSwipeTouchMove}
+          onSwipeEnd={onSwipeTouchEnd}
         >
           <Animated.View
             style={[
               styles.swipeablePageWrapper,
-              { transform: [{ translateX: swipeAnim }] },
+              { 
+                transform: [{ translateX: swipeAnim }],
+                opacity: pageOpacity,
+              },
             ]}
           >
             <PageImage
@@ -591,25 +907,6 @@ export default function ChapterReaderScreen({ route, navigation }) {
               isScrollMode={false}
             />
           </Animated.View>
-
-          {/* Invisible tap zones — left/right edges for tap navigation, center for controls */}
-          <View style={styles.tapZoneRow} pointerEvents="box-none">
-            <TouchableOpacity
-              style={styles.leftTapZone}
-              onPress={goToPrevPage}
-              activeOpacity={1}
-            />
-            <TouchableOpacity
-              style={styles.centerTapZone}
-              onPress={() => setShowControls((prev) => !prev)}
-              activeOpacity={1}
-            />
-            <TouchableOpacity
-              style={styles.rightTapZone}
-              onPress={goToNextPage}
-              activeOpacity={1}
-            />
-          </View>
 
           {/* Swipe direction indicators */}
           <Animated.View
@@ -644,7 +941,7 @@ export default function ChapterReaderScreen({ route, navigation }) {
           >
             <Ionicons name="chevron-forward" size={32} color="#fff" />
           </Animated.View>
-        </View>
+        </ZoomableImage>
       )}
 
       {/* Controls */}
@@ -661,7 +958,7 @@ export default function ChapterReaderScreen({ route, navigation }) {
               <Ionicons name="chevron-back" size={24} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.controlsTitle} numberOfLines={1}>
-              {mangaTitle}
+              {mangaTitle}{chapter ? ` - Chapter ${chapter}` : ""}
             </Text>
             <View style={styles.controlsTopRight}>
               <TouchableOpacity
@@ -921,6 +1218,16 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
+  },
+  chapterTransitionHint: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+    gap: 4,
+  },
+  chapterTransitionHintText: {
+    color: "#555",
+    fontSize: 13,
   },
   scrollContainer: {
     flex: 1,
