@@ -61,7 +61,7 @@ export default function BookmarksPage() {
           bookmarkedManga
             .filter(
               (b) =>
-                b.hash && typeof b.hash === "string" && b.hash.trim() !== "",
+                b.hash && typeof b.hash === "string"44444444
             )
             .map(async (b) => {
               const url = `${API_BASE}/manga/${b.hash}`;
